@@ -1,13 +1,16 @@
 import pytest
 from .yuiparser import (
-    Source, parse, YuiError, 
+    Source, parse, YuiError, load_syntax 
 )
+
+yui_syntax = load_syntax('syntax-yui.json')
+py_syntax = load_syntax('syntax-py.json')
 
 class TestSource:
     """式の評価に関するテストクラス"""
 
     def test_syntax(self):
-        source = Source('')
+        source = Source('', syntax=yui_syntax)
         source.update_syntax(**{
             "line-feed": r"\n",
             "whitespace": " ",
@@ -93,37 +96,137 @@ class TestParseExpressionNode:
         string_node = parse("@String", source, pc={})
         assert str(string_node) == '"AB{1}C"'
 
+    def test_Array(self):
+        source = Source('[1,2]', pos=0)
+        array_node = parse("@Array", source, pc={})
+        assert str(array_node) == '[1,2]'
+
+        source = Source('[\n1,\n2\n]', pos=0)
+        array_node = parse("@Array", source, pc={})
+        assert str(array_node) == '[\n1,\n2\n]'
+
+    def test_Object(self):
+        source = Source('{"A": 1}', pos=0)
+        object_node = parse("@Object", source, pc={})
+        assert str(object_node) == '{"A": 1}'
+    
     def test_Name(self):
         source = Source("x_1 = 1")
         name_node = parse("@Name", source, pc={})
         assert str(name_node) == "x_1"
 
+    def test_GetArrayIndex(self):
+        source = Source("x[0]")
+        name_node = parse("@Expression", source, pc={})
+        assert str(name_node) == "x[0]"
+
+    def test_FuncApp(self):
+        source = Source("x(0)")
+        name_node = parse("@Expression", source, pc={})
+        assert str(name_node) == "x(0)"
+
+        source = Source("x()")
+        name_node = parse("@Expression", source, pc={})
+        assert str(name_node) == "x()"
+
+        source = Source("x(1, 2)")
+        name_node = parse("@Expression", source, pc={})
+        assert str(name_node) == "x(1, 2)"
+
+
+
 class TestParseStatementNode:
 
     def test_Assignment(self):
-        source = Source("x = 1")
+        source = Source("x = 1 # コメント")
         assignment_node = parse("@Assignment", source, pc={})
         assert str(assignment_node) == "x = 1"
+
+        source = Source("x=1 # コメント")
+        assignment_node = parse("@Statement", source, pc={})
+        assert str(assignment_node) == "x=1"
 
     def test_Increment(self):
         source = Source("xを増やす")
         increment_node = parse("@Increment", source, pc={})
         assert str(increment_node) == "xを増やす"
 
+        source = Source("xを増やす # コメント")
+        increment_node = parse("@Statement", source, pc={})
+        assert str(increment_node) == "xを増やす"
+
+    def test_Increment_py(self):
+        source = Source("x += 1", syntax=py_syntax)
+        increment_node = parse("@Increment", source, pc={})
+        assert str(increment_node) == "x += 1"
+
+        source = Source("x += 1", syntax=py_syntax)
+        increment_node = parse("@Statement", source, pc={})
+        assert str(increment_node) == "x += 1"
+
     def test_Decrement(self):
         source = Source("xを減らす")
         decrement_node = parse("@Decrement", source, pc={})
         assert str(decrement_node) == "xを減らす"
+
+        source = Source("xを減らす # コメント")
+        decrement_node = parse("@Statement", source, pc={})
+        assert str(decrement_node) == "xを減らす"
+    
+    def test_Decrement_py(self):
+        source = Source("x -= 1", syntax=py_syntax)
+        decrement_node = parse("@Decrement", source, pc={})
+        assert str(decrement_node) == "x -= 1"
+
+        source = Source("x -= 1 # コメント", syntax=py_syntax)
+        decrement_node = parse("@Statement", source, pc={})
+        assert str(decrement_node) == "x -= 1"  
 
     def test_Append(self):
         source = Source("xに10を追加する")
         append_node = parse("@Append", source, pc={})
         assert str(append_node) == "xに10を追加する"
 
-        source = Source("xに10を追加する")
+        source = Source("xに10を追加する # コメント")
         append_node = parse("@Statement", source, pc={})
         assert str(append_node) == "xに10を追加する"
 
+    def test_Append_py(self):
+        source = Source("x.append(10)", syntax=py_syntax)
+        append_node = parse("@Append", source, pc={})
+        assert str(append_node) == "x.append(10)"
+
+        source = Source("x.append(10) # コメント", syntax=py_syntax)
+        append_node = parse("@Statement", source, pc={})
+        assert str(append_node) == "x.append(10)"
+
+    def test_Break(self):
+        source = Source("くり返しを抜ける")
+        expr_stmt_node = parse("@Break", source, pc={})
+        assert str(expr_stmt_node) == "くり返しを抜ける"
+
+    def test_Break_py(self):
+        source = Source("break", syntax=py_syntax)
+        expr_stmt_node = parse("@Break", source, pc={})
+        assert str(expr_stmt_node) == "break"
+    
+    def test_Return(self):
+        source = Source("1が答え")
+        return_node = parse("@Return", source, pc={})
+        assert str(return_node) == "1が答え"
+
+        source = Source("1が答え # コメント")
+        return_node = parse("@Return", source, pc={})
+        assert str(return_node) == "1が答え"
+
+    def test_Return_py(self):
+        source = Source("return 1 # コメント", syntax=py_syntax)
+        return_node = parse("@Return", source, pc={})
+        assert str(return_node) == "return 1"
+
+        source = Source("return 1", syntax=py_syntax)
+        return_node = parse("@Statement", source, pc={})
+        assert str(return_node) == "return 1"
 
 
 class TestParseBlockNode:
@@ -132,13 +235,6 @@ class TestParseBlockNode:
         source = Source("x = 1\ny=2")
         top_level_node = parse("@TopLevel", source, pc={})
         assert str(top_level_node) == "x = 1\ny=2"
-
-        # with pytest.raises(YuiError) as excinfo:
-        #     source = Source("10")
-        #     name_node = parse("@Name", source, pc={})
-        # assert "expected" in str(excinfo.value)
-        # assert excinfo.value.error_node.pos == 0
-        # assert excinfo.value.error_node.end_pos == 1
 
     def test_statement_separator(self):
         source = Source("x = 1;y=2")
@@ -158,16 +254,8 @@ class TestParseBlockNode:
         repeat_node = parse("@Repeat", source, pc={})
         assert str(repeat_node) == "3回くり返す {\n  x = 1\n}"
 
+    def test_If(self):
+        source = Source("もしxが1ならば {\n  x = 1\n}")
+        if_node = parse("@If", source, pc={})
+        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
 
-class aNode:
-
-
-    def test_Block(self):
-        source = Source("{\n  x = 1\n  y = 2\n}")
-        block_node = parse("@Block", source, pc={})
-        assert str(block_node) == "{\n  x = 1\n  y = 2\n}"
-
-        with pytest.raises(YuiError) as excinfo:
-            source = Source("  {\n    x = 1\n  y = 2\n  }", pos=2)
-            block_node = parse("@Block", source, pc={})
-        assert "indentation" in str(excinfo.value)

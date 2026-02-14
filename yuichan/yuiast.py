@@ -4,6 +4,14 @@ from typing import List, Optional, Dict, Any, Union
 from types import FunctionType
 from abc import ABC, abstractmethod
 
+YuiParser = None  # 循環インポート防止のため、後で設定されます
+CodeVisitor = None  # 循環インポート防止のため、後で設定されます
+
+def set_from_outside(parser, visitor):
+    global YuiParser
+    global CodeVisitor
+    YuiParser = parser
+    CodeVisitor = visitor
 
 class YuiRuntime(object):
     """
@@ -110,8 +118,7 @@ class YuiRuntime(object):
         """比較操作のカウントを増やす"""
         self.compare_count += 1
 
-
-    def exec(self, source: str, timeout: int = 30, eval_mode: bool = True):
+    def exec(self, source: str, syntax: Union[str,dict] = 'syntax-yui.json', timeout: int = 30, eval_mode: bool = True):
         """Yuiプログラムを実行する"""
         self.source = source
 
@@ -204,19 +211,7 @@ class YuiRuntime(object):
 
 @dataclass
 class ASTNode(ABC):
-    """
-    抽象構文木（AST）の基底クラス
-
-    すべてのASTノードはこのクラスを継承します。
-    各ノードはソースコード内の位置情報を持ち、
-    評価（evaluate）とコード生成（emit）ができます。
-
-    Attributes:
-        filename: ファイル名
-        source: ソースコード全体
-        pos: ノードの開始位置
-        end_pos: ノードの終了位置
-    """
+    """抽象構文木（AST）の基底クラス"""
     filename: str
     source: str
     pos: int
@@ -246,8 +241,8 @@ class ASTNode(ABC):
 
     def visit(self, visitor):
         """ノードを訪問する"""
-        method_name = 'visit_' + self.__class__.__name__
-        visit = getattr(visitor, method_name, visitor.generic_visit)
+        method_name = 'visit' + self.__class__.__name__
+        visit = getattr(visitor, method_name, visitor.visitASTNode)
         return visit(self)
     
     def extract(self) -> tuple:
@@ -982,11 +977,12 @@ class AssignmentNode(StatementNode):
 class IncrementNode(StatementNode):
     """インクリメント（変数 を 増やす）を表すノード"""
     variable: NameNode
+    expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, value: ExpressionNode=None):
+    def __init__(self, variable: NameNode, expression: ExpressionNode=None):
         super().__init__()
         self.variable = variable
-        self.value = value
+        self.expression = expression
 
     def evaluate(self, runtime: YuiRuntime):
         """変数を1増やす"""
@@ -1000,11 +996,12 @@ class IncrementNode(StatementNode):
 class DecrementNode(StatementNode):
     """デクリメント（変数 を 減らす）を表すノード"""
     variable: NameNode
+    expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, value: ExpressionNode=None):
+    def __init__(self, variable: NameNode, expression: ExpressionNode=None):
         super().__init__()
         self.variable = variable
-        self.value = value
+        self.expression = expression
 
     def evaluate(self, runtime: YuiRuntime):
         """変数を1減らす"""
@@ -1034,10 +1031,12 @@ class AppendNode(StatementNode):
 @dataclass
 class BlockNode(StatementNode):
     statements: List[StatementNode]
+    top_level: bool
 
     def __init__(self, *statements: StatementNode):
         super().__init__()
         self.statements = statements
+        self.top_level = False
 
     def evaluate(self, runtime: YuiRuntime):
         for statement in self.statements:

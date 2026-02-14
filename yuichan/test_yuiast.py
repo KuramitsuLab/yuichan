@@ -1,8 +1,6 @@
 import pytest
 from .yuiast import (
-    YuiError,
-    YuiRuntime,
-    YuiData,
+    YuiError, YuiRuntime, YuiData,
     NumberNode,StringNode,
     ArrayNode, ObjectNode,
     NameNode,
