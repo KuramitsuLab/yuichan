@@ -998,6 +998,14 @@ class CodingVisitor:
             self.push('unary-')
             node.element.visit(self)
 
+    def visitBinaryNode(self, node: BinaryNode):
+        node.left_node.visit(self)
+        self.print(' ')
+        # 演算子をそのまま出力（*, /, %, +, -, ==, != など）
+        self.print(node.operator)
+        self.print(' ')
+        node.right_node.visit(self)
+
     def visitArrayLenNode(self, node: ArrayLenNode):
         if self.is_defined('property-length'):
             node.element.visit(self)
@@ -1016,7 +1024,7 @@ class CodingVisitor:
         self.push('array-index-end')
     
     def visitFuncAppNode(self, node: FuncAppNode):
-        node.name.visit(self)
+        node.name_node.visit(self)
         self.push('funcapp-begin', if_undefined=r'\(')
         for i, arg in enumerate(node.arguments):
             if i > 0:
@@ -1074,27 +1082,27 @@ class CodingVisitor:
     def visitIfNode(self, node: IfNode):
         self.push('if-begin')
         self.push('if-condition-begin')
-        node.left_node.visit(self)
-        if self.is_defined(f'if-infix{node.operator}'):
-            self.push(f'if-infix{node.operator}')
+        node.left.visit(self)
+        if self.is_defined(f'if-infix-{node.operator}'):
+            self.push(f'if-infix-{node.operator}')
         else:
             self.push('if-infix')
-        node.right_node.visit(self)
-        if self.is_defined(f'if-suffix{node.operator}'):
-            self.push(f'if-suffix{node.operator}')
+        node.right.visit(self)
+        if self.is_defined(f'if-suffix-{node.operator}'):
+            self.push(f'if-suffix-{node.operator}')
         else:
             self.push('if-suffix')
         self.push('if-condition-end')
         self.push('if-then')
-        node.then_node.visit(self)
-        if node.else_node:
+        node.then_block.visit(self)
+        if node.else_block:
             self.push('if-else')
-            node.else_node.visit(self)
+            node.else_block.visit(self)
         self.push('if-end')
 
     def visitRepeatNode(self, node: RepeatNode):
         self.push('repeat-begin')
-        node.times_node.visit(self)
+        node.count_node.visit(self)
         self.push('repeat-times')
         self.push('repeat-block')
         node.block_node.visit(self)
@@ -1106,14 +1114,14 @@ class CodingVisitor:
         node.name_node.visit(self)
         self.push('funcdef-name-end')
         self.push('funcdef-args-begin')
-        for i, arg_node in enumerate(node.arg_nodes):
+        for i, arg_node in enumerate(node.parameters):
             if i > 0:
                 self.push('funcdef-arg-separator')
             arg_node.visit(self)
         self.push('funcdef-args-end')
         self.push('funcdef-block')
         self.indent += 1
-        node.body_node.visit(self)
+        node.body.visit(self)
         self.indent -= 1
         self.push('funcdef-end')
 
