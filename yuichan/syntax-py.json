@@ -2,6 +2,7 @@
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
     "linefeed": "[\\n]",
+    "word-segmenter": " ",
     "line-comment-begin": "[#＃]",
     "comment-begin": "",
     "comment-end": "",
@@ -83,7 +84,7 @@
 
     "repeat-begin": "for\\s+_\\s+in\\s+range\\s*\\(\\s*",
     "repeat-times": "\\)\\s*",
-    "repeat-block": "\\:",
+    "repeat-block": "",
     "repeat-end": "",
 
     "if-begin": "if\\s",
@@ -98,8 +99,8 @@
     "if-infix>=": ">=",
     "if-infixin": "in\\s",
     "if-infixnotin": "not\\s+in\\s",
-    "if-then": "\\:",
-    "if-else": "else\\s*\\:",
+    "if-then": "",
+    "if-else": "else\\s*",
     "if-end": "",
 
     "funcdef-begin": "def\\s",
@@ -109,7 +110,7 @@
     "funcdef-noarg": "",
     "funcdef-arg-separator": "\\,",
     "funcdef-args-end": "\\)",
-    "funcdef-block": "\\:",
+    "funcdef-block": "",
     "funcdef-end": "",
 
     "assert-begin": "assert\\s",

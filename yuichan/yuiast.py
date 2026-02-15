@@ -216,6 +216,7 @@ class ASTNode(ABC):
     source: str
     pos: int
     end_pos: int
+    comment: Optional[str]
 
     def __init__(self):
         """ASTNodeを初期化する"""
@@ -223,12 +224,14 @@ class ASTNode(ABC):
         self.source = ""
         self.pos = 0
         self.end_pos = -1
+        self.comment = None
 
     def setpos(self, source: str, pos: int, end_pos: int = -1, filename: str = "main.yui"):
         self.source = source
         self.pos = pos
         self.end_pos = end_pos
         self.filename = filename
+        self.comment = None
         return self
     
     def __str__(self) -> str:
@@ -847,12 +850,15 @@ class BinaryNode(ASTNode):
     """二項演算子を表すノード"""
     left_node: ExpressionNode
     right_node: ExpressionNode
+    operator: str
+    comparative: bool
 
-    def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode):
+    def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode, comparative: bool = False):
         super().__init__()
         self.left_node = left
         self.operator = operator
         self.right_node = right
+        self.comparative = comparative
 
     def evaluate(self, runtime):
         pass
@@ -1033,10 +1039,14 @@ class BlockNode(StatementNode):
     statements: List[StatementNode]
     top_level: bool
 
-    def __init__(self, *statements: StatementNode):
+    def __init__(self, statements: List[StatementNode], top_level: bool = False):
         super().__init__()
-        self.statements = statements
-        self.top_level = False
+        if isinstance(statements, StatementNode):
+            self.statements = [statements]
+        else:
+            assert isinstance(statements, list)
+            self.statements = statements
+        self.top_level = top_level
 
     def evaluate(self, runtime: YuiRuntime):
         for statement in self.statements:
@@ -1109,8 +1119,9 @@ class BreakNode(StatementNode):
 
 @dataclass
 class PassNode(StatementNode):
-    def __init__(self):
+    def __init__(self, comment: Optional[str] = None):
         super().__init__()
+        self.comment = comment
 
     def evaluate(self, runtime: YuiRuntime):
         pass
@@ -1203,10 +1214,14 @@ class FuncDefNode(StatementNode):
 class PrintExpressionNode(StatementNode):
     """式の出力（単独で書かれた式）を表すノード"""
     expression: ExpressionNode
+    inspection: bool
+    groping: bool = False
 
-    def __init__(self, expression: ExpressionNode):
+    def __init__(self, expression: ExpressionNode, inspection: bool = False, groping: bool = False):
         super().__init__()
         self.expression = expression
+        self.inspection = inspection
+        self.groping = groping
 
     def evaluate(self, runtime: YuiRuntime):
         """式を評価して結果を出力する"""
@@ -1240,5 +1255,5 @@ class AssertNode(StatementNode):
                 return
         except Exception as e:
             pass
-        raise YuiError(("test", "failed", f"❌{test_value}\n(正解) {reference_value}"), self, runtime)
+        raise YuiError(("test", "failed", f"❌{test_value}\n✅{reference_value}"), self, runtime)
 

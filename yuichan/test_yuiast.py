@@ -185,11 +185,11 @@ class TestExpression:
 
     def test_block(self):
         runtime = self.init_runtime()
-        statement = BlockNode(
+        statement = BlockNode([
             AssignmentNode(NameNode("x"), NumberNode(10)),
             IncrementNode(NameNode("x")),
             IncrementNode(NameNode("x")),
-        )
+        ])
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 12) == 0
     
@@ -199,8 +199,8 @@ class TestExpression:
             left=NameNode("x"),
             operator="==",
             right=NumberNode(1),
-            then_block=BlockNode(AssignmentNode(NameNode("x"), NumberNode(100))),
-            else_block=BlockNode(AssignmentNode(NameNode("x"), NumberNode(200))),
+            then_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(100))]),
+            else_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(200))]),
         )
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 100) == 0
@@ -211,8 +211,8 @@ class TestExpression:
             left=NameNode("x"),
             operator="!=",
             right=NumberNode(1),
-            then_block=BlockNode(AssignmentNode(NameNode("x"), NumberNode(100))),
-            else_block=BlockNode(AssignmentNode(NameNode("x"), NumberNode(200))),
+            then_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(100))]),
+            else_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(200))]),
         )
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 200) == 0
@@ -221,7 +221,7 @@ class TestExpression:
         runtime = self.init_runtime()
         statement = RepeatNode(
             NumberNode(3),
-            BlockNode(IncrementNode(NameNode("x")))
+            BlockNode([IncrementNode(NameNode("x"))])
         )
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 4) == 0
@@ -230,15 +230,15 @@ class TestExpression:
         runtime = self.init_runtime()
         statement = RepeatNode(
             NumberNode(10),
-            BlockNode(
+            BlockNode([
                 IncrementNode(NameNode("x")),
                 IfNode(
                     left=NameNode("x"),
                     operator="==",
                     right=NumberNode(4),
-                    then_block=BlockNode(BreakNode())
+                    then_block=BlockNode([BreakNode()])
                 )
-            )
+            ])
         )
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 4) == 0
@@ -247,15 +247,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode(
-                ReturnNode(
-                    MinusNode(
-                        MinusNode(
-                            NameNode("a")
-                        )
-                    )
-                )
-            )
+            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
@@ -280,15 +272,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode(
-                ReturnNode(
-                    MinusNode(
-                        MinusNode(
-                            NameNode("a")
-                        )
-                    )
-                )
-            )
+            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
@@ -304,7 +288,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode()
+            BlockNode([])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
@@ -341,7 +325,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode()
+            BlockNode([])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
@@ -360,7 +344,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode(ReturnNode(NumberNode(0)))
+            BlockNode([ReturnNode(NumberNode(0))])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
@@ -377,7 +361,7 @@ class TestExpression:
         runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode(ReturnNode(NumberNode(0)))
+            BlockNode([ReturnNode(NumberNode(0))])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(

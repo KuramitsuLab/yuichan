@@ -93,10 +93,9 @@ class TestYuiEmit:
 
 
     def test_BlockNode(self):
-        node = BlockNode(
+        node = BlockNode([
             AssignmentNode(NameNode("x"), NumberNode(1)),
             AssignmentNode(NameNode("y"), NumberNode(2)),
-        )
-        node.top_level = True
+        ], top_level=True)
         emitter = CodingVisitor()
         assert emitter.emit(node) == 'x=1\ny=2'

@@ -107,15 +107,18 @@
     "funcdef-name-begin": "",
     "funcdef-name-end": "=",
     "funcdef-args-begin": "入力",
-    "funcdef-noarg": "なし",
     "funcdef-arg-separator": "[,、]",
     "funcdef-args-end": "に対して[、]?",
+    "funcdef-noarg": "入力なし",
     "funcdef-block": "",
     "funcdef-end": "",
 
     "import-begin": "",
     "import-end": "を使う",
 
+    "assert-begin": ">>>\\s+",
+    "assert-infix": "[\\n]",
+    "assert-end": "",
 
-    "構文": "Yui-Classic"
+    "syntax": "Yui-Classic"
 }
