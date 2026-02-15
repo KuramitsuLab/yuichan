@@ -69,7 +69,7 @@ class TestExpression:
         runtime = self.init_runtime()
         expression = MinusNode(NumberNode(1.0))
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, -1) == 0
+        assert YuiData.compare(result, -1.0) == 0
 
     def test_minus_string(self):
         runtime = self.init_runtime()
@@ -82,7 +82,7 @@ class TestExpression:
 
     def test_array(self):
         runtime = self.init_runtime()
-        expression = ArrayNode([NumberNode(1), NumberNode(2), NumberNode(3)])
+        expression = ArrayNode([1, 2, 3])
         result = expression.evaluate(runtime)
         assert YuiData.compare(result, YuiData([1, 2, 3])) == 0
 
@@ -195,34 +195,109 @@ class TestExpression:
     
     def test_if_eq(self):
         runtime = self.init_runtime()
-        statement = IfNode(
-            left=NameNode("x"),
-            operator="==",
-            right=NumberNode(1),
-            then_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(100))]),
-            else_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(200))]),
+        statement = IfNode(NameNode("x"), "==", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
         )
         statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 100) == 0
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "==", 0,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 2) == 0
 
     def test_if_ne(self):
         runtime = self.init_runtime()
-        statement = IfNode(
-            left=NameNode("x"),
-            operator="!=",
-            right=NumberNode(1),
-            then_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(100))]),
-            else_block=BlockNode([AssignmentNode(NameNode("x"), NumberNode(200))]),
+        statement = IfNode(NameNode("x"), "!=", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
         )
         statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 200) == 0
+        assert YuiData.compare(runtime.getenv("x"), 2) == 0
+
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "!=", 0,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
+    def test_if_lt(self):
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "<", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 2) == 0
+
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "<", 2,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
+    def test_if_le(self):
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "<=", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), "<=", 0,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 2) == 0
+
+    def test_if_gt(self):
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), ">", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 2) == 0
+
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), ">", 0,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
+    def test_if_ge(self):
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), ">=", 1,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
+        runtime = self.init_runtime()
+        statement = IfNode(NameNode("x"), ">=", 0,
+            AssignmentNode(NameNode("x"), 1),
+            AssignmentNode(NameNode("x"), 2)
+        )
+        statement.evaluate(runtime)
+        assert YuiData.compare(runtime.getenv("x"), 1) == 0
+
 
     def test_repeat(self):
         runtime = self.init_runtime()
-        statement = RepeatNode(
-            NumberNode(3),
-            BlockNode([IncrementNode(NameNode("x"))])
-        )
+        statement = RepeatNode(3,IncrementNode(NameNode("x")))
         statement.evaluate(runtime)
         assert YuiData.compare(runtime.getenv("x"), 4) == 0
 

@@ -69,12 +69,12 @@ class TestSource:
 
 class TestParseExpressionNode:
     def test_Number(self):
-        source = Source("0123", pos=1)
+        source = Source("01234", pos=1)
         assert source.is_defined("number-begin")
         assert source.is_defined("number-chars")
 
         number_node = parse("@Number", source, pc={})
-        assert str(number_node) == '123'
+        assert str(number_node) == '1234'
 
         source = Source("0123.12", pos=1)
         number_node = parse("@Number", source, pc={})
@@ -134,8 +134,6 @@ class TestParseExpressionNode:
         assert str(name_node) == "x(1, 2)"
 
 
-
-
 class TestParseStatementNode:
 
     def test_Assignment(self):
@@ -161,27 +159,27 @@ class TestParseStatementNode:
         increment_node = parse("@Increment", source, pc={})
         assert str(increment_node) == "x += 1"
 
-        source = Source("x += 1", syntax=py_syntax)
+        source = Source("y += 1", syntax=py_syntax)
         increment_node = parse("@Statement", source, pc={})
-        assert str(increment_node) == "x += 1"
+        assert str(increment_node) == "y += 1"
 
     def test_Decrement(self):
         source = Source("xを減らす")
         decrement_node = parse("@Decrement", source, pc={})
         assert str(decrement_node) == "xを減らす"
 
-        source = Source("xを減らす # コメント")
+        source = Source("yを減らす # コメント")
         decrement_node = parse("@Statement", source, pc={})
-        assert str(decrement_node) == "xを減らす"
+        assert str(decrement_node) == "yを減らす"
     
     def test_Decrement_py(self):
         source = Source("x -= 1", syntax=py_syntax)
         decrement_node = parse("@Decrement", source, pc={})
         assert str(decrement_node) == "x -= 1"
 
-        source = Source("x -= 1 # コメント", syntax=py_syntax)
+        source = Source("y -= 1 # コメント", syntax=py_syntax)
         decrement_node = parse("@Statement", source, pc={})
-        assert str(decrement_node) == "x -= 1"  
+        assert str(decrement_node) == "y -= 1"  
 
     def test_Append(self):
         source = Source("xに10を追加する")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Yui言語のCLIインターフェース
+Yui Language CLI Interface
 """
 
 import sys
@@ -22,7 +22,7 @@ from . import yuiexample
 
 
 def main(argv=None):
-    """メインエントリーポイント"""
+    """Main entry point"""
     if argv is None:
         argv = sys.argv[1:]
 
@@ -31,103 +31,119 @@ def main(argv=None):
         description=f'Yui Language Interpreter v{__version__}',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-例:
-  yui file.yui                              # ファイルを実行
-  yui -i                                    # 対話モード
-  yui --input input.json file.yui           # 環境を読み込んで実行
-  yui file.yui --output output.json         # 実行後の環境を保存
-  yui --syntax syntax-py.json file.yui     # カスタム構文で実行
-  yui --syntax syntax-yui.json file.yui --syntax-to syntax-py.json  # 構文変換
-  yui --syntax syntax-yui.json file.md --syntax-to syntax-py.json   # Markdown変換
-  yui --list-examples                       # サンプル一覧を表示
-  yui --make-examples                       # 全サンプルを生成（Yui + Python風）
-  yui --make-examples --example loop        # 特定のサンプルのみ生成
-  yui --make-examples --syntax syntax-yui.json  # Yui構文のみで生成
+Examples:
+  yui file.yui                              # Execute a file
+  yui -i                                    # Interactive mode
+  yui --input input.json file.yui           # Load environment and execute
+  yui file.yui --output output.json         # Save environment after execution
+  yui --syntax syntax-py.json file.yui     # Execute with custom syntax
+  yui --syntax syntax-yui.json file.yui --syntax-to syntax-py.json  # Convert syntax
+  yui --syntax syntax-yui.json file.md --syntax-to syntax-py.json   # Convert Markdown
+  yui --list-examples                       # List available examples
+  yui --make-examples                       # Generate all examples (Yui + Python style)
+  yui --make-examples --example loop        # Generate specific example only
+  yui --make-examples --syntax syntax-yui.json  # Generate with Yui syntax only
 """
     )
 
     parser.add_argument('-V', '--version', action='version',
                         version=f'Yui {__version__}')
     parser.add_argument('-i', '--interactive', action='store_true',
-                        help='対話モードで起動')
+                        help='Start in interactive mode')
     parser.add_argument('--syntax', type=str, metavar='FILE',
-                        help='構文ファイル（JSON）を指定（実行時は必須）')
+                        help='Specify syntax file (JSON) - required for execution')
     parser.add_argument('--syntax-to', type=str, metavar='FILE',
-                        help='変換先の構文ファイル（--syntaxと併用）')
+                        help='Target syntax file for conversion (use with --syntax)')
     parser.add_argument('--input', type=str, metavar='FILE',
-                        help='環境変数をJSONファイルから読み込む')
+                        help='Load environment variables from JSON file')
     parser.add_argument('--output', type=str, metavar='FILE',
-                        help='実行後の環境変数をJSONファイルに保存')
+                        help='Save environment variables to JSON file after execution')
     parser.add_argument('--make-examples', action='store_true',
-                        help='サンプルコードを生成')
+                        help='Generate sample code files (.yui)')
+    parser.add_argument('--test-examples', action='store_true',
+                        help='Test all examples with YuiRuntime')
     parser.add_argument('--example', type=str, metavar='NAME',
-                        help='特定のサンプルのみ生成（--make-examplesと併用）')
+                        help='Generate specific example only (use with --make-examples)')
     parser.add_argument('--list-examples', action='store_true',
-                        help='利用可能なサンプル一覧を表示')
-    parser.add_argument('file', nargs='?', help='実行するYuiファイル')
+                        help='List available examples')
+    parser.add_argument('file', nargs='?', help='Yui file to execute')
 
     args = parser.parse_args(argv)
 
     try:
-        # サンプル一覧表示
+        # List examples
         if args.list_examples:
             list_examples()
             return
 
-        # サンプル生成モード
-        if args.make_examples:
+        # Test examples mode
+        if args.test_examples:
             if not args.syntax:
-                print("エラー: --syntax オプションが必要です", file=sys.stderr)
-                print("例: yui --syntax syntax-yui.json --make-examples", file=sys.stderr)
-                print("\n利用可能な構文ファイル:", file=sys.stderr)
-                print("  - syntax-yui.json  (日本語風)", file=sys.stderr)
-                print("  - syntax-py.json   (Python風)", file=sys.stderr)
+                print("Error: --syntax option is required", file=sys.stderr)
+                print("Example: yui --syntax syntax-yui.json --test-examples", file=sys.stderr)
+                print("\nAvailable syntax files:", file=sys.stderr)
+                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
+                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
-            syntaxes = [args.syntax]
-            make_examples(args.example, syntaxes)
+            test_examples(args.syntax)
             return
 
-        # 構文ファイルの必須チェック（実行・対話・変換モード）
+        # Example generation mode
+        if args.make_examples:
+            if not args.syntax:
+                print("Error: --syntax option is required", file=sys.stderr)
+                print("Example: yui --syntax syntax-yui.json --make-examples", file=sys.stderr)
+                print("\nAvailable syntax files:", file=sys.stderr)
+                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
+                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - emoji.json       (Emoji style)", file=sys.stderr)
+                sys.exit(1)
+            make_examples(args.example, args.syntax)
+            return
+
+        # Required syntax file check (execution, interactive, conversion modes)
         if not args.syntax:
-            print("エラー: --syntax オプションが必要です", file=sys.stderr)
-            print("\n使用方法:", file=sys.stderr)
-            print("  yui --syntax <構文ファイル> [オプション] [ファイル]", file=sys.stderr)
-            print("\n例:", file=sys.stderr)
+            print("Error: --syntax option is required", file=sys.stderr)
+            print("\nUsage:", file=sys.stderr)
+            print("  yui --syntax <syntax-file> [options] [file]", file=sys.stderr)
+            print("\nExamples:", file=sys.stderr)
             print("  yui --syntax syntax-yui.json file.yui", file=sys.stderr)
             print("  yui --syntax syntax-py.json -i", file=sys.stderr)
-            print("\n利用可能な構文ファイル:", file=sys.stderr)
-            print("  - syntax-yui.json  (日本語風)", file=sys.stderr)
-            print("  - syntax-py.json   (Python風)", file=sys.stderr)
+            print("\nAvailable syntax files:", file=sys.stderr)
+            print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
+            print("  - syntax-py.json   (Python style)", file=sys.stderr)
+            print("  - emoji.json       (Emoji style)", file=sys.stderr)
             sys.exit(1)
 
         syntax = args.syntax
 
-        # 環境の初期化
+        # Initialize environment
         env = {}
         if args.input:
             env = load_env_from_json(args.input)
-            print(f"環境を読み込みました: {args.input}")
+            print(f"Environment loaded: {args.input}")
 
-        # 構文変換モード
+        # Syntax conversion mode
         if args.syntax_to:
             if not args.file:
-                print("エラー: --syntax-to には入力ファイルが必要です", file=sys.stderr)
+                print("Error: --syntax-to requires an input file", file=sys.stderr)
                 sys.exit(1)
             convert_syntax(args.file, syntax, args.syntax_to)
             return
 
-        # ファイル実行
+        # Execute file
         if args.file:
             env = run_file(args.file, env, syntax)
 
-            # 環境の保存
+            # Save environment
             if args.output:
                 save_env_to_json(env, args.output)
-                print(f"環境を保存しました: {args.output}")
+                print(f"Environment saved: {args.output}")
 
             return
 
-        # 対話モード
+        # Interactive mode
         if args.interactive or not args.file:
             interactive_mode(env, syntax)
             return
@@ -136,35 +152,35 @@ def main(argv=None):
         print(f"\n{e}", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError as e:
-        print(f"エラー: ファイルが見つかりません - {e}", file=sys.stderr)
+        print(f"Error: File not found - {e}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
-        print("\n終了します")
+        print("\nExiting")
         sys.exit(0)
     except Exception as e:
-        print(f"エラー: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         sys.exit(1)
 
 
 def run_file(filename: str, env: Dict[str, Any], syntax: str = 'syntax-yui.json') -> Dict[str, Any]:
-    """ファイルを実行"""
+    """Execute a file"""
     with open(filename, 'r', encoding='utf-8') as f:
         code = f.read()
 
-    # パーサーで構文木を生成
+    # Generate AST with parser
     parser = YuiParser(syntax)
     ast = parser.parse(code)
 
-    # ランタイムで実行
+    # Execute with runtime
     runtime = YuiRuntime()
     for key, value in env.items():
         runtime.setenv(key, value)
 
     ast.evaluate(runtime)
 
-    # 環境を返す（最後のスコープから取得）
+    # Return environment (from last scope)
     result_env = {}
     if runtime.enviroments:
         result_env = runtime.enviroments[-1].copy()
@@ -173,12 +189,12 @@ def run_file(filename: str, env: Dict[str, Any], syntax: str = 'syntax-yui.json'
 
 
 def interactive_mode(env: Dict[str, Any], syntax: str = 'syntax-yui.json'):
-    """対話モード"""
-    print(f"Yui v{__version__} - 対話モード")
-    print(f"構文: {syntax}")
-    print("終了するには 'quit' または 'exit' を入力してください\n")
+    """Interactive mode"""
+    print(f"Yui v{__version__} - Interactive Mode")
+    print(f"Syntax: {syntax}")
+    print("Type 'quit' or 'exit' to exit\n")
 
-    # readline の履歴ファイルを設定
+    # Setup readline history file
     history_file = os.path.expanduser("~/.yui_history")
     if READLINE_AVAILABLE:
         try:
@@ -201,23 +217,23 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'syntax-yui.json'):
 
                 code = code.strip()
                 if code == "":
-                    # 環境を表示
+                    # Display environment
                     if runtime.enviroments and len(runtime.enviroments[-1]) > 0:
                         print(json.dumps(runtime.enviroments[-1], indent=2, ensure_ascii=False))
                     continue
 
-                # パースして実行
+                # Parse and execute
                 parser = YuiParser(syntax)
                 ast = parser.parse(code)
                 ast.evaluate(runtime)
 
             except YuiError as e:
-                print(f"エラー: {e}")
+                print(f"Error: {e}")
             except KeyboardInterrupt:
-                print("\n終了します")
+                print("\nExiting")
                 break
             except EOFError:
-                print("\n終了します")
+                print("\nExiting")
                 break
     finally:
         if READLINE_AVAILABLE:
@@ -228,15 +244,15 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'syntax-yui.json'):
 
 
 def convert_syntax(input_file: str, source_syntax: str, target_syntax: str):
-    """構文変換"""
+    """Convert syntax"""
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Markdownファイルの場合
+    # Markdown file conversion
     if input_file.endswith('.md'):
         convert_markdown(content, source_syntax, target_syntax)
     else:
-        # 通常のファイル変換
+        # Regular file conversion
         parser = YuiParser(source_syntax)
         ast = parser.parse(content)
 
@@ -247,7 +263,7 @@ def convert_syntax(input_file: str, source_syntax: str, target_syntax: str):
 
 
 def convert_markdown(content: str, source_syntax: str, target_syntax: str):
-    """Markdownファイル内のコードブロックを変換"""
+    """Convert code blocks in Markdown files"""
     lines = content.split('\n')
     in_code_block = False
     current_block = []
@@ -255,16 +271,16 @@ def convert_markdown(content: str, source_syntax: str, target_syntax: str):
     for line in lines:
         stripped = line.strip()
 
-        # ```yui で始まるブロックを検出
+        # Detect blocks starting with ```yui
         if stripped.startswith("```yui") and not in_code_block:
             in_code_block = True
             current_block = []
-            print(line)  # コードブロック開始をそのまま出力
+            print(line)  # Output code block start as-is
             continue
 
-        # コードブロック終了
+        # End of code block
         if stripped.startswith("```") and in_code_block:
-            # コードブロックを変換
+            # Convert code block
             code = '\n'.join(current_block)
             if code.strip():
                 try:
@@ -276,73 +292,136 @@ def convert_markdown(content: str, source_syntax: str, target_syntax: str):
 
                     print(converted)
                 except Exception as e:
-                    print(f"# 変換エラー: {e}")
+                    print(f"# Conversion error: {e}")
                     print(code)
 
-            print(line)  # コードブロック終了をそのまま出力
+            print(line)  # Output code block end as-is
             in_code_block = False
             current_block = []
             continue
 
-        # コードブロック内
+        # Inside code block
         if in_code_block:
             current_block.append(line)
         else:
-            # コードブロック外はそのまま出力
+            # Outside code block - output as-is
             print(line)
 
 
 def load_env_from_json(filename: str) -> Dict[str, Any]:
-    """JSONファイルから環境を読み込む"""
+    """Load environment from JSON file"""
     with open(filename, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
 def save_env_to_json(env: Dict[str, Any], filename: str):
-    """環境をJSONファイルに保存"""
+    """Save environment to JSON file"""
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(env, f, indent=2, ensure_ascii=False)
 
 
 def list_examples():
-    """利用可能なサンプル一覧を表示"""
+    """List available examples"""
     examples = yuiexample.get_all_examples()
-    print("\n利用可能なサンプル:")
-    print(f"{'名前':<20} 説明")
+    print("\nAvailable examples:")
+    print(f"{'Name':<20} Description")
     print("-" * 60)
     for ex in examples:
         print(f"{ex.name:<20} {ex.description}")
 
 
-def make_examples(example_name: str = None, syntaxes: list = None):
+def make_examples(example_name: str = None, syntax: str = 'syntax-yui.json'):
     """
-    サンプルコードを生成
+    Generate sample code files
 
     Args:
-        example_name: 特定のサンプル名（Noneの場合は全サンプル）
-        syntaxes: 構文ファイルのリスト
+        example_name: Specific example name (all examples if None)
+        syntax: Syntax file to use
     """
-    if syntaxes is None:
-        syntaxes = ['syntax-yui.json', 'syntax-py.json']
-
     examples = yuiexample.get_all_examples()
 
-    # 特定のサンプルのみ生成
+    # Create examples directory if it doesn't exist
+    examples_dir = 'examples'
+    if not os.path.exists(examples_dir):
+        os.makedirs(examples_dir)
+        print(f"Created directory: {examples_dir}/")
+
+    # Determine file extension from syntax
+    syntax_basename = os.path.basename(syntax)
+    if 'py' in syntax_basename:
+        ext = 'py'
+    elif 'emoji' in syntax_basename:
+        ext = 'yui'  # Use .yui for emoji syntax
+    else:
+        ext = 'yui'
+
+    # Generate specific example only
     if example_name:
         example = next((ex for ex in examples if ex.name == example_name), None)
-        if example:
-            yuiexample.print_example(example, syntaxes)
-        else:
-            print(f"エラー: サンプル '{example_name}' が見つかりません", file=sys.stderr)
-            print("\n利用可能なサンプル:")
+        if not example:
+            print(f"Error: Example '{example_name}' not found", file=sys.stderr)
+            print("\nAvailable examples:")
             for ex in examples:
                 print(f"  - {ex.name}")
             sys.exit(1)
+
+        code = example.generate(syntax)
+        filename = os.path.join(examples_dir, f"{example.name}.{ext}")
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(code)
+        print(f"Generated: {filename}")
         return
 
-    # すべてのサンプルを生成
+    # Generate all examples
     for example in examples:
-        yuiexample.print_example(example, syntaxes)
+        code = example.generate(syntax)
+        filename = os.path.join(examples_dir, f"{example.name}.{ext}")
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(code)
+        print(f"Generated: {filename}")
+
+    print(f"\nAll examples generated in {examples_dir}/ directory")
+
+
+def test_examples(syntax: str = 'syntax-yui.json'):
+    """
+    Test all examples with YuiRuntime
+
+    Args:
+        syntax: Syntax file to use for parsing
+    """
+    examples = yuiexample.get_all_examples()
+
+    print(f"\nTesting examples with syntax: {syntax}")
+    print("=" * 60)
+
+    passed = 0
+    failed = 0
+
+    for example in examples:
+        try:
+            # Generate code
+            code = example.generate(syntax)
+
+            # Parse and execute
+            parser = YuiParser(syntax)
+            ast = parser.parse(code)
+
+            runtime = YuiRuntime()
+            ast.evaluate(runtime)
+
+            print(f"✓ {example.name:<20} PASSED")
+            passed += 1
+
+        except Exception as e:
+            print(f"✗ {example.name:<20} FAILED: {e}")
+            failed += 1
+
+    print("=" * 60)
+    print(f"\nResults: {passed} passed, {failed} failed")
+
+    if failed > 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

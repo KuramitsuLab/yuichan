@@ -685,6 +685,18 @@ class ExpressionNode(ASTNode):
     def __init__(self):
         super().__init__()
 
+def node(node: Any) -> ASTNode:
+    if node is None: return None
+    if isinstance(node, (int, float)):
+        return NumberNode(node)
+    if isinstance(node, str):
+        return StringNode(node)
+    if isinstance(node, list):
+        return ArrayNode([node(e) for e in node])
+    if isinstance(node, ASTNode):
+        return node
+    raise YuiError(("expected", "node", f"❌{node}"), None, None)
+
 @dataclass
 class NullNode(ExpressionNode):
     """
@@ -774,7 +786,7 @@ class ArrayNode(ExpressionNode):
 
     def __init__(self, elements: List[Any]):
         super().__init__()
-        self.elements = elements
+        self.elements = [node(e) for e in elements]
 
     def evaluate(self, runtime: YuiRuntime):
         """各要素を評価してYuiDataを作成する"""
@@ -788,7 +800,7 @@ class ObjectNode(ExpressionNode):
 
     def __init__(self, elements: List[Any]):
         super().__init__()
-        self.elements = elements
+        self.elements = [node(e) for e in elements]
 
     def evaluate(self, runtime: YuiRuntime)-> Union[YuiData, int]:
         """各要素を評価してYuiDataを作成する"""
@@ -828,8 +840,8 @@ class GetIndexNode(ASTNode):
 
     def __init__(self, collection: ExpressionNode, index: ExpressionNode):
         super().__init__()
-        self.collection = collection
-        self.index_node = index
+        self.collection = node(collection)
+        self.index_node = node(index)
 
     def evaluate(self, runtime: YuiRuntime)-> Union[YuiData, int]:
         """配列またはオブジェクトから値を取得する"""
@@ -855,9 +867,9 @@ class BinaryNode(ASTNode):
 
     def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode, comparative: bool = False):
         super().__init__()
-        self.left_node = left
+        self.left_node = node(left)
         self.operator = operator
-        self.right_node = right
+        self.right_node = node(right)
         self.comparative = comparative
 
     def evaluate(self, runtime):
@@ -935,8 +947,8 @@ class FuncAppNode(ExpressionNode):
 
     def __init__(self, name: ExpressionNode, arguments: List[ExpressionNode]):
         super().__init__()
-        self.name_node = name
-        self.arguments = arguments
+        self.name_node = NameNode(name) if isinstance(name, str) else node(name)
+        self.arguments = [node(arg) for arg in arguments]
         self.snippet = str(self)
 
     def evaluate(self, runtime: YuiRuntime):
@@ -969,8 +981,8 @@ class AssignmentNode(StatementNode):
 
     def __init__(self, variable: NameNode, expression: ExpressionNode):
         super().__init__()
-        self.variable = variable
-        self.expression = expression
+        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
+        self.expression = node(expression)
 
     def evaluate(self, runtime: YuiRuntime):
         """式を評価して変数に代入する"""
@@ -983,12 +995,10 @@ class AssignmentNode(StatementNode):
 class IncrementNode(StatementNode):
     """インクリメント（変数 を 増やす）を表すノード"""
     variable: NameNode
-    expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, expression: ExpressionNode=None):
+    def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = variable
-        self.expression = expression
+        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
 
     def evaluate(self, runtime: YuiRuntime):
         """変数を1増やす"""
@@ -1002,12 +1012,10 @@ class IncrementNode(StatementNode):
 class DecrementNode(StatementNode):
     """デクリメント（変数 を 減らす）を表すノード"""
     variable: NameNode
-    expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, expression: ExpressionNode=None):
+    def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = variable
-        self.expression = expression
+        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
 
     def evaluate(self, runtime: YuiRuntime):
         """変数を1減らす"""
@@ -1024,8 +1032,8 @@ class AppendNode(StatementNode):
 
     def __init__(self, variable: NameNode, expression: ExpressionNode):
         super().__init__()
-        self.variable = variable
-        self.expression = expression
+        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
+        self.expression = node(expression)
 
     def evaluate(self, runtime: YuiRuntime):
         """値を評価して配列に追加する"""
@@ -1065,9 +1073,9 @@ class IfNode(StatementNode):
                  left: ExpressionNode, operator: str, right: ExpressionNode,
                  then_block: BlockNode, else_block: Optional[BlockNode] = None):
         super().__init__()
-        self.left = left
+        self.left = node(left)
         self.operator = operator
-        self.right = right
+        self.right = node(right)
         self.then_block = then_block
         self.else_block = else_block
 
@@ -1134,7 +1142,7 @@ class RepeatNode(StatementNode):
 
     def __init__(self, count_node: ExpressionNode, block_node: BlockNode):
         super().__init__()
-        self.count_node = count_node    
+        self.count_node = node(count_node)    
         self.block_node = block_node
 
     def evaluate(self, runtime: YuiRuntime):
@@ -1150,17 +1158,12 @@ class RepeatNode(StatementNode):
 
 @dataclass
 class ImportNode(StatementNode):
-    """
-    ライブラリのインポート（標準ライブラリを使う）を表すノード
-
-    Attributes:
-        module_name: ライブラリ名
-    """
+    """ライブラリのインポート（標準ライブラリを使う）を表すノード"""
     module_name: str
 
     def __init__(self, module_name: str):
         super().__init__()
-        self.module_name = module_name
+        self.module_name = NameNode(module_name) if isinstance(module_name, str) else node(module_name)
 
     def evaluate(self, runtime: YuiRuntime):
         """ライブラリを環境に追加する"""
@@ -1184,7 +1187,7 @@ class ReturnNode(StatementNode):
 
     def __init__(self, expression: ExpressionNode):
         super().__init__()
-        self.expression = expression
+        self.expression = node(expression)
 
     def evaluate(self, runtime: YuiRuntime):
         value = self.expression.evaluate(runtime)
@@ -1200,8 +1203,8 @@ class FuncDefNode(StatementNode):
 
     def __init__(self, name_node: NameNode, parameters: List[NameNode], body: BlockNode):
         super().__init__()
-        self.name_node = name_node  
-        self.parameters = parameters
+        self.name_node = NameNode(name_node) if isinstance(name_node, str) else node(name_node)
+        self.parameters = [NameNode(param) if isinstance(param, str) else node(param) for param in parameters]
         self.body = body
 
     def evaluate(self, runtime: YuiRuntime):
@@ -1219,7 +1222,7 @@ class PrintExpressionNode(StatementNode):
 
     def __init__(self, expression: ExpressionNode, inspection: bool = False, groping: bool = False):
         super().__init__()
-        self.expression = expression
+        self.expression = node(expression)
         self.inspection = inspection
         self.groping = groping
 
@@ -1242,8 +1245,8 @@ class AssertNode(StatementNode):
 
     def __init__(self, test: ExpressionNode, reference: ExpressionNode):
         super().__init__()
-        self.test = test
-        self.reference = reference
+        self.test = node(test)
+        self.reference = node(reference)
 
     def evaluate(self, runtime: YuiRuntime):
         """式を評価して期待値と比較する"""

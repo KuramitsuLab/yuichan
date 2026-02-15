@@ -76,10 +76,11 @@
 
     "break": "くり返しを抜ける",
     "continue": "もう一度[、]?くり返す",
-    "pass": "何もしない",
+    "pass": "(何もしない)?",
 
     "return-begin": "",
     "return-end": "が[、 ]?答え",
+    "return-none": "関数から抜ける",
 
     "repeat-begin": "",
     "repeat-times": "回[、]?",
@@ -98,7 +99,7 @@
     "if-suffix>": "より大きい",
     "if-suffix>=": "以上",
     "if-suffixin": "のいずれか",
-    "if-suffixnot_in": "のいずれでもない",
+    "if-suffixnotin": "のいずれでもない",
     "if-then": "ならば",
     "if-else": "そうでなければ",
     "if-end": "",
@@ -108,9 +109,9 @@
     "funcdef-name-end": "=",
     "funcdef-args-begin": "入力",
     "funcdef-arg-separator": "[,、]",
-    "funcdef-args-end": "に対して[、]?",
+    "funcdef-args-end": "",
     "funcdef-noarg": "入力なし",
-    "funcdef-block": "",
+    "funcdef-block": "に対して[、]?",
     "funcdef-end": "",
 
     "import-begin": "",

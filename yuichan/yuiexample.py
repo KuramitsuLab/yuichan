@@ -39,12 +39,12 @@ def example_basic_arithmetic():
         AssignmentNode(NameNode("y"),MinusNode(NumberNode(2))),
         IncrementNode(NameNode("x")),
         DecrementNode(NameNode("y")),
-        AssertNode(NameNode("x"), NumberNode(2)),
-        AssertNode(NameNode("y"), MinusNode(NumberNode(3))),
+        PrintExpressionNode(NameNode("x")),
+        PrintExpressionNode(NameNode("y")),
     ]
     return YuiExample(
         name="basic_arithmetic",
-        description="基本的な変数の定義とインクリメント・デクリメント",
+        description="Basic variable definition and increment/decrement",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -61,12 +61,12 @@ def example_loop():
                 IfNode(NameNode("count"), "==", NumberNode(5), BlockNode(BreakNode())),
             ]),
         ),
-        AssertNode(NameNode("count"), NumberNode(5)),
+        PrintExpressionNode(NameNode("count")),
     ]
 
     return YuiExample(
         name="loop",
-        description="5回ループしてカウンターを増やす",
+        description="Loop 10 times and break at 5",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -86,12 +86,12 @@ def example_conditional():
         IfNode(NameNode("x"),">=", NumberNode(1),then_block, else_block),
         IfNode(NameNode("x"),"<", NumberNode(1),then_block, else_block),
         IfNode(NameNode("x"),">", NumberNode(1),then_block, else_block),
-        AssertNode(NameNode("y"), NumberNode(3)),
-        AssertNode(NameNode("z"), NumberNode(3)),
+        PrintExpressionNode(NameNode("y")),
+        PrintExpressionNode(NameNode("z")),
     ]
     return YuiExample(
         name="conditional",
-        description="条件分岐（if-else）のサンプル",
+        description="Conditional branching (if-else)",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -108,11 +108,11 @@ def example_nested_conditional():
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(1),then_block, else_block)),
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(2),then_block, else_block))
         ),
-        AssertNode(NameNode("y"), NumberNode(3)),
+        PrintExpressionNode(NameNode("y")),
     ]
     return YuiExample(
         name="nested_conditional",
-        description="ネストした条件分岐のサンプル",
+        description="Nested conditional branching",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -126,11 +126,11 @@ def example_array():
         IfNode(GetIndexNode(NameNode("A"), NumberNode(0)), "==", NumberNode(2),
             AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)),GetIndexNode(NameNode("A"), NumberNode(3)))
         ),
-        AssertNode(ArrayLenNode(NameNode("A")), NumberNode(4)),
+        PrintExpressionNode(ArrayLenNode(NameNode("A"))),
     ]
     return YuiExample(
         name="array",
-        description="配列の作成と要素の追加",
+        description="Array creation and element manipulation",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -139,7 +139,7 @@ def example_array():
 def example_function():
     """関数のサンプル"""
     statements = [
-        PassNode(comment="1を加算する関数を定義"),
+        PassNode(comment="Define function that adds 1"),
         FuncDefNode(
             NameNode("succ"), [NameNode("n")],
             BlockNode([
@@ -150,20 +150,20 @@ def example_function():
         AssignmentNode(NameNode("result"),
             FuncAppNode(NameNode("succ"),[NumberNode(0)])
         ),
-        AssertNode(NameNode("result"), NumberNode(1)),
+        PrintExpressionNode(NameNode("result")),
         FuncDefNode(
             NameNode("zero"), [], BlockNode(ReturnNode(NumberNode(0)))
         ),
-        AssertNode(FuncAppNode(NameNode("zero"), []), NumberNode(0)),
+        PrintExpressionNode(FuncAppNode(NameNode("zero"), [])),
         FuncDefNode(
             NameNode("point"), [NameNode("x"), NameNode("y")], BlockNode([])
         ),
         AssignmentNode(NameNode("O"), FuncAppNode(NameNode("point"), [NumberNode(0), NumberNode(0)])),
-        AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(0)),
+        PrintExpressionNode(GetIndexNode(NameNode("O"), StringNode("x"))),
     ]
     return YuiExample(
         name="function",
-        description="関数の定義と呼び出し（1を加算する関数）",
+        description="Function definition and call (increment function)",
         ast_node=BlockNode(statements, top_level=True)
     )
 

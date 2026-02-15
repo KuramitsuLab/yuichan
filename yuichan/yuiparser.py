@@ -316,14 +316,17 @@ class Source(object):
         node = node or SourceNode()
         node.filename = self.filename
         node.source = self.source
-        node.comment = self.capture_comment()
+        #node.comment = self.capture_comment()
 
+        save_pos = self.pos
         if start_pos is not None:
             node.pos = start_pos
             if end_pos is not None:
                 node.end_pos = end_pos
             elif length != 0:
-                node.end_pos = min(self.pos + length, self.length)
+                node.end_pos = min(start_pos + length, self.length)
+            else:
+                node.end_pos = save_pos           
         elif length != 0:
             node.pos = self.pos
             node.end_pos = min(self.pos + length, self.length)
@@ -606,15 +609,18 @@ class MultiplicativeParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         left_node = parse("@Primary", source, pc)
-        if source.is_match("binary*", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Multiplicative", source, pc)
-            return source.p(BinaryNode(left_node, "*", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary/", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Multiplicative", source, pc)
-            return source.p(BinaryNode(left_node, "/", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary%", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Multiplicative", source, pc)
-            return source.p(BinaryNode(left_node, "%", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+        try:
+            if source.is_match("binary*", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Multiplicative", source, pc)
+                return source.p(BinaryNode(left_node, "*", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary/", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Multiplicative", source, pc)
+                return source.p(BinaryNode(left_node, "/", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary%", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Multiplicative", source, pc)
+                return source.p(BinaryNode(left_node, "%", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+        except YuiError:
+            pass
         source.pos = left_node.end_pos
         return left_node
 
@@ -624,12 +630,15 @@ class AdditiveParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         left_node = parse("@Multiplicative", source, pc)
-        if source.is_match("binary+", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "+", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary-", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "-", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+        try:
+            if source.is_match("binary+", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "+", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary-", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "-", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+        except YuiError:
+            pass
         source.pos = left_node.end_pos
         return left_node
 
@@ -639,30 +648,33 @@ class ComparativeParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         left_node = parse("@Additive", source, pc)
-        if source.is_match("binary==", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "==", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary!=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "!=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary<", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "<", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary>", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, ">", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary<=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "<=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binary>=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, ">=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binaryin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "in", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
-        if source.is_match("binarynotin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
-            right_node = parse("@Additive", source, pc)
-            return source.p(BinaryNode(left_node, "notin", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+        try:
+            if source.is_match("binary==", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "==", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary!=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "!=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary<=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "<=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary>=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, ">=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary<", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "<", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binary>", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, ">", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binaryin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "in", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+            if source.is_match("binarynotin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
+                right_node = parse("@Additive", source, pc)
+                return source.p(BinaryNode(left_node, "notin", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+        except YuiError:
+            pass
         source.pos = left_node.end_pos
         return left_node
 
@@ -693,11 +705,7 @@ class IncrementParser(ParserCombinator):
         start_pos = source.pos
         source.try_match('increment-begin', skip_ws=True)       
         lvalue_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('increment-infix')
-        # try:
-        #     value = parse("@Expression", source, pc, lskip_ws=True)
-        # except YuiError:
-        #     value = None
+        source.try_match('increment-infix', lskip_ws=True)
         source.try_match('increment-end', lskip_ws=True)
         return source.p(IncrementNode(lvalue_node), start_pos=start_pos)
 
@@ -708,11 +716,7 @@ class DecrementParser(ParserCombinator):
         start_pos = source.pos
         source.try_match('decrement-begin', skip_ws=True)
         lvalue_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('decrement-infix')
-        # try:
-        #     value = parse("@Expression", source, pc, lskip_ws=True)
-        # except YuiError:
-        #     value = None
+        source.try_match('decrement-infix', lskip_ws=True)
         source.try_match('decrement-end', lskip_ws=True)
         return source.p(DecrementNode(lvalue_node), start_pos=start_pos)
 
