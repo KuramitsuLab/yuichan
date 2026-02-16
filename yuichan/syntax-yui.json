@@ -92,7 +92,6 @@
     "if-condition-end": "",
     "if-prefix": "",
     "if-infix": "が",
-    "if-suffix==": "",
     "if-suffix!=": "でない",
     "if-suffix<": "より小さい",
     "if-suffix<=": "以下",
@@ -100,8 +99,8 @@
     "if-suffix>=": "以上",
     "if-suffixin": "のいずれか",
     "if-suffixnotin": "のいずれでもない",
-    "if-then": "ならば",
-    "if-else": "そうでなければ",
+    "if-then": "ならば[、]?",
+    "if-else": "そうでなければ[、]?",
     "if-end": "",
 
     "funcdef-begin": "",

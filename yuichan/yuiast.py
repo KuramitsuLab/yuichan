@@ -210,6 +210,113 @@ class YuiRuntime(object):
         return '\n'.join(lines)
 
 @dataclass
+class Operator(ABC):
+    symbol: str
+    comparative: bool
+
+    def __init__(self, symbol: str, comparative: bool):
+        self.symbol = symbol
+        self.comparative = comparative
+
+    def __str__(self):
+        return self.symbol
+
+    @abstractmethod
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> Any:
+        pass
+
+@dataclass
+class Equals(Operator):
+    def __init__(self, symbol: str = "=="):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) == 0
+
+@dataclass
+class NotEquals(Operator):
+    def __init__(self, symbol: str = "!="):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) != 0
+
+@dataclass
+class LessThan(Operator):
+    def __init__(self, symbol: str = "<"):
+        super().__init__(symbol, comparative=True)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) < 0
+
+@dataclass
+class GreaterThan(Operator):
+    def __init__(self, symbol: str = ">"):
+        super().__init__(symbol, comparative=True)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) > 0
+
+@dataclass
+class LessThanEquals(Operator):
+    def __init__(self, symbol: str = "<="):
+        super().__init__(symbol, comparative=True)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) <= 0
+
+@dataclass
+class GreaterThanEquals(Operator):
+    def __init__(self, symbol: str = ">="):
+        super().__init__(symbol, comparative=True)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        return YuiData.compare(left, right, node, env) >= 0
+
+@dataclass
+class In(Operator):
+    def __init__(self, symbol: str = "in"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        if YuiData.is_string(left) and YuiData.is_string(right):
+            left = YuiData.ensure_string(left)
+            right = YuiData.ensure_string(right)
+            return left in right
+        YuiData.type_check(right, 'data', node, env)
+        for element in right.array:
+            if YuiData.compare(left, element, node, env) == 0:
+                return True
+        return False
+
+@dataclass
+class NotIn(Operator):
+    def __init__(self, symbol: str = "notin"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: Any, right: Any, node = None, env = None) -> bool:
+        if YuiData.is_string(left) and YuiData.is_string(right):
+            left = YuiData.ensure_string(left)
+            right = YuiData.ensure_string(right)
+            return left not in right
+        YuiData.type_check(right, 'data', node, env)
+        for element in right.array:
+            if YuiData.compare(left, element, node, env) == 0:
+                return False
+        return True
+
+OPERATORS = {
+    '==': Equals(),
+    '!=': NotEquals(),
+    '<': LessThan(),
+    '>': GreaterThan(),
+    '<=': LessThanEquals(),
+    '>=': GreaterThanEquals(),
+    'in': In(),
+    'notin': NotIn(),
+}
+
+@dataclass
 class ASTNode(ABC):
     """抽象構文木（AST）の基底クラス"""
     filename: str
@@ -351,14 +458,7 @@ class YuiError(RuntimeError):
 
 
 class YuiData(object):
-    """
-    Yui言語のデータ型
-
-    Yui言語では、すべてのデータは配列として表現されます：
-    - 配列: 要素の配列
-    - 文字列: 文字コードの配列
-    - 数値: 桁の配列（浮動小数点数対応）
-    """
+    """Yui言語のデータ型"""
     view: str
     elements: List[Any]
     native_value: Optional[Union[str, float, dict, int]]
@@ -1057,6 +1157,10 @@ class BlockNode(StatementNode):
         for statement in self.statements:
             statement.evaluate(runtime)
 
+
+
+
+
 @dataclass
 class IfNode(StatementNode):
     """条件分岐（もし〜ならば）を表すノード"""
@@ -1071,7 +1175,7 @@ class IfNode(StatementNode):
                  then_block: BlockNode, else_block: Optional[BlockNode] = None):
         super().__init__()
         self.left = node(left)
-        self.operator = operator
+        self.operator = OPERATORS[operator]
         self.right = node(right)
         self.then_block = then_block
         self.else_block = else_block
@@ -1080,24 +1184,7 @@ class IfNode(StatementNode):
         """条件を評価して適切なブロックを実行する"""
         left_value = self.left.evaluate(runtime)
         right_value = self.right.evaluate(runtime)
-        compare_result = YuiData.compare(left_value, right_value, self.left, runtime)
-        # 演算子に応じて比較
-        if self.operator == ">=":
-            result = compare_result >= 0
-        elif self.operator == "<=":
-            result = compare_result <= 0
-        elif self.operator == ">":
-            result = compare_result > 0
-        elif self.operator == "<":
-            result = compare_result < 0
-        elif self.operator == "!=":
-            result = compare_result != 0
-        elif self.operator == "==":
-            result = compare_result == 0
-        elif self.operator == "in":
-            result = YuiData.contains(right_value, left_value, self.left, self.right, runtime)
-        else:
-            result = not YuiData.contains(right_value, left_value, self.left, self.right, runtime)
+        result = self.operator.evaluate(left_value, right_value, self, runtime)
         runtime.count_compare()
 
         # 結果に応じてブロックを実行
@@ -1255,5 +1342,5 @@ class AssertNode(StatementNode):
                 return
         except Exception as e:
             pass
-        raise YuiError(("test", "failed", f"❌{test_value}\n✅{reference_value}"), self, runtime)
+        raise YuiError(("failed", f"test:{str(self.test)}", f"❌{test_value}", f"✅{reference_value}"), self, runtime)
 

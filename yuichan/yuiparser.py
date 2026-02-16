@@ -216,7 +216,7 @@ class Source(object):
 
     def find_match(self, terminal: str, suffixes: List[str], skip_ws = False, skip_linefeed=False, lskip_ws=False):
         for suffix in suffixes:
-            key = f"{terminal}-{suffix}"
+            key = f"{terminal}{suffix}"
             if self.is_match(key, if_undefined=False, unconsumed=False, 
                              skip_ws=skip_ws, skip_linefeed=skip_linefeed, lskip_ws=lskip_ws):
                 return suffix
@@ -590,23 +590,14 @@ class PrimaryParser(ParserCombinator):
                 source.try_match("array-index-end", skip_ws=True, opening_pos=opening_pos)
                 node = source.p(GetIndexNode(node, index_node), start_pos=start_pos)
                 continue
+            save_pos = source.pos
             if source.is_match("property-accessor", if_undefined=False):
                 if source.is_match("property-length", if_undefined=False):
                     node = source.p(ArrayLenNode(node), start_pos=start_pos)
                     continue
                 if source.is_match("property-type", if_undefined=False):
                     ...
-                if source.is_match("not-property-name", if_undefined=False, unconsumed=True):
-                    # python .append()のようなとき、エラーを避ける
-                    source.pos = opening_pos # backtrack
-                    return node
-                try:
-                    property_name = str(parse("@Name", source, pc))
-                    raise YuiError(("bad", "property", "name", property_name), source.p(length=len(property_name)), avoid_backtrack=True)
-                except YuiError:
-                    source.pos = opening_pos # backtrack
-                    snippet = source.capture_line()[:10]
-                    raise YuiError(("expected", "property", "name", f"❌{snippet}"), source.p(start_pos=opening_pos), avoid_backtrack=True)
+                source.pos = save_pos
             break
         return node
     
@@ -813,13 +804,13 @@ class IfParser(ParserCombinator):
             left_node = left_node.left
             pass
         else:
-            operator = source.find_match('if-infix', ['==', '!=', '<', '<=', '>', '>=', 'in', 'notin'])
+            operator = source.find_match('if-infix', ['==', '!=', '<', '<=', '>', '>=', 'notin', 'in'])
             if not operator:
                 source.try_match('if-infix', skip_ws=True, avoid_backtrack=avoid_backtrack) # が
             right_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
 
             if not operator:
-                operator = source.find_match('if-suffix', ['!=', '<', '<=', '>', '>=', 'in', 'notin'])
+                operator = source.find_match('if-suffix', ['!=', '<', '<=', '>', '>=', 'notin', 'in'])
                 source.skip_whitespaces_and_comments()
                 if operator is None:
                     operator = "=="
@@ -855,7 +846,7 @@ class FuncDefParser(ParserCombinator):
         source.try_match('funcdef-name-end', skip_ws=True, avoid_backtrack = avoid_backtrack) # =
 
         arguments = []
-        if not source.is_match('funcdef-noarg', unconsumed=True): 
+        if not source.is_match('funcdef-noarg', skip_ws=True): # 引数なし
             source.try_match('funcdef-args-begin', skip_ws=True, avoid_backtrack = avoid_backtrack) # ～ならば
             while not source.is_match('funcdef-args-end', unconsumed=True):
                 arg_node = parse("@Name", source, pc, skip_ws=True, avoid_backtrack=True)

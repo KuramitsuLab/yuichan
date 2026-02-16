@@ -258,13 +258,18 @@ class TestParseBlockNode:
         if_node = parse("@If", source, pc={})
         assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
 
-    def test_RepeatNested(self):
-        source = Source(code)
-        if_node = parse("@TopLevel", source, pc={})
-        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
+    def test_If_in(self):
+        source = Source("もしxがAのいずれかならば{\n  x = 1\n}")
+        if_node = parse("@If", source, pc={})
+        assert str(if_node) == "もしxがAのいずれかならば{\n  x = 1\n}"
 
+    def test_If_not_in(self):
+        source = Source("もしxがAのいずれでもないならば{\n  x = 1\n}")
+        if_node = parse("@If", source, pc={})
+        assert str(if_node) == "もしxがAのいずれでもないならば{\n  x = 1\n}"
 
-code = """
+test_cases = [
+"""\n
 count=0
 10回くり返す{
    countを増やす
@@ -272,4 +277,7 @@ count=0
       くり返しを抜ける
    }
 }
-"""
+""",
+]
+
+
