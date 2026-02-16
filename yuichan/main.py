@@ -62,11 +62,13 @@ Examples:
                         help='Generate sample code files (.yui)')
     parser.add_argument('--test-examples', action='store_true',
                         help='Test all examples with YuiRuntime')
+    parser.add_argument('--pass@1', dest='pass_at_1', action='store_true',
+                        help='Execute multiple scripts and show pass rate')
     parser.add_argument('--example', type=str, metavar='NAME',
                         help='Generate specific example only (use with --make-examples)')
     parser.add_argument('--list-examples', action='store_true',
                         help='List available examples')
-    parser.add_argument('file', nargs='?', help='Yui file to execute')
+    parser.add_argument('file', nargs='*', help='Yui file(s) to execute')
 
     args = parser.parse_args(argv)
 
@@ -74,6 +76,22 @@ Examples:
         # List examples
         if args.list_examples:
             list_examples()
+            return
+
+        # Pass@1 mode
+        if args.pass_at_1:
+            if not args.syntax:
+                print("Error: --syntax option is required", file=sys.stderr)
+                print("Example: yui --syntax syntax-yui.json --pass@1 file1.yui file2.yui", file=sys.stderr)
+                print("\nAvailable syntax files:", file=sys.stderr)
+                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
+                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - emoji.json       (Emoji style)", file=sys.stderr)
+                sys.exit(1)
+            if not args.file:
+                print("Error: --pass@1 requires at least one file", file=sys.stderr)
+                sys.exit(1)
+            pass_at_1_mode(args.file, args.syntax)
             return
 
         # Test examples mode
@@ -132,9 +150,14 @@ Examples:
             convert_syntax(args.file, syntax, args.syntax_to)
             return
 
-        # Execute file
+        # Execute file(s)
         if args.file:
-            env = run_file(args.file, env, syntax)
+            # If multiple files are provided, execute them sequentially
+            if isinstance(args.file, list):
+                for filename in args.file:
+                    env = run_file(filename, env, syntax)
+            else:
+                env = run_file(args.file, env, syntax)
 
             # Save environment
             if args.output:
@@ -421,6 +444,75 @@ def test_examples(syntax: str = 'syntax-yui.json'):
     print(f"\nResults: {passed} passed, {failed} failed")
 
     if failed > 0:
+        sys.exit(1)
+
+
+def pass_at_1_mode(files: list, syntax: str = 'syntax-yui.json'):
+    """
+    Execute multiple script files and calculate pass rate
+
+    Args:
+        files: List of .yui files to execute
+        syntax: Syntax file to use for parsing
+    """
+    # Filter .yui files only
+    yui_files = [f for f in files if f.endswith('.yui')]
+
+    if not yui_files:
+        print("Error: No .yui files specified", file=sys.stderr)
+        sys.exit(1)
+
+    results = []
+
+    for filename in yui_files:
+        try:
+            # Read and execute file
+            with open(filename, 'r', encoding='utf-8') as f:
+                code = f.read()
+
+            # Parse and execute
+            parser = YuiParser(syntax)
+            ast = parser.parse(code)
+
+            runtime = YuiRuntime()
+            ast.evaluate(runtime)
+
+            # Success
+            results.append(1)
+            print(f"✓ {filename}")
+
+        except FileNotFoundError:
+            # File not found
+            results.append(0)
+            print(f"✗ {filename} (File not found)")
+
+        except YuiError as e:
+            # Yui syntax or runtime error
+            results.append(0)
+            print(f"✗ {filename}")
+            print(f"  | {e}")
+
+        except Exception as e:
+            # Other errors
+            results.append(0)
+            print(f"✗ {filename}")
+            print(f"  | Error: {e}")
+
+    # Calculate pass rate
+    total = len(results)
+    passed = sum(results)
+    pass_rate = passed / total if total > 0 else 0
+
+    # Display results
+    print(f"\n{'='*50}")
+    print(f"Total: {total}")
+    print(f"Passed: {passed}")
+    print(f"Failed: {total - passed}")
+    print(f"pass@1: {pass_rate:.2%} ({passed}/{total})")
+    print(f"{'='*50}")
+
+    # Exit with error code if any failed
+    if total - passed > 0:
         sys.exit(1)
 
 

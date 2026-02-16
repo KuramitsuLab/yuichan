@@ -138,11 +138,11 @@ class Source(object):
         else:
             self.terminals = load_syntax(syntax)
         self.memos = {}
+        self.backtrack = True
 
     def update_syntax(self, **kwargs):
         self.terminals.update(kwargs)
     
-
     def get_memo(self, nonterminal: str, pos: int):
         """Pakrat parsingのメモを取得する"""
         return self.memos.get((nonterminal, pos), None) 
@@ -202,7 +202,7 @@ class Source(object):
             self.terminals[terminal] = pattern
         return get_example_from_pattern(pattern.pattern)
 
-    def try_match(self, terminal: str, if_undefined=True, unconsumed=False, 
+    def try_match(self, terminal: str, if_undefined=True, unconsumed=False, avoid_backtrack=False,
               skip_ws = False, skip_linefeed=False, opening_pos: int = None, lskip_ws=False):
         if self.is_match(terminal, if_undefined=if_undefined, unconsumed=unconsumed,
                          skip_ws=skip_ws, skip_linefeed=skip_linefeed,
@@ -211,8 +211,8 @@ class Source(object):
         candidate = self.first_candidate(terminal)
         snippet = self.source[self.pos:self.pos+10].replace('\n', '\\n')
         if opening_pos is not None:
-            raise YuiError(("expected", "closing", f"`{candidate}`", f"❌`{snippet}`"), self.p(start_pos=opening_pos))
-        raise YuiError(("expected", f"`{candidate}`", f"❌`{snippet}`"), self.p(length=1))
+            raise YuiError(("expected", "closing", f"`{candidate}`", f"❌`{snippet}`"), self.p(start_pos=opening_pos), avoid_backtrack=False)
+        raise YuiError(("expected", f"`{candidate}`", f"❌`{snippet}`"), self.p(length=1), avoid_backtrack=avoid_backtrack)
 
     def find_match(self, terminal: str, suffixes: List[str], skip_ws = False, skip_linefeed=False, lskip_ws=False):
         for suffix in suffixes:
@@ -345,7 +345,8 @@ class ParserCombinator(object):
     def match(self, source: Source, pc: dict):
         return True
 
-def parse(nonterminal: str, source: Source, pc: dict, skip_ws: bool = False, skip_linefeed: bool = False, lskip_ws=False) -> Any:
+def parse(nonterminal: str, source: Source, pc: dict, avoid_backtrack=False,
+          skip_ws: bool = False, skip_linefeed: bool = False, lskip_ws=False) -> Any:
     global NONTERMINALS
     patterns = NONTERMINALS[nonterminal]
     saved_pos = source.pos
@@ -358,8 +359,13 @@ def parse(nonterminal: str, source: Source, pc: dict, skip_ws: bool = False, ski
             result = memo[0]
         else:
             saved_pos = source.pos
-            result = patterns.match(source, pc)
-            source.set_memo(nonterminal, saved_pos, result, source.pos)
+            try:
+                result = patterns.match(source, pc)
+                source.set_memo(nonterminal, saved_pos, result, source.pos)
+            except YuiError as e:
+                if avoid_backtrack:
+                    e.avoid_backtrack = True
+                raise e
         if skip_ws or skip_linefeed:
             source.skip_whitespaces_and_comments(include_linefeed=skip_linefeed)
         return result
@@ -399,14 +405,14 @@ class NumberParser(ParserCombinator):
         if source.is_match("number-begin", if_undefined=r"[0-9]"):
             source.try_match("number-chars", if_undefined=r"[0-9]")
             if source.is_match("number-dot-char", if_undefined=r"\."):
-                source.try_match("number-begin")
+                source.try_match("number-begin", avoid_backtrack=True)
                 source.try_match("number-chars")
                 number = source.source[saved_pos:source.pos]
                 return source.p(NumberNode(float(number)), start_pos=saved_pos)
             else:
                 number = source.source[saved_pos:source.pos]
             return source.p(NumberNode(int(number)), start_pos=saved_pos)
-        raise YuiError(("expected", "number"), source.p(length=1))
+        raise YuiError(("expected", pc.get("expected", "number")), source.p(length=1))
 
 NONTERMINALS["@Number"] = NumberParser()
 
@@ -429,7 +435,7 @@ class StringParser(ParserCombinator):
                     return source.p(StringNode(string_content), start_pos=opening_pos)
                 if source.is_match("string-escape"):
                     if source.is_eos():
-                        raise YuiError(("bad", "escape sequence"), source.p(length=1))
+                        raise YuiError(("bad", "escape sequence"), source.p(length=1), avoid_backtrack=True)
                     next_char = source.source[source.pos]
                     source.pos += 1
                     if next_char == 'n':
@@ -441,14 +447,14 @@ class StringParser(ParserCombinator):
                     continue
                 start_inter_pos = source.pos
                 if source.is_match("string-interpolation-begin", skip_ws=True):
-                    expression = parse("@Expression", source, pc, skip_ws=True)
-                    source.try_match("string-interpolation-end", opening_pos=start_inter_pos)
+                    expression = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack = True)
+                    source.try_match("string-interpolation-end", opening_pos=start_inter_pos, avoid_backtrack = True)
                     string_content.append(expression)
                     expression_count += 1
                     continue
             candidate = source.first_candidate("string-end")
-            raise YuiError(("expected", "closing", f"`{candidate}`"), source.p(start_pos=opening_pos))
-        raise YuiError(("expected", "string"), source.p(length=1))
+            raise YuiError(("expected", "closing", f"`{candidate}`"), source.p(start_pos=opening_pos), avoid_backtrack = True)
+        raise YuiError(("expected", pc.get("expected", "string")), source.p(length=1), avoid_backtrack = True)
 
 NONTERMINALS["@String"] = StringParser()
 
@@ -462,7 +468,7 @@ class ArrayParser(ParserCombinator):
         if source.is_match("array-begin", if_undefined=r"\[", skip_linefeed=True):
             arguments = []
             while not source.is_match("array-end", if_undefined=r"\]", unconsumed=True):
-                arguments.append(parse("@Expression", source, pc, skip_linefeed=True))
+                arguments.append(parse("@Expression", source, pc, skip_linefeed=True, avoid_backtrack=True))
                 if source.is_match("array-end", if_undefined=r"\]"):
                     return source.p(ArrayNode(arguments), start_pos=opening_pos)
                 if source.is_match("array-separator", skip_linefeed=True):
@@ -486,9 +492,9 @@ class ObjectParser(ParserCombinator):
         if source.is_match("object-begin", if_undefined=r"\{", skip_linefeed=True):
             arguments = []
             while not source.is_match("object-end", if_undefined=r"\}", unconsumed=True):
-                arguments.append(parse("@String", source, pc, skip_linefeed=True))
-                source.try_match("object-key-value-separator", if_undefined=r"\:", skip_linefeed=True)
-                arguments.append(parse("@Expression", source, pc, skip_linefeed=True))
+                arguments.append(parse("@String", source, pc, skip_linefeed=True, avoid_backtrack=True))
+                source.try_match("object-key-value-separator", if_undefined=r"\:", skip_linefeed=True, avoid_backtrack=True)
+                arguments.append(parse("@Expression", source, pc, skip_linefeed=True, avoid_backtrack=True))
                 if source.is_match("object-end", if_undefined=r"\}"):
                     return source.p(ObjectNode(arguments), start_pos=opening_pos)
                 if source.is_match("object-separator", skip_linefeed=True):
@@ -496,10 +502,10 @@ class ObjectParser(ParserCombinator):
                 break
             if is_parsable("@String", source, pc):
                 candidate = source.first_candidate("object-separator")
-                raise YuiError(("expected", f"`{candidate}`"), source.p(length=1))
+                raise YuiError(("expected", f"`{candidate}`"), source.p(length=1), avoid_backtrack=True)
             source.try_match("object-end", if_undefined=r"\}", opening_pos=opening_pos)
             return source.p(ObjectNode(arguments), start_pos=opening_pos)
-        raise YuiError(("expected", "object"), source.p(length=1))
+        raise YuiError(("expected", pc.get("expected", "object")), source.p(length=1))
 
 NONTERMINALS["@Object"] = ObjectParser()
 
@@ -526,7 +532,7 @@ class NameParser(ParserCombinator):
             source.try_match("identifier-end", if_undefined=True)
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
-        raise YuiError(("expected", "identifier"), source.p(length=1))
+        raise YuiError(("expected", pc.get("expected", "identifier")), source.p(length=1))
 
 NONTERMINALS["@Name"] = NameParser()
 
@@ -542,15 +548,16 @@ class TermParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         opening_pos = source.pos
         if source.is_match("group-begin", skip_ws=True):
-            expression_node = parse("@Expression", source, pc, skip_ws=True)
+            expression_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=True)
             source.try_match("group-end", skip_ws=True, opening_pos=opening_pos)
             return expression_node
         if source.is_match("length-begin", skip_ws=True):
-            expression_node = parse("@Expression", source, pc, skip_ws=True)
+            expression_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=True)
             source.try_match("length-end", skip_ws=True, opening_pos=opening_pos)
             return source.p(ArrayLenNode(expression_node), start_pos=opening_pos)
         for literal in LITERALS:
             if NONTERMINALS[literal].quick_check(source):
+                source.pos = opening_pos
                 return parse(literal, source, pc)
         return parse("@Name", source, pc)
 
@@ -560,10 +567,10 @@ class PrimaryParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         if source.is_match('unary-', if_undefined=False):
-            node = parse('@Primary', source, pc)
+            node = parse('@Primary', source, pc, avoid_backtrack=True)
             return source.p(MinusNode(node), start_pos=start_pos)
         if source.is_match('unary-inspection', if_undefined=False):
-            node = parse('@Primary', source, pc)
+            node = parse('@Primary', source, pc, avoid_backtrack=True)
             return source.p(PrintExpressionNode(node, inspection=True), start_pos=start_pos)
         node = parse("@Term", source, pc)
         while source.has_next():
@@ -571,7 +578,7 @@ class PrimaryParser(ParserCombinator):
             if source.is_match("funcapp-args-begin", if_undefined=r"\(", skip_linefeed=True):
                 arguments = []
                 while not source.is_match("funcapp-args-end", if_undefined=r"\)", skip_ws=True, unconsumed=True):
-                    arguments.append(parse("@Expression", source, pc, skip_ws=True))
+                    arguments.append(parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=True))
                     if source.is_match("funcapp-args-separator", if_undefined=r"\,", skip_linefeed=True):
                         continue
                     break
@@ -579,7 +586,7 @@ class PrimaryParser(ParserCombinator):
                 node = source.p(FuncAppNode(node, arguments), start_pos=start_pos)
                 continue
             if source.is_match("array-index-begin", skip_ws=True):
-                index_node = parse("@Expression", source, pc, skip_ws=True)
+                index_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=True)
                 source.try_match("array-index-end", skip_ws=True, opening_pos=opening_pos)
                 node = source.p(GetIndexNode(node, index_node), start_pos=start_pos)
                 continue
@@ -595,11 +602,11 @@ class PrimaryParser(ParserCombinator):
                     return node
                 try:
                     property_name = str(parse("@Name", source, pc))
-                    raise YuiError(("bad", "property", "name", property_name), source.p(length=len(property_name)))
+                    raise YuiError(("bad", "property", "name", property_name), source.p(length=len(property_name)), avoid_backtrack=True)
                 except YuiError:
                     source.pos = opening_pos # backtrack
                     snippet = source.capture_line()[:10]
-                    raise YuiError(("expected", "property", "name", f"❌{snippet}"), source.p(start_pos=opening_pos))
+                    raise YuiError(("expected", "property", "name", f"❌{snippet}"), source.p(start_pos=opening_pos), avoid_backtrack=True)
             break
         return node
     
@@ -612,13 +619,13 @@ class MultiplicativeParser(ParserCombinator):
         try:
             if source.is_match("binary*", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Multiplicative", source, pc)
-                return source.p(BinaryNode(left_node, "*", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "*", right_node), start_pos=start_pos)
             if source.is_match("binary/", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Multiplicative", source, pc)
-                return source.p(BinaryNode(left_node, "/", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "/", right_node), start_pos=start_pos)
             if source.is_match("binary%", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Multiplicative", source, pc)
-                return source.p(BinaryNode(left_node, "%", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "%", right_node), start_pos=start_pos)
         except YuiError:
             pass
         source.pos = left_node.end_pos
@@ -633,10 +640,10 @@ class AdditiveParser(ParserCombinator):
         try:
             if source.is_match("binary+", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "+", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "+", right_node), start_pos=start_pos)
             if source.is_match("binary-", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "-", right_node), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "-", right_node), start_pos=start_pos)
         except YuiError:
             pass
         source.pos = left_node.end_pos
@@ -651,28 +658,28 @@ class ComparativeParser(ParserCombinator):
         try:
             if source.is_match("binary==", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "==", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "==", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binary!=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "!=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "!=", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binary<=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "<=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "<=", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binary>=", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, ">=", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, ">=", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binary<", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "<", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "<", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binary>", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, ">", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, ">", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binaryin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "in", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "in", right_node, comparative=True), start_pos=start_pos)
             if source.is_match("binarynotin", if_undefined=False, lskip_ws=True, skip_linefeed=True):
                 right_node = parse("@Additive", source, pc)
-                return source.p(BinaryNode(left_node, "notin", right_node, comparative=True), start_pos=start_pos, end_pos=right_node.end_pos)
+                return source.p(BinaryNode(left_node, "notin", right_node, comparative=True), start_pos=start_pos)
         except YuiError:
             pass
         source.pos = left_node.end_pos
@@ -692,10 +699,11 @@ class AssignmentParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('assignment-begin', skip_ws=True)
-        left_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('assignment-infix', skip_ws=True)
-        right_node = parse("@Expression", source, pc)
-        source.try_match('assignment-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        left_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('assignment-infix', skip_ws=True, avoid_backtrack = avoid_backtrack)
+        right_node = parse("@Expression", source, pc, avoid_backtrack = avoid_backtrack)
+        source.try_match('assignment-end', lskip_ws=True, avoid_backtrack = avoid_backtrack) # E E 代入もありえる
         return source.p(AssignmentNode(left_node, right_node), start_pos=start_pos)
     
 NONTERMINALS["@Assignment"] = AssignmentParser()
@@ -704,9 +712,10 @@ class IncrementParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('increment-begin', skip_ws=True)       
-        lvalue_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('increment-infix', lskip_ws=True)
-        source.try_match('increment-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        lvalue_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
+        source.try_match('increment-infix', lskip_ws=True, avoid_backtrack=avoid_backtrack)
+        source.try_match('increment-end', lskip_ws=True, avoid_backtrack=avoid_backtrack)
         return source.p(IncrementNode(lvalue_node), start_pos=start_pos)
 
 NONTERMINALS["@Increment"] = IncrementParser()
@@ -715,9 +724,10 @@ class DecrementParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('decrement-begin', skip_ws=True)
-        lvalue_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('decrement-infix', lskip_ws=True)
-        source.try_match('decrement-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        lvalue_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
+        source.try_match('decrement-infix', lskip_ws=True, avoid_backtrack=avoid_backtrack)
+        source.try_match('decrement-end', lskip_ws=True, avoid_backtrack=avoid_backtrack)
         return source.p(DecrementNode(lvalue_node), start_pos=start_pos)
 
 NONTERMINALS["@Decrement"] = DecrementParser()
@@ -726,11 +736,12 @@ class AppendParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('append-begin', skip_ws=True)
-        lvalue_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('append-infix', skip_ws=True)
-        value = parse("@Expression", source, pc)
-        source.try_match('append-suffix', lskip_ws=True)
-        source.try_match('append-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        lvalue_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('append-infix', skip_ws=True, avoid_backtrack = avoid_backtrack)
+        value = parse("@Expression", source, pc, lskip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('append-suffix', lskip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('append-end', lskip_ws=True, avoid_backtrack = avoid_backtrack)
         return source.p(AppendNode(lvalue_node, value), start_pos=start_pos)
 
 NONTERMINALS["@Append"] = AppendParser()
@@ -743,12 +754,21 @@ class BreakParser(ParserCombinator):
     
 NONTERMINALS["@Break"] = BreakParser()
 
+class PassParser(ParserCombinator):
+    def match(self, source: Source, pc: dict):
+        start_pos = source.pos
+        source.try_match('pass')
+        return source.p(PassNode(), start_pos=start_pos)
+    
+NONTERMINALS["@Pass"] = PassParser()
+
 class ReturnParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('return-begin', skip_ws=True)
-        expr_node = parse("@Expression", source, pc)
-        source.try_match('return-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        expr_node = parse("@Expression", source, pc, avoid_backtrack=avoid_backtrack)
+        source.try_match('return-end', lskip_ws=True, avoid_backtrack = avoid_backtrack)
         return source.p(ReturnNode(expr_node), start_pos=start_pos)
     
 NONTERMINALS["@Return"] = ReturnParser()
@@ -757,8 +777,9 @@ class PrintExpressionParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('print-begin', skip_ws=True)
-        expr_node = parse("@Expression", source, pc)
-        source.try_match('print-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        expr_node = parse("@Expression", source, pc, avoid_backtrack=avoid_backtrack)
+        source.try_match('print-end', lskip_ws=True, avoid_backtrack = avoid_backtrack)
         return source.p(PrintExpressionNode(expr_node), start_pos=start_pos)
 
 NONTERMINALS["@PrintExpression"] = PrintExpressionParser()
@@ -767,13 +788,14 @@ class RepeatParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('repeat-begin', skip_ws=True)
-        times_node = parse("@Expression", source, pc, skip_ws=True)
-        source.try_match('repeat-times', skip_ws=True)
-        source.try_match('repeat-block', skip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        times_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('repeat-times', skip_ws=True, avoid_backtrack = avoid_backtrack)
+        source.try_match('repeat-block', skip_ws=True, avoid_backtrack = avoid_backtrack)
         pc = pc.copy()
         pc['indent'] = source.capture_indent()
-        block_node = parse("@Block", source, pc)     
-        source.try_match('repeat-end', lskip_ws=True)
+        block_node = parse("@Block", source, pc, avoid_backtrack=True)
+        source.try_match('repeat-end', lskip_ws=True, avoid_backtrack = True)
         return source.p(RepeatNode(times_node, block_node), start_pos=start_pos)
 
 NONTERMINALS["@Repeat"] = RepeatParser()
@@ -782,9 +804,9 @@ class IfParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('if-begin', skip_ws=True) # もし
-        source.try_match('if-condition-begin', skip_ws=True) # ～ならば
-
-        left_node = parse("@Expression", source, pc, skip_ws=True)
+        source.try_match('if-condition-begin', skip_ws=True) 
+        avoid_backtrack = source.pos > start_pos
+        left_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
         if isinstance(left_node, BinaryNode) and left_node.comparative:
             operator = left_node.operator
             right_node = left_node.right
@@ -793,8 +815,8 @@ class IfParser(ParserCombinator):
         else:
             operator = source.find_match('if-infix', ['==', '!=', '<', '<=', '>', '>=', 'in', 'notin'])
             if not operator:
-                source.try_match('if-infix', skip_ws=True) # が
-            right_node = parse("@Expression", source, pc, skip_ws=True)
+                source.try_match('if-infix', skip_ws=True, avoid_backtrack=avoid_backtrack) # が
+            right_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
 
             if not operator:
                 operator = source.find_match('if-suffix', ['!=', '<', '<=', '>', '>=', 'in', 'notin'])
@@ -802,23 +824,23 @@ class IfParser(ParserCombinator):
                 if operator is None:
                     operator = "=="
 
-        source.try_match('if-condition-end', lskip_ws=True) # )
+        source.try_match('if-condition-end', lskip_ws=True, avoid_backtrack = avoid_backtrack) # )
 
         pc = pc.copy()
         pc['indent'] = source.capture_indent()
 
-        source.try_match('if-then', skip_linefeed=True) # ならば                
+        source.try_match('if-then', skip_linefeed=True, avoid_backtrack = True) # ならば                
 
-        then_node = parse("@Block", source, pc)
+        then_node = parse("@Block", source, pc, avoid_backtrack=True)
 
         save_pos = source.pos
         source.skip_whitespaces_and_comments(include_linefeed=True)
         if source.is_match('if-else', skip_linefeed=True):
-            else_node = parse("@Block", source, pc)
+            else_node = parse("@Block", source, pc, avoid_backtrack=True)
         else:
             source.pos = save_pos
             else_node = None
-        source.try_match('if-end', lskip_ws=True)
+        source.try_match('if-end', lskip_ws=True, avoid_backtrack = True)
         return source.p(IfNode(left_node, operator, right_node, then_node, else_node), start_pos=start_pos)
 
 NONTERMINALS["@If"] = IfParser()
@@ -827,40 +849,40 @@ class FuncDefParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('funcdef-begin', skip_ws=True) # もし
-        source.try_match('funcdef-name-begin', skip_ws=True) # ～ならば
-        name_node = parse("@Name", source, pc, skip_ws=True)
-        source.try_match('funcdef-name-end', skip_ws=True) # =
-
-        source.try_match('funcdef-args-begin', skip_ws=True) # ～ならば
+        source.try_match('funcdef-name-begin', skip_ws=True) #
+        avoid_backtrack = source.pos > start_pos        
+        name_node = parse("@Name", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
+        source.try_match('funcdef-name-end', skip_ws=True, avoid_backtrack = avoid_backtrack) # =
 
         arguments = []
         if not source.is_match('funcdef-noarg', unconsumed=True): 
+            source.try_match('funcdef-args-begin', skip_ws=True, avoid_backtrack = avoid_backtrack) # ～ならば
             while not source.is_match('funcdef-args-end', unconsumed=True):
-                arg_node = parse("@Name", source, pc, skip_ws=True)
+                arg_node = parse("@Name", source, pc, skip_ws=True, avoid_backtrack=True)
                 arguments.append(arg_node)
                 if source.is_match('funcdef-arg-separator', skip_ws=True):
                     continue
                 break
-            source.try_match('funcdef-args-end', skip_ws=True)
+            source.try_match('funcdef-args-end', skip_ws=True, avoid_backtrack = avoid_backtrack)
 
         pc = pc.copy()
         pc['indent'] = source.capture_indent()
-        source.try_match('funcdef-block', skip_ws=True) 
-        body_node = parse("@Block", source, pc)
-        source.try_match('funcdef-end', lskip_ws=True)
+        source.try_match('funcdef-block', skip_ws=True, avoid_backtrack = True) # ならば
+        body_node = parse("@Block", source, pc, avoid_backtrack=True)
+        source.try_match('funcdef-end', lskip_ws=True, avoid_backtrack = True)
         return source.p(FuncDefNode(name_node, arguments, body_node), start_pos=start_pos)
 
 NONTERMINALS["@FuncDef"] = FuncDefParser()
-
 
 class AssertParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
         source.try_match('assert-begin', skip_ws=True)
-        test_node = parse("@Expression", source, pc)
-        source.try_match('assert-infix', skip_ws=True)
-        reference_node = parse("@Expression", source, pc)
-        source.try_match('assert-end', lskip_ws=True)
+        avoid_backtrack = source.pos > start_pos
+        test_node = parse("@Expression", source, pc, avoid_backtrack=avoid_backtrack)
+        source.try_match('assert-infix', lskip_ws=True, skip_ws=True, avoid_backtrack = avoid_backtrack)
+        reference_node = parse("@Expression", source, pc, avoid_backtrack=avoid_backtrack)
+        source.try_match('assert-end', lskip_ws=True, avoid_backtrack = avoid_backtrack)
         return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
 
 NONTERMINALS["@Assert"] = AssertParser()
@@ -885,17 +907,17 @@ class BlockParser(ParserCombinator):
             if source.consume_string(end_level_indent): 
                 if source.is_match('whitespace', skip_ws=True): # deeper end_level_indent
                     if source.is_match("block-end", unconsumed=True):
-                        raise YuiError(("bad", "indent", f"☝️`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)))
+                        raise YuiError(("bad", "indent", f"☝️`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)), avoid_backtrack=True)
                     statements.extend(parse("@Statement[]", source, pc, skip_ws=True))
                     continue
                 else: # end_level_indent reached
-                    source.try_match("block-end", opening_pos=saved_pos)
+                    source.try_match("block-end", opening_pos=saved_pos, avoid_backtrack=True)
                     return source.p(BlockNode(statements), start_pos=saved_pos)
             break
         #print('@@@', source.pos, source.source[source.pos:])
         if source.is_defined("block-end"):
             candidate = source.first_candidate("block-end")
-            raise YuiError(("expected", "closing", candidate), source.p(start_pos=saved_pos))
+            raise YuiError(("expected", "closing", candidate), source.p(start_pos=saved_pos), avoid_backtrack=True)
         return source.p(BlockNode(statements), start_pos=saved_pos)
 
 NONTERMINALS["@Block"] = BlockParser()
@@ -917,27 +939,35 @@ STATEMENTS = [
     "@Assert",
     "@If",
     "@Repeat",
+    "@Break",
     "@Increment",
     "@Decrement",
     "@Append",
     "@Return",
+    "@Pass",
     "@PrintExpression",
 ]
 
 class StatementParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         saved_pos = source.pos
+        #print(f'>>> {source.capture_line()}')
         for parser_name in STATEMENTS:
             source.pos = saved_pos # backtrack
             try:
-                return parse(parser_name, source, pc)
+                statement = parse(parser_name, source, pc)
+                #print(f'🧪{parser_name} matched, {statement}')
+                return statement
             except YuiError as e:
+                #print(f'@{parser_name}, {saved_pos} < {e.error_node.pos}, error={e}')
+                if e.avoid_backtrack:
+                    raise e
                 continue
         source.pos = saved_pos
         if source.is_match("statement-separator", lskip_ws=True, unconsumed=True) or source.match_eos_or_linefeed(lskip_ws=True, unconsumed=True):
             return source.p(PassNode(), start_pos=saved_pos)
         line = source.capture_line()
-        raise YuiError(("bad", "statement", f"❌{line}"), source.p(length=1))
+        raise YuiError(("bad", "statement", f"❌{line}"), source.p(length=1), avoid_backtrack=True)
 
 NONTERMINALS["@Statement"] = StatementParser()
 
@@ -1144,16 +1174,12 @@ class CodingVisitor:
         self.push('increment-begin')
         self.push_expression(node.variable)
         self.push('increment-infix')
-        if isinstance(node.expression, ASTNode):
-            self.push_expression(node.expression)
         self.push('increment-end')
 
     def visitDecrementNode(self, node: DecrementNode):
         self.push('decrement-begin')
         self.push_expression(node.variable)
         self.push('decrement-infix')
-        if isinstance(node.expression, ASTNode):
-            self.push_expression(node.expression)
         self.push('decrement-end')
 
     def visitAppendNode(self, node: AppendNode):

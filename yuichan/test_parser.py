@@ -258,3 +258,18 @@ class TestParseBlockNode:
         if_node = parse("@If", source, pc={})
         assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
 
+    def test_RepeatNested(self):
+        source = Source(code)
+        if_node = parse("@TopLevel", source, pc={})
+        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
+
+
+code = """
+count=0
+10回くり返す{
+   countを増やす
+   もし countが 5ならば{
+      くり返しを抜ける
+   }
+}
+"""

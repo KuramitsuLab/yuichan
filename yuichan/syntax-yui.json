@@ -76,7 +76,7 @@
 
     "break": "くり返しを抜ける",
     "continue": "もう一度[、]?くり返す",
-    "pass": "(何もしない)?",
+    "pass": "何もしない",
 
     "return-begin": "",
     "return-end": "が[、 ]?答え",

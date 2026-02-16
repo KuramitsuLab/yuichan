@@ -289,22 +289,19 @@ class YuiError(RuntimeError):
     messages: tuple
     error_node: Optional[ASTNode]
     runtime: Optional[YuiRuntime]
+    avoid_backtrack: bool
     
     def __init__(self, messages: tuple, 
                  error_node: Optional[ASTNode] = None,
-                 runtime: Optional[YuiRuntime] = None):
-        """
-        YuiErrorを初期化する
-
-        Args:
-            messages: エラーメッセージのタプル
-            error_node: エラーが発生したASTノード
-            runtime: エラー発生時のランタイム環境
-        """
+                 runtime: Optional[YuiRuntime] = None,
+                 avoid_backtrack: bool = False):
+        """YuiErrorを初期化する"""
         super().__init__(' '.join(messages))
         self.messages = messages
         self.error_node = error_node
         self.runtime = runtime
+        self.avoid_backtrack = avoid_backtrack
+
 
     @property
     def lineno(self) -> int:

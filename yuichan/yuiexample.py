@@ -39,8 +39,8 @@ def example_basic_arithmetic():
         AssignmentNode(NameNode("y"),MinusNode(NumberNode(2))),
         IncrementNode(NameNode("x")),
         DecrementNode(NameNode("y")),
-        PrintExpressionNode(NameNode("x")),
-        PrintExpressionNode(NameNode("y")),
+        AssertNode(NameNode("x"), NumberNode(2)),
+        AssertNode(NameNode("y"), MinusNode(NumberNode(3))),
     ]
     return YuiExample(
         name="basic_arithmetic",
@@ -61,7 +61,7 @@ def example_loop():
                 IfNode(NameNode("count"), "==", NumberNode(5), BlockNode(BreakNode())),
             ]),
         ),
-        PrintExpressionNode(NameNode("count")),
+        AssertNode(NameNode("count"), NumberNode(5)),
     ]
 
     return YuiExample(
@@ -74,8 +74,8 @@ def example_loop():
 # サンプル3: 条件分岐
 def example_conditional():
     """条件分岐のサンプル"""
-    then_block = BlockNode(IncrementNode(NameNode("y")))
-    else_block = BlockNode(IncrementNode(NameNode("z")))
+    then_block = IncrementNode(NameNode("y"))
+    else_block = IncrementNode(NameNode("z"))
     statements = [
         AssignmentNode(NameNode("x"), NumberNode(1)),
         AssignmentNode(NameNode("y"), NumberNode(0)),
@@ -86,8 +86,8 @@ def example_conditional():
         IfNode(NameNode("x"),">=", NumberNode(1),then_block, else_block),
         IfNode(NameNode("x"),"<", NumberNode(1),then_block, else_block),
         IfNode(NameNode("x"),">", NumberNode(1),then_block, else_block),
-        PrintExpressionNode(NameNode("y")),
-        PrintExpressionNode(NameNode("z")),
+        AssertNode(NameNode("y"), NumberNode(3)),
+        AssertNode(NameNode("z"), NumberNode(3)),
     ]
     return YuiExample(
         name="conditional",
@@ -98,8 +98,8 @@ def example_conditional():
 # サンプル3: 条件分岐
 def example_nested_conditional():
     """ネストした条件分岐のサンプル"""
-    then_block = BlockNode(IncrementNode(NameNode("y")))
-    else_block = BlockNode(IncrementNode(NameNode("z")))
+    then_block = IncrementNode(NameNode("y"))
+    else_block = IncrementNode(NameNode("z"))
     statements = [
         AssignmentNode(NameNode("x"), NumberNode(1)),
         AssignmentNode(NameNode("y"), NumberNode(2)),
@@ -108,7 +108,7 @@ def example_nested_conditional():
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(1),then_block, else_block)),
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(2),then_block, else_block))
         ),
-        PrintExpressionNode(NameNode("y")),
+        AssertNode(NameNode("y"), NumberNode(3)),
     ]
     return YuiExample(
         name="nested_conditional",
@@ -123,10 +123,10 @@ def example_array():
         AssignmentNode(NameNode("A"),ArrayNode([NumberNode(1),NumberNode(2),NumberNode(3)])),
         AppendNode(NameNode("A"),NumberNode(0)),
         IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0))),
-        IfNode(GetIndexNode(NameNode("A"), NumberNode(0)), "==", NumberNode(2),
+        IfNode(NumberNode(2), "in", NameNode("A"),
             AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)),GetIndexNode(NameNode("A"), NumberNode(3)))
         ),
-        PrintExpressionNode(ArrayLenNode(NameNode("A"))),
+        AssertNode(ArrayLenNode(NameNode("A")), NumberNode(4)),
     ]
     return YuiExample(
         name="array",
@@ -150,16 +150,16 @@ def example_function():
         AssignmentNode(NameNode("result"),
             FuncAppNode(NameNode("succ"),[NumberNode(0)])
         ),
-        PrintExpressionNode(NameNode("result")),
+        AssertNode(NameNode("result"), NumberNode(1)),
         FuncDefNode(
             NameNode("zero"), [], BlockNode(ReturnNode(NumberNode(0)))
         ),
-        PrintExpressionNode(FuncAppNode(NameNode("zero"), [])),
+        AssertNode(FuncAppNode(NameNode("zero"), []), NumberNode(0)),
         FuncDefNode(
             NameNode("point"), [NameNode("x"), NameNode("y")], BlockNode([])
         ),
         AssignmentNode(NameNode("O"), FuncAppNode(NameNode("point"), [NumberNode(0), NumberNode(0)])),
-        PrintExpressionNode(GetIndexNode(NameNode("O"), StringNode("x"))),
+        AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(0)),
     ]
     return YuiExample(
         name="function",
