@@ -36,13 +36,13 @@ Examples:
   yui -i                                    # Interactive mode
   yui --input input.json file.yui           # Load environment and execute
   yui file.yui --output output.json         # Save environment after execution
-  yui --syntax syntax-py.json file.yui     # Execute with custom syntax
-  yui --syntax syntax-yui.json file.yui --syntax-to syntax-py.json  # Convert syntax
-  yui --syntax syntax-yui.json file.md --syntax-to syntax-py.json   # Convert Markdown
+  yui --syntax pylike file.yui     # Execute with custom syntax
+  yui --syntax yui file.yui --syntax-to pylike  # Convert syntax
+  yui --syntax yui file.md --syntax-to pylike   # Convert Markdown
   yui --list-examples                       # List available examples
   yui --make-examples                       # Generate all examples (Yui + Python style)
   yui --make-examples --example loop        # Generate specific example only
-  yui --make-examples --syntax syntax-yui.json  # Generate with Yui syntax only
+  yui --make-examples --syntax yui  # Generate with Yui syntax only
 """
     )
 
@@ -82,10 +82,10 @@ Examples:
         if args.pass_at_1:
             if not args.syntax:
                 print("Error: --syntax option is required", file=sys.stderr)
-                print("Example: yui --syntax syntax-yui.json --pass@1 file1.yui file2.yui", file=sys.stderr)
+                print("Example: yui --syntax yui --pass@1 file1.yui file2.yui", file=sys.stderr)
                 print("\nAvailable syntax files:", file=sys.stderr)
-                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
-                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - yui  (Yui style)", file=sys.stderr)
+                print("  - pylike   (Python style)", file=sys.stderr)
                 print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
             if not args.file:
@@ -98,10 +98,10 @@ Examples:
         if args.test_examples:
             if not args.syntax:
                 print("Error: --syntax option is required", file=sys.stderr)
-                print("Example: yui --syntax syntax-yui.json --test-examples", file=sys.stderr)
+                print("Example: yui --syntax yui --test-examples", file=sys.stderr)
                 print("\nAvailable syntax files:", file=sys.stderr)
-                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
-                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - yui  (Yui style)", file=sys.stderr)
+                print("  - pylike   (Python style)", file=sys.stderr)
                 print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
             test_examples(args.syntax)
@@ -111,10 +111,10 @@ Examples:
         if args.make_examples:
             if not args.syntax:
                 print("Error: --syntax option is required", file=sys.stderr)
-                print("Example: yui --syntax syntax-yui.json --make-examples", file=sys.stderr)
+                print("Example: yui --syntax yui --make-examples", file=sys.stderr)
                 print("\nAvailable syntax files:", file=sys.stderr)
-                print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
-                print("  - syntax-py.json   (Python style)", file=sys.stderr)
+                print("  - yui  (Yui style)", file=sys.stderr)
+                print("  - pylike   (Python style)", file=sys.stderr)
                 print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
             make_examples(args.example, args.syntax)
@@ -126,11 +126,11 @@ Examples:
             print("\nUsage:", file=sys.stderr)
             print("  yui --syntax <syntax-file> [options] [file]", file=sys.stderr)
             print("\nExamples:", file=sys.stderr)
-            print("  yui --syntax syntax-yui.json file.yui", file=sys.stderr)
-            print("  yui --syntax syntax-py.json -i", file=sys.stderr)
+            print("  yui --syntax yui file.yui", file=sys.stderr)
+            print("  yui --syntax pylike -i", file=sys.stderr)
             print("\nAvailable syntax files:", file=sys.stderr)
-            print("  - syntax-yui.json  (Yui style)", file=sys.stderr)
-            print("  - syntax-py.json   (Python style)", file=sys.stderr)
+            print("  - yui  (Yui style)", file=sys.stderr)
+            print("  - pylike   (Python style)", file=sys.stderr)
             print("  - emoji.json       (Emoji style)", file=sys.stderr)
             sys.exit(1)
 
@@ -187,7 +187,7 @@ Examples:
         sys.exit(1)
 
 
-def run_file(filename: str, env: Dict[str, Any], syntax: str = 'syntax-yui.json') -> Dict[str, Any]:
+def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[str, Any]:
     """Execute a file"""
     with open(filename, 'r', encoding='utf-8') as f:
         code = f.read()
@@ -211,7 +211,7 @@ def run_file(filename: str, env: Dict[str, Any], syntax: str = 'syntax-yui.json'
     return result_env
 
 
-def interactive_mode(env: Dict[str, Any], syntax: str = 'syntax-yui.json'):
+def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
     """Interactive mode"""
     print(f"Yui v{__version__} - Interactive Mode")
     print(f"Syntax: {syntax}")
@@ -353,7 +353,7 @@ def list_examples():
         print(f"{ex.name:<20} {ex.description}")
 
 
-def make_examples(example_name: str = None, syntax: str = 'syntax-yui.json'):
+def make_examples(example_name: str = None, syntax: str = 'yui'):
     """
     Generate sample code files
 
@@ -406,7 +406,7 @@ def make_examples(example_name: str = None, syntax: str = 'syntax-yui.json'):
     print(f"\nAll examples generated in {examples_dir}/ directory")
 
 
-def test_examples(syntax: str = 'syntax-yui.json'):
+def test_examples(syntax: str = 'yui'):
     """
     Test all examples with YuiRuntime
 
@@ -447,7 +447,7 @@ def test_examples(syntax: str = 'syntax-yui.json'):
         sys.exit(1)
 
 
-def pass_at_1_mode(files: list, syntax: str = 'syntax-yui.json'):
+def pass_at_1_mode(files: list, syntax: str = 'yui'):
     """
     Execute multiple script files and calculate pass rate
 

@@ -26,7 +26,7 @@ class YuiExample:
         self.description = description
         self.ast_node = ast_node
 
-    def generate(self, syntax: str = 'syntax-yui.json') -> str:
+    def generate(self, syntax: str = 'yui') -> str:
         visitor = CodingVisitor(syntax)
         return visitor.emit(self.ast_node)
 
@@ -190,7 +190,7 @@ def print_example(example: YuiExample, syntaxes: List[str] = None):
         syntaxes: 構文ファイルのリスト（Noneの場合はデフォルト構文のみ）
     """
     if syntaxes is None:
-        syntaxes = ['syntax-yui.json']
+        syntaxes = ['yui']
 
     print(f"\n{'='*60}")
     print(f"サンプル名: {example.name}")
@@ -220,7 +220,7 @@ def main():
     parser.add_argument(
         '--syntax',
         nargs='+',
-        default=['syntax-yui.json', 'syntax-py.json'],
+        default=['yui', 'pylike'],
         help='使用する構文ファイル（複数指定可）'
     )
     parser.add_argument(

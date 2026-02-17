@@ -3,8 +3,8 @@ from .yuiparser import (
     Source, parse, YuiError, load_syntax 
 )
 
-yui_syntax = load_syntax('syntax-yui.json')
-py_syntax = load_syntax('syntax-py.json')
+yui_syntax = load_syntax('yui')
+py_syntax = load_syntax('pylike')
 
 class TestSource:
     """式の評価に関するテストクラス"""

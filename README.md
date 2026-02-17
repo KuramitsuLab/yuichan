@@ -124,7 +124,7 @@ yui --input env2.json step2.yui --output result.json
 
 ```bash
 # Python風の構文ファイルで実行
-yui --syntax syntax-py.json file.yui
+yui --syntax pylike file.yui
 
 # 独自の構文ファイルで実行
 yui --syntax my-syntax.json file.yui
@@ -134,10 +134,10 @@ yui --syntax my-syntax.json file.yui
 
 ```bash
 # Yui構文 → Python風構文に変換
-yui --syntax syntax-yui.json file.yui --syntax-to syntax-py.json
+yui --syntax yui file.yui --syntax-to pylike
 
 # Markdownファイル内の ```yui ブロックを変換
-yui --syntax syntax-yui.json README.md --syntax-to syntax-py.json > README_py.md
+yui --syntax yui README.md --syntax-to pylike > README_py.md
 ```
 
 **変換前（Yui構文）:**
@@ -270,8 +270,8 @@ result = add(10, 20)
 
 ### デフォルト構文ファイル
 
-- `syntax-yui.json`: 日本語風の自然な構文（デフォルト）
-- `syntax-py.json`: Python風の構文
+- `yui`: 日本語風の自然な構文（デフォルト）
+- `pylike`: Python風の構文
 
 ## サンプルプログラム
 
@@ -352,8 +352,8 @@ yuichan/
 │   ├── main.py              # CLIエントリーポイント
 │   ├── yuiparser.py         # パーサー（構文解析）
 │   ├── yuiast.py            # AST定義・ランタイム
-│   ├── syntax-yui.json      # Yui構文定義
-│   ├── syntax-py.json       # Python風構文定義
+│   ├── yui      # Yui構文定義
+│   ├── pylike       # Python風構文定義
 │   ├── test_yuiparser.py    # パーサーテスト
 │   ├── test_yuiast.py       # ASTテスト
 │   └── test_pattern.py      # パターンテスト

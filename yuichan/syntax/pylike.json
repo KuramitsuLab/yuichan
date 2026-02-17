@@ -1,4 +1,6 @@
 {
+    "syntax": "yui",
+
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
     "linefeed": "[\\n]",
@@ -42,12 +44,12 @@
     "binary%": "%",
     "unary-": "-",
 
-    "array-index-begin": "\\[",
-    "array-index-end": "\\]",
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
     "property-accessor": "\\.",
     "property-type": "__class__.__name__",
     "not-property-name": "append",
-    "funcapp-begin": "\\(",
+    "funcapp-suffix": "\\(",
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
 

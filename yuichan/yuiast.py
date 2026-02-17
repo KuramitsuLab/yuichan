@@ -118,7 +118,7 @@ class YuiRuntime(object):
         """比較操作のカウントを増やす"""
         self.compare_count += 1
 
-    def exec(self, source: str, syntax: Union[str,dict] = 'syntax-yui.json', timeout: int = 30, eval_mode: bool = True):
+    def exec(self, source: str, syntax: Union[str,dict] = 'yui', timeout: int = 30, eval_mode: bool = True):
         """Yuiプログラムを実行する"""
         self.source = source
 
@@ -729,7 +729,7 @@ class YuiData(object):
                 return 1
             else:
                 return 0
-        raise YuiError(("incomparable", f"❌{v} と ❌{v2}"), node, env)
+        raise YuiError(("incomparable", f"❌{v}", "❌{v2}"), node, env)
 
 
     def get(self, index: int, node = None, env = None) -> Any:
@@ -1006,9 +1006,10 @@ class LocalFunction(YuiFunction):
             self.body.evaluate(runtime)
         except YuiReturnException as e:
             # return 文で値が返された
-            runtime.pop_call_frame()
-            runtime.popenv()
-            return e.value
+            if e.value is not None:
+                runtime.pop_call_frame()
+                runtime.popenv()
+                return e.value
         # return 文がない場合は変更された変数のみ返す
         runtime.pop_call_frame()
         return YuiData(runtime.popenv())

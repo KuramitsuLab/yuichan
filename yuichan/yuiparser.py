@@ -20,26 +20,72 @@ from .yuiast import (
     AssertNode,
 )
 
+
 def get_example_from_pattern(pattern: str) -> str:
     """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
     # エスケープされた文字を一時的に置換
-    pattern = pattern.replace(r'\|', '▁｜▁') 
-    pattern = pattern.replace(r'\[', '▁［▁') 
-    pattern = pattern.replace(r'\]', '▁］▁') 
-    pattern = pattern.replace(r'\*', '▁＊▁') 
-    pattern = pattern.replace(r'\?', '▁？▁') 
-    pattern = pattern.replace(r'\+', '▁＋▁')
-    pattern = pattern.replace(r'+', '') # 
-    pattern = pattern.replace(r'*', '?') #
-    example = get_example_from_pattern_inner(pattern)
+    ESC = [
+        (r'\|', '▁｜▁'), (r'\[', '▁［▁'), (r'\]', '▁］▁'),
+        (r'\(', '▁（▁'), (r'\)', '▁）▁'), (r'\*', '▁＊▁'), (r'\?', '▁？▁'),
+        (r'\+', '▁＋▁'), (r'+', ''), (r'*', '?')
+    ]
+    for a, b in ESC:
+        pattern = pattern.replace(a, b)
+    processed = ''
+    while len(pattern) > 0:
+        s_pos = pattern.find('(') # シングルループだけ対応
+        if s_pos == -1:
+            processed += get_example_from_pattern_inner(pattern)
+            break
+        e_pos = pattern.find(')', s_pos+1)
+        processed += get_example_from_pattern_inner(pattern[:s_pos])
+        inner = pattern[s_pos+1:e_pos]
+        pattern = pattern[e_pos+1:]
+        if pattern.startswith('?'):
+            pattern = pattern[1:]
+        else:
+            processed += get_example_from_pattern_inner(inner)
     # 置換した文字を元に戻す
-    example = example.replace('▁｜▁', r'|')
-    example = example.replace('▁［▁', r'[')
-    example = example.replace('▁］▁', r']')
-    example = example.replace('▁＊▁', r'*')
-    example = example.replace('▁？▁', r'?')
-    example = example.replace('▁＋▁', r'+')
-    return example
+    ESC2 = [
+        ('▁｜▁', r'|'), ('▁［▁', r'['), ('▁］▁', r']'), ('▁（▁', r'('),
+        ('▁）▁', r')'), ('▁＊▁', r'*'), ('▁？▁', r'?'), ('▁＋▁', r'+'),
+    ]
+    for a, b in ESC2:
+        processed = processed.replace(a, b)
+    return processed
+
+def split_heading_char(s: str):
+    if s.startswith("\\"):
+        # エスケープシーケンスの処理
+        remaining = s[2:]
+        if s.startswith('\\', 1):  # バックスラッシュ
+            heading_char = '\\'
+        elif s.startswith('s', 1):  # 空白文字
+            heading_char = ' '
+        elif s.startswith('t', 1):  # タブ
+            heading_char = '\t'
+        elif s.startswith('n', 1):  # 改行
+            heading_char = '\n'
+        elif s.startswith('r', 1):  # キャリッジリターン
+            heading_char = '\r'
+        elif s.startswith('d', 1):  # 数字
+            heading_char = '1'
+        elif s.startswith('w', 1):  # 単語文字
+            heading_char = 'a'
+        else:
+            heading_char = s[1]
+    elif s.startswith('▁', 0) and s.endswith('▁', 2):
+        heading_char = s[0:3]
+        remaining = s[3:]
+    elif s.startswith('\uFE0F', 1) or s.startswith('\u200D', 1): #合字や絵文字のバリエーションセレクタを考慮
+        heading_char = s[0:2]
+        remaining = s[2:]
+    else:
+        heading_char = s[0]
+        remaining = s[1:]
+    if remaining.startswith("?"):
+        return '', remaining[1:]
+    return heading_char, remaining
 
 def get_example_from_pattern_inner(pattern: str)-> str:
     if pattern == "":
@@ -47,44 +93,15 @@ def get_example_from_pattern_inner(pattern: str)-> str:
     # 選択肢（|）の処理：最初の選択肢を使用
     if "|" in pattern:
         pattern = pattern.split("|")[0]
-    
     # 文字クラス [abc] の処理 
     if pattern.startswith("["):
         end_pos = pattern.find("]")
-        head = pattern[1:end_pos]
-        tail = pattern[end_pos+1:]
-        if tail.startswith("?"):
-            return get_example_from_pattern_inner(tail[1:])
-        head_char = get_example_from_pattern_inner(head)[0]
-        return head_char + get_example_from_pattern_inner(tail)
-    if pattern.startswith("\\"):
-        # エスケープシーケンスの処理
-        next_char = pattern[1]
-        remaining = pattern[2:]
-        if remaining.startswith("?"):
-            return get_example_from_pattern_inner(remaining[1:])
-        if next_char == '\\':  # バックスラッシュ
-            char = '\\'
-        elif next_char == 's':  # 空白文字
-            char = ' '
-        elif next_char == 't':  # タブ
-            char = '\t'
-        elif next_char == 'n':  # 改行
-            char = '\n'
-        elif next_char == 'r':  # キャリッジリターン
-            char = '\r'
-        elif next_char == 'd':  # 数字
-            char = '1'
-        elif next_char == 'w':  # 単語文字
-            char = 'a'
-        else:
-            char = next_char
-        return char + get_example_from_pattern_inner(remaining)
-    char = pattern[0]
-    remaining = pattern[1:]
-    if remaining.startswith("?"):
-        return get_example_from_pattern_inner(remaining[1:])
-    return char + get_example_from_pattern_inner(remaining)
+        if pattern.startswith('?', end_pos + 1):
+            return get_example_from_pattern_inner(pattern[end_pos+2:])
+        heading_char, _ = split_heading_char(pattern[1:end_pos])
+        return heading_char + get_example_from_pattern_inner(pattern[end_pos+1:])
+    heading_char, remaining = split_heading_char(pattern)
+    return heading_char + get_example_from_pattern_inner(remaining)
 
 def is_all_alnum(s: str) -> bool:
     for ch in s:
@@ -95,12 +112,16 @@ def is_all_alnum(s: str) -> bool:
 def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
     """JSON文法ファイルから終端記号をロードする"""
     if filepath is None:
-        filepath = "syntax-yui.json"
+        filepath = "yui"
 
     if not os.path.exists(filepath):
-        # デフォルト: yuichanフォルダのsyntax-yui.json
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        filepath = os.path.join(current_dir, filepath)
+        syntax_dir = os.path.join(current_dir, 'syntax')
+        if not filepath.endswith('.json'):
+            filepath = f"{filepath}.json"
+        new_filepath = os.path.join(syntax_dir, filepath)
+        if os.path.exists(new_filepath):
+            filepath = new_filepath
 
     with open(filepath, 'r', encoding='utf-8') as f:
         terminals = json.load(f)
@@ -112,7 +133,7 @@ def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
             if is_all_alnum(word):
                 if word not in keywords:
                     keywords.add(word)
-        terminals['keywords'] = keywords
+        terminals['keywords'] = keywords        
     return terminals
 
 @dataclass
@@ -128,7 +149,7 @@ class SourceNode(ASTNode):
 
 class Source(object):
     """ソースコード"""
-    def __init__(self, source: str, filename: str = "main.yui", pos: int = 0, syntax = 'syntax-yui.json'):
+    def __init__(self, source: str, filename: str = "main.yui", pos: int = 0, syntax = 'yui'):
         self.filename = filename
         self.source = source
         self.pos = pos
@@ -352,26 +373,27 @@ def parse(nonterminal: str, source: Source, pc: dict, avoid_backtrack=False,
     saved_pos = source.pos
     if lskip_ws:
         source.skip_whitespaces_and_comments()
-    if isinstance(patterns, ParserCombinator):
-        memo = source.get_memo(nonterminal, source.pos)
-        if memo is not None:
-            source.pos = memo[1]
-            result = memo[0]
-        else:
-            saved_pos = source.pos
-            try:
-                result = patterns.match(source, pc)
-                source.set_memo(nonterminal, saved_pos, result, source.pos)
-            except YuiError as e:
-                if avoid_backtrack:
-                    e.avoid_backtrack = True
-                raise e
-        if skip_ws or skip_linefeed:
-            source.skip_whitespaces_and_comments(include_linefeed=skip_linefeed)
-        return result
+    
+    memo = source.get_memo(nonterminal, source.pos)
+    if memo is not None:
+        source.pos = memo[1]
+        result = memo[0]
     else:
         saved_pos = source.pos
-        raise YuiError(("undefined", f"`{nonterminal}`"), source.p(length=1))
+        try:
+            result = patterns.match(source, pc)
+            source.set_memo(nonterminal, saved_pos, result, source.pos)
+        except YuiError as e:
+            if e.avoid_backtrack:
+                raise e
+            source.pos = saved_pos
+            if avoid_backtrack:
+                snippet = source.capture_line()
+                raise YuiError(("expected", nonterminal[1:], f"❌{snippet}"), source.p(length=1), avoid_backtrack=True)
+            raise e
+    if skip_ws or skip_linefeed:
+        source.skip_whitespaces_and_comments(include_linefeed=skip_linefeed)
+    return result
 
 def is_parsable(nonterminal: str, source: Source, pc: dict, lskip_ws=False) -> bool:
     try:
@@ -532,7 +554,8 @@ class NameParser(ParserCombinator):
             source.try_match("identifier-end", if_undefined=True)
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
-        raise YuiError(("expected", pc.get("expected", "identifier")), source.p(length=1))
+        snippet = source.capture_line()
+        raise YuiError(("expected", pc.get("expected", "identifier"), f"❌{snippet}"), source.p(length=1))
 
 NONTERMINALS["@Name"] = NameParser()
 
@@ -585,9 +608,9 @@ class PrimaryParser(ParserCombinator):
                 source.try_match("funcapp-args-end", if_undefined=r"\)", skip_ws=True, opening_pos=opening_pos)
                 node = source.p(FuncAppNode(node, arguments), start_pos=start_pos)
                 continue
-            if source.is_match("array-index-begin", skip_ws=True):
+            if source.is_match("array-indexer-suffix", skip_ws=True):
                 index_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=True)
-                source.try_match("array-index-end", skip_ws=True, opening_pos=opening_pos)
+                source.try_match("array-indexer-end", skip_ws=True, opening_pos=opening_pos)
                 node = source.p(GetIndexNode(node, index_node), start_pos=start_pos)
                 continue
             save_pos = source.pos
@@ -804,13 +827,13 @@ class IfParser(ParserCombinator):
             left_node = left_node.left
             pass
         else:
-            operator = source.find_match('if-infix', ['==', '!=', '<', '<=', '>', '>=', 'notin', 'in'])
+            operator = source.find_match('if-infix', ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in'])
             if not operator:
                 source.try_match('if-infix', skip_ws=True, avoid_backtrack=avoid_backtrack) # が
-            right_node = parse("@Expression", source, pc, skip_ws=True, avoid_backtrack=avoid_backtrack)
+            right_node = parse("@Expression", source, pc, lskip_ws=True, skip_ws=True, avoid_backtrack=avoid_backtrack)
 
             if not operator:
-                operator = source.find_match('if-suffix', ['!=', '<', '<=', '>', '>=', 'notin', 'in'])
+                operator = source.find_match('if-suffix', ['!=', '<=', '<', '>=', '>', 'notin', 'in'])
                 source.skip_whitespaces_and_comments()
                 if operator is None:
                     operator = "=="
@@ -919,7 +942,12 @@ class TopLevelParser(ParserCombinator):
         saved_pos = source.pos
         statements = []
         while source.has_next():
+            cur_pos = source.pos
             statements.extend(parse("@Statement[]", source, pc, skip_linefeed=True))
+            if cur_pos == source.pos:
+                print('@@@', source.pos, saved_pos, source.source[source.pos:])
+                break
+            source.skip_whitespaces_and_comments()
         return source.p(BlockNode(statements, top_level=True), start_pos=saved_pos)
 
 NONTERMINALS["@TopLevel"] = TopLevelParser()
@@ -987,7 +1015,7 @@ class YuiParser:
 
 
 class CodingVisitor:
-    def __init__(self, syntax: Union[str, dict] = 'yui_syntax.json'):
+    def __init__(self, syntax: Union[str, dict] = 'yui'):
         self.buffer = []
         self.indent = 0
         if isinstance(syntax, dict):
@@ -1015,11 +1043,13 @@ class CodingVisitor:
         if not ignore:
             self.buffer.append('\n' + '   ' * self.indent)
 
-    def push_word_segmenter(self, always=False):
+    def push_word_segmenter(self, always=False, no_space_last_chars=' \n([{'):
         if always or self.is_defined('word-segmenter'):
             if len(self.buffer) > 0:
                 last_char = self.buffer[-1][-1]
-                if last_char != ' ' and last_char != '\n':
+                if not self.is_defined('word-segmenter') and ord(last_char) > 127:
+                    return # 日本語向けのアドホック 
+                if last_char not in no_space_last_chars:
                     self.buffer.append(' ')
 
     def push(self, terminal: str, if_undefined = None, push_linefeed_before=False):
@@ -1141,13 +1171,13 @@ class CodingVisitor:
 
     def visitGetIndexNode(self, node: GetIndexNode):
         node.collection.visit(self)
-        self.push('array-index-begin')
+        self.push('array-indexer-suffix')
         node.index_node.visit(self)
-        self.push('array-index-end')
+        self.push('array-indexer-end')
     
     def visitFuncAppNode(self, node: FuncAppNode):
         node.name_node.visit(self)
-        self.push('funcapp-begin', if_undefined=r'\(')
+        self.push('funcapp-suffix', if_undefined=r'\(')
         for i, arg in enumerate(node.arguments):
             if i > 0:
                 self.push('funcapp-separator', if_undefined=r'\,')

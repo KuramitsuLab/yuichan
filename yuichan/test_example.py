@@ -12,7 +12,7 @@ from .yuiparser import (
     CodingVisitor, load_syntax
 )
 
-yui_syntax = load_syntax('syntax-yui.json')
+yui_syntax = load_syntax('yui')
 
 class TestYuiEmit:
     """Yuiコード生成に関するテストクラス"""

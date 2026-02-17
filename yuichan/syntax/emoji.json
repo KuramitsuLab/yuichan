@@ -1,4 +1,6 @@
 {
+    "syntax": "Emoji",
+
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
     "word-segmenter": " ",
@@ -10,7 +12,7 @@
     "number-begin": "[0-9]",
     "number-chars": "[0-9]*",
     "number-dot-char": "[.]",
-    "identifier-begin": "📦[A-Za-z_]",
+    "identifier-begin": "[A-Za-z_]",
     "identifier-chars": "[A-Za-z0-9_]*",
     "extra-identifier-begin": "",
     "extra-identifier-end": "",
@@ -44,12 +46,12 @@
     "unary-length": "[📏📐]",
     "unary-inspect": "[🔍👀]",
 
-    "array-index-begin": "\\[",
-    "array-index-end": "\\]",
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
     "property-accessor": "",
     "property-type": "",
     "not-property-name": "",
-    "funcapp-begin": "\\(",
+    "funcapp-suffix": "\\(",
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
 
@@ -121,7 +123,5 @@
     "assert-end": "",
 
     "import-begin": "[🗝️🛒]",
-    "import-end": "",
-
-    "syntax": "Emoji"
+    "import-end": ""
 }

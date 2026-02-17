@@ -1,0 +1,117 @@
+{
+    "syntax": "ASTNode",
+
+    "whitespace": "[ \\t\\r　]",
+    "whitespaces": "[ \\t\\r　]+",
+    "linefeed": "[\\n]",
+    "word-segmenter": " ",
+    "line-comment-begin": "\\#",
+    "comment-begin": "",
+    "comment-end": "",
+    "statement-separater": ",",
+
+    "number-begin": "NumberNode\\(",
+    "number-chars": "[0-9]*",
+    "number-dot-char": "[.]",
+    "number-end": "\\)",
+
+    "identifier-begin": "NameNode\\(\"",
+    "identifier-chars": "[A-Za-z0-9_]*",
+    "identifier-end": "\"\\)",
+    
+    "string-begin": "StringNode\\(\"",
+    "string-end": "\"\\)",
+    "string-escape": "\\\\",
+    "string-interpolation-begin": "\\{",
+    "string-interpolation-end": "\\}",
+    "string-content-end": "\\\\|\\{|\\\"",
+
+    "array-begin": "ArrayNode\\(\\[",
+    "array-end": "\\]\\)",
+    "array-separator": ",",
+    "object-begin": "ObjectNode\\(\\[",
+    "object-end": "\\]\\)",
+    "object-separator": ",",
+    "key-value-separator": ",",
+
+    "group-begin!": "\\(",
+    "group-end!": "\\)",
+    "length-begin": "ArrayLenNode\\(",
+    "length-end": "\\)",
+
+    "array-indexer-begin": "GetIndexNode\\(",
+    "array-indexer-suffix": "",
+    "array-indexer-end": "\\)",
+    "array-indexer-separator": ",",
+
+    "funcapp-begin": "FuncApp\\(",
+    "funcapp-suffix": "",
+    "funcapp-end": "\\)",
+    "funcapp-separator": ",",
+
+    "block-begin": "BlockNode\\(\\[",
+    "block-end": "\\]\\)",
+    "block-separator": ",",
+
+    "assignment-begin": "AssignmentNode\\(",
+    "assignment-infix": ",",
+    "assignment-end": "\\)",
+
+    "increment-begin": "IncrementNode\\(",
+    "increment-end": "\\)",
+
+    "decrement-begin": "DecrementNode\\(",
+    "decrement-end": "\\)",
+ 
+    "append-begin": "AppendNode\\(",
+    "append-infix": ",",
+    "append-end": "\\)",
+
+    "print-begin": "PrintExpression\\(",
+    "print-end": "\\)",
+
+    "break": "BreakNode\\(\\)",
+    "pass": "PassNode\\(\\)",
+
+    "return-begin": "ReturnNode\\(",
+    "return-end": "\\)",
+
+    "repeat-begin": "RepeatNode\\(",
+    "repeat-times": ",",
+    "repeat-block": "",
+    "repeat-end": "\\)",
+
+    "if-begin": "IfNode\\(",
+    "if-condition-begin": "",
+    "if-condition-end": "",
+    "if-prefix": "",
+    "if-infix==": "==",
+    "if-infix!=": "!=",
+    "if-infix<": "<",
+    "if-infix<=": "<=",
+    "if-infix>": ">",
+    "if-infix>=": ">=",
+    "if-infixin": "in\\s",
+    "if-infixnotin": "not\\s+in\\s",
+    "if-then": "",
+    "if-else": "else\\s*",
+    "if-end": "",
+
+    "funcdef-begin": "FuncNode\\(",
+    "funcdef-name-begin": "",
+    "funcdef-name-end": "",
+    "funcdef-args-begin": "\\[",
+    "funcdef-noarg": "\\[\\]",
+    "funcdef-arg-separator": "\\,",
+    "funcdef-args-end": "\\]",
+    "funcdef-block": ",",
+    "funcdef-end": "\\)",
+
+    "assert-begin": "AssertNode\\(",
+    "assert-infix": ",",
+    "assert-end": "\\)",
+
+
+    "import-begin": "ImportNode\\(",
+    "import-end": "\\)"
+}

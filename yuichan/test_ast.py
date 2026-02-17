@@ -332,6 +332,24 @@ class TestExpression:
         result = func_app.evaluate(runtime)
         assert YuiData.compare(result, 10) == 0
 
+    def test_function_return_none(self):
+        runtime = self.init_runtime()
+        func_def = FuncDefNode(
+            NameNode("add"),[NameNode("a"), NameNode("b")],
+            BlockNode([AssignmentNode(NameNode("a"), 1),AssignmentNode(NameNode("c"), 3)])
+        )
+        func_def.evaluate(runtime)
+        func_app = FuncAppNode(
+            name=NameNode("add"),
+            arguments=[NumberNode(0), NumberNode(1)]
+        )
+        result = func_app.evaluate(runtime)
+        assert YuiData.is_object(result)
+        assert result.get(YuiData("a")) == 1
+        assert result.get(YuiData("b")) == 1
+        assert result.get(YuiData("c")) == 3
+        # assert str(result) == "" for debug
+
     def test_function_undefined(self):
         runtime = self.init_runtime()
         func_app = FuncAppNode(
@@ -449,3 +467,16 @@ class TestExpression:
         with pytest.raises(YuiError) as excinfo:
             expression.evaluate(runtime)
         assert "failed" in str(excinfo.value.args[0])
+
+
+class TestExampleAST:
+    def test_example_function(self):
+        runtime = YuiRuntime()
+        block = BlockNode([
+            FuncDefNode(
+                NameNode("point"), [NameNode("x"), NameNode("y")], BlockNode([])
+            ),
+            AssignmentNode(NameNode("O"), FuncAppNode(NameNode("point"), [NumberNode(0), NumberNode(0)])),
+            AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(0)),
+        ], top_level=True)
+        block.evaluate(runtime)

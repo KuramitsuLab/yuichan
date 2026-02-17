@@ -41,12 +41,12 @@
     "binary%": "%",
     "unary-": "-",
 
-    "array-index-begin": "\\[",
-    "array-index-end": "\\]",
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
     "property-accessor": "の",
     "property-length": "大きさ|個数|文字数|要素数",
     "property-type": "型",
-    "funcapp-begin": "\\(",
+    "funcapp-suffix": "\\(",
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
 

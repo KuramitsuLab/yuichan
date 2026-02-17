@@ -50,3 +50,23 @@ class TestGetFirstMatchString:
         pattern = r'\|'
         result = get_example_from_pattern(pattern)
         assert result == '|'
+
+    def test_emoji(self):
+        pattern = r'[⬇️⬆️]'
+        result = get_example_from_pattern(pattern)
+        assert result == '⬇️'
+    
+    def test_emoji2(self):
+        pattern = r'⬇️⬆️?⬆️'
+        result = get_example_from_pattern(pattern)
+        assert result == '⬇️⬆️'
+
+    def test_group(self):
+        pattern = r'ab([A-Z]+)(XXX|XYZ)'
+        result = get_example_from_pattern(pattern)
+        assert result == 'abAXXX'
+
+    def test_group2(self):
+        pattern = r'ab([A-Z]+)?XXX'
+        result = get_example_from_pattern(pattern)
+        assert result == 'abXXX'
