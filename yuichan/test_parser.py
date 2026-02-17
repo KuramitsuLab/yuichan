@@ -70,7 +70,7 @@ class TestSource:
 class TestParseExpressionNode:
     def test_Number(self):
         source = Source("01234", pos=1)
-        assert source.is_defined("number-begin")
+        assert source.is_defined("number-first-char")
         assert source.is_defined("number-chars")
 
         number_node = parse("@Number", source, pc={})

@@ -6,13 +6,14 @@
     "comment-begin": "",
     "comment-end": "",
 
-    "number-begin": "[0-9]",
+    "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
-    "number-dot-char": "[.]",
-    "identifier-begin": "[A-Za-z_]",
-    "identifier-chars": "[A-Za-z0-9_]*",
-    "extra-identifier-begin": "「",
-    "extra-identifier-end": "」",
+    "number-dot-char": "[\\.]",
+
+    "name-first-char": "[A-Za-z_]",
+    "name-chars": "[A-Za-z0-9_]*",
+    "extra-name-begin": "「",
+    "extra-name-end": "」",
     
     "string-begin": "\"",
     "string-end": "\"",

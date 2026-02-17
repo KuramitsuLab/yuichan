@@ -420,14 +420,14 @@ NONTERMINALS["@Boolean"] = BooleanParser()
 class NumberParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("number-begin", if_undefined=r"[0-9]", unconsumed=True)
+        return source.is_match("number-first-char", if_undefined=r"[0-9]", unconsumed=True)
     
     def match(self, source: Source, pc: dict):
         saved_pos = source.pos
-        if source.is_match("number-begin", if_undefined=r"[0-9]"):
+        if source.is_match("number-first-char", if_undefined=r"[0-9]"):
             source.try_match("number-chars", if_undefined=r"[0-9]")
             if source.is_match("number-dot-char", if_undefined=r"\."):
-                source.try_match("number-begin", avoid_backtrack=True)
+                source.try_match("number-first-char", avoid_backtrack=True)
                 source.try_match("number-chars")
                 number = source.source[saved_pos:source.pos]
                 return source.p(NumberNode(float(number)), start_pos=saved_pos)
@@ -444,8 +444,9 @@ class StringParser(ParserCombinator):
         return source.is_match("string-begin", if_undefined=r'"', unconsumed=True)
     
     def match(self, source: Source, pc: dict):
-        opening_pos = source.pos
+        opening_quote_pos = source.pos
         if source.is_match("string-begin", if_undefined=r'"'):
+            opening_pos = source.pos
             string_content = []
             expression_count = 0
             while source.pos < source.length:
@@ -475,7 +476,7 @@ class StringParser(ParserCombinator):
                     expression_count += 1
                     continue
             candidate = source.first_candidate("string-end")
-            raise YuiError(("expected", "closing", f"`{candidate}`"), source.p(start_pos=opening_pos), avoid_backtrack = True)
+            raise YuiError(("expected", "closing", f"`{candidate}`"), source.p(start_pos=opening_quote_pos), avoid_backtrack = True)
         raise YuiError(("expected", pc.get("expected", "string")), source.p(length=1), avoid_backtrack = True)
 
 NONTERMINALS["@String"] = StringParser()
@@ -538,19 +539,19 @@ class NameParser(ParserCombinator):
             for keyword in source.terminals["keywords"]:
                 if source.is_match(keyword, if_undefined=False, unconsumed=True):
                     return False
-        return source.is_match("identifier-begin", if_undefined=r"[A-Za-z_]", unconsumed=True) or source.is_match("extra-identifier-begin", if_undefined=True, unconsumed=True)
+        return source.is_match("name-first-char", if_undefined=r"[A-Za-z_]", unconsumed=True) or source.is_match("extra-name-begin", if_undefined=True, unconsumed=True)
 
     def match(self, source: Source, pc: dict):
-        if source.is_match("extra-identifier-begin", if_undefined=False):
+        if source.is_match("extra-name-begin", if_undefined=False):
             start_pos = source.pos
-            source.consume_until("extra-identifier-end", disallow_string="\n")
+            source.consume_until("extra-name-end", disallow_string="\n")
             name = source.source[start_pos:source.pos]
             node = source.p(NameNode(name), start_pos=start_pos)
-            source.try_match("extra-identifier-end", opening_pos=start_pos-1)
+            source.try_match("extra-name-end", opening_pos=start_pos-1)
             return node
         start_pos = source.pos
-        if source.is_match("identifier-begin", if_undefined=r"[A-Za-z_]"):
-            source.try_match("identifier-chars", if_undefined=r"[A-Za-z0-9_]*")
+        if source.is_match("name-first-char", if_undefined=r"[A-Za-z_]"):
+            source.try_match("name-chars", if_undefined=r"[A-Za-z0-9_]*")
             source.try_match("identifier-end", if_undefined=True)
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
@@ -1039,11 +1040,11 @@ class CodingVisitor:
             return
         self.buffer.append(text)
     
-    def push_linefeed(self, ignore = False):
+    def linefeed(self, ignore = False):
         if not ignore:
             self.buffer.append('\n' + '   ' * self.indent)
 
-    def push_word_segmenter(self, always=False, no_space_last_chars=' \n([{'):
+    def word_segment(self, always=False, no_space_last_chars=' \n([{'):
         if always or self.is_defined('word-segmenter'):
             if len(self.buffer) > 0:
                 last_char = self.buffer[-1][-1]
@@ -1052,10 +1053,10 @@ class CodingVisitor:
                 if last_char not in no_space_last_chars:
                     self.buffer.append(' ')
 
-    def push(self, terminal: str, if_undefined = None, push_linefeed_before=False):
+    def terminal(self, terminal: str, if_undefined = None, linefeed_before=False):
         pattern = None
         if terminal == 'linefeed':
-            self.push_linefeed()
+            self.linefeed()
             return
         if self.is_defined(terminal):
             pattern = self.terminals[terminal]
@@ -1065,32 +1066,32 @@ class CodingVisitor:
             token = get_example_from_pattern(pattern)
             if token == "": return
             if token[0] not in ",()[]{}:\"'.":
-                self.push_word_segmenter()
-            if push_linefeed_before:
-                self.push_linefeed()
+                self.word_segment()
+            if linefeed_before:
+                self.linefeed()
             self.buffer.append(token)
 
-    def push_comment(self, comment: str):
+    def comment(self, comment: str):
         if comment:
             comment = comment.splitlines()[0]
             if self.is_defined('line-comment-begin'):
-                self.push('line-comment-begin')
+                self.terminal('line-comment-begin')
                 self.print(comment)
                 return
             if self.is_defined('comment-begin') and self.is_defined('comment-end'):
-                self.push('comment-begin')
+                self.terminal('comment-begin')
                 self.print(comment)
-                self.push('comment-end')
+                self.terminal('comment-end')
 
-    def push_expression(self, node: ASTNode):
-        self.push_word_segmenter(always=True)
+    def expression(self, node: ASTNode):
+        self.word_segment(always=True)
         node.visit(self)
 
     def push_statement(self, node: ASTNode):
         node.visit(self)
-        self.push_comment(node.comment)
+        self.comment(node.comment)
 
-    def push_block(self, node: ASTNode):
+    def block(self, node: ASTNode):
         if not isinstance(node, BlockNode):
             BlockNode([node]).visit(self)
         else:
@@ -1100,10 +1101,12 @@ class CodingVisitor:
         self.print(f'FIXME: {node.__class__.__name__}')
 
     def visitNumberNode(self, node: NumberNode):
+        self.terminal("number-begin")
         self.print(str(node.value))
+        self.terminal("number-end")
 
     def visitStringNode(self, node: StringNode):
-        self.push('string-begin', if_undefined=r'"')
+        self.terminal('string-begin', if_undefined=r'"')
         if isinstance(node.contents,str):
             self.print(node.contents.replace('"', '\\"').replace('\n', '\\n'))
         else:
@@ -1111,214 +1114,224 @@ class CodingVisitor:
                 if isinstance(content, str):
                     self.print(content.replace('"', '\\"').replace('\n', '\\n'))
                 else:
-                    self.push('string-interpolation-begin', if_undefined=r"\{")
+                    self.terminal('string-interpolation-begin', if_undefined=r"\{")
                     content.visit(self)
-                    self.push('string-interpolation-end', if_undefined=r"\}")
-        self.push('string-end', if_undefined=r'"')
+                    self.terminal('string-interpolation-end', if_undefined=r"\}")
+        self.terminal('string-end', if_undefined=r'"')
     
     def visitNameNode(self, node: NameNode):
+        self.terminal("name-begin")
         self.print(node.name)
+        self.terminal("name-end")
 
     def visitArrayNode(self, node: ArrayNode):
-        self.push('array-begin', if_undefined=r'\[')
+        self.terminal('array-begin', if_undefined=r'\[')
         for i, element in enumerate(node.elements):
             if i > 0:
-                self.push('array-separator', if_undefined=r'\,')
-            self.push_expression(element)
-        self.push('array-end', if_undefined=r'\]')
+                self.terminal('array-separator', if_undefined=r'\,')
+            self.expression(element)
+        self.terminal('array-end', if_undefined=r'\]')
 
     def visitObjectNode(self, node: ObjectNode):
         ignore_linefeed = "\n" not in str(node)
-        self.push('object-begin', if_undefined=r'\{')
+        self.terminal('object-begin', if_undefined=r'\{')
         self.indent += 1
-        self.push_linefeed(ignore=ignore_linefeed)
+        self.linefeed(ignore=ignore_linefeed)
         for i in range(0, len(node.elements), 2):
             if i > 0:
-                self.push('object-separator', if_undefined=r'\,')
-                self.push_linefeed(ignore=ignore_linefeed)
+                self.terminal('object-separator', if_undefined=r'\,')
+                self.linefeed(ignore=ignore_linefeed)
             key_node = node.elements[i]
             value_node = node.elements[i+1]
-            self.push_expression(key_node)
-            self.push('key-value-separator', if_undefined=r'\:')
-            self.push_expression(value_node)
+            self.expression(key_node)
+            self.terminal('key-value-separator', if_undefined=r'\:')
+            self.expression(value_node)
         self.indent -= 1
-        self.push_linefeed(ignore=ignore_linefeed)
-        self.push('object-end', if_undefined=r'\}')
+        self.linefeed(ignore=ignore_linefeed)
+        self.terminal('object-end', if_undefined=r'\}')
 
     def visitMinusNode(self, node: MinusNode):
-        if self.is_defined('unary-'):
-            self.push('unary-')
+        if self.is_defined('minus-begin'):
+            self.terminal('minus-begin')
+            self.expression(node.element)
+            self.terminal('minus-end')
+        elif self.is_defined('unary-'):
+            self.terminal('unary-')
             node.element.visit(self) # avoid extra word segmenter for negative numbers
+        else:
+            self.visitASTNode(node)
 
     def visitBinaryNode(self, node: BinaryNode):
-        self.push_expression(node.left_node)
-        self.push_word_segmenter()
+        self.expression(node.left_node)
+        self.word_segment()
         # 演算子をそのまま出力（*, /, %, +, -, ==, != など）
-        self.push(f"binary{node.operator}", if_undefined=node.operator)
-        self.push_word_segmenter()
-        self.push_expression(node.right_node)
+        self.terminal(f"binary{node.operator}", if_undefined=node.operator)
+        self.word_segment()
+        self.expression(node.right_node)
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         if self.is_defined('property-length'):
-            self.push_expression(node.element)
-            self.push('property-accessor')
-            self.push('property-length')
+            self.expression(node.element)
+            self.terminal('property-accessor')
+            self.terminal('property-length')
             return
         if self.is_defined('length-begin'):
-            self.push('length-begin')
+            self.terminal('length-begin')
             node.element.visit(self)
-            self.push('length-end')
+            self.terminal('length-end')
 
     def visitGetIndexNode(self, node: GetIndexNode):
-        node.collection.visit(self)
-        self.push('array-indexer-suffix')
-        node.index_node.visit(self)
-        self.push('array-indexer-end')
+        self.terminal('array-indexer-begin')
+        self.expression(node.collection)
+        self.terminal('array-indexer-suffix')
+        self.expression(node.index_node)
+        self.terminal('array-indexer-end')
     
     def visitFuncAppNode(self, node: FuncAppNode):
-        node.name_node.visit(self)
-        self.push('funcapp-suffix', if_undefined=r'\(')
+        self.terminal('funcapp-begin')
+        self.expression(node.name_node)
+        self.terminal('funcapp-suffix', if_undefined=r'\(')
         for i, arg in enumerate(node.arguments):
             if i > 0:
-                self.push('funcapp-separator', if_undefined=r'\,')
-            arg.visit(self)
-        self.push('funcapp-end', if_undefined=r'\)')
+                self.terminal('funcapp-separator', if_undefined=r'\,')
+            self.expression(arg)
+        self.terminal('funcapp-end', if_undefined=r'\)')
 
     def visitAssignmentNode(self, node: AssignmentNode):
-        self.push('assignment-begin')
-        node.variable.visit(self)
-        self.push('assignment-infix')
-        node.expression.visit(self)
-        self.push('assignment-end')
+        self.terminal('assignment-begin')
+        self.expression(node.variable)
+        self.terminal('assignment-infix')
+        self.expression(node.expression)
+        self.terminal('assignment-end')
     
     def visitIncrementNode(self, node: IncrementNode):
-        self.push('increment-begin')
-        self.push_expression(node.variable)
-        self.push('increment-infix')
-        self.push('increment-end')
+        self.terminal('increment-begin')
+        self.expression(node.variable)
+        self.terminal('increment-infix')
+        self.terminal('increment-end')
 
     def visitDecrementNode(self, node: DecrementNode):
-        self.push('decrement-begin')
-        self.push_expression(node.variable)
-        self.push('decrement-infix')
-        self.push('decrement-end')
+        self.terminal('decrement-begin')
+        self.expression(node.variable)
+        self.terminal('decrement-infix')
+        self.terminal('decrement-end')
 
     def visitAppendNode(self, node: AppendNode):
-        self.push('append-begin')
-        self.push_expression(node.variable)
-        self.push('append-infix')
-        self.push_expression(node.expression)
-        self.push('append-suffix')
-        self.push('append-end')
+        self.terminal('append-begin')
+        self.expression(node.variable)
+        self.terminal('append-infix')
+        self.expression(node.expression)
+        self.terminal('append-suffix')
+        self.terminal('append-end')
 
     def visitBreakNode(self, node: BreakNode):
-        self.push('break')
+        self.terminal('break')
     
     def visitPassNode(self, node: PassNode):
         # block 内で処理される
-        # self.push('pass')
+        # self.terminal('pass')
         pass
 
     def visitReturnNode(self, node: ReturnNode):
         if isinstance(node.expression, ASTNode):
-            self.push('return-begin')
-            self.push_expression(node.expression)
-            self.push('return-end')
+            self.terminal('return-begin')
+            self.expression(node.expression)
+            self.terminal('return-end')
         else:
-            self.push('return-none')
+            self.terminal('return-none')
         
     def visitPrintExpressionNode(self, node: PrintExpressionNode):
         if node.groping:
-            self.push('groping-begin', if_undefined=r"\(")
-            self.push_expression(node.expression)
-            self.push('groping-end', if_undefined=r"\)")
-            return
-        if node.inspection and self.is_defined('unary-inspection'):
-            self.push('unary-inspection')
-            self.push_expression(node.expression)
-            return
-        self.push('print-begin')
-        self.push_expression(node.expression)
-        self.push('print-end')
+            self.terminal('groping-begin', if_undefined=r"\(")
+            self.expression(node.expression)
+            self.terminal('groping-end', if_undefined=r"\)")
+        elif node.inspection and self.is_defined('unary-inspection'):
+            self.terminal('unary-inspection')
+            self.expression(node.expression)
+        else:
+            self.terminal('print-begin')
+            self.expression(node.expression)
+            self.terminal('print-end')
 
     def visitIfNode(self, node: IfNode):
-        self.push('if-begin')
-        self.push('if-condition-begin')
-        self.push_expression(node.left)
+        self.terminal('if-begin')
+        self.terminal('if-condition-begin')
+        self.expression(node.left)
         if isinstance(node.left, BinaryNode) and node.left.comparative:
             pass
         else:
             if self.is_defined(f'if-infix{node.operator}'):
-                self.push(f'if-infix{node.operator}')
+                self.terminal(f'if-infix{node.operator}')
             else:
-                self.push('if-infix')
-            self.push_expression(node.right)
+                self.terminal('if-infix')
+            self.expression(node.right)
             if self.is_defined(f'if-suffix{node.operator}'):
-                self.push(f'if-suffix{node.operator}')
+                self.terminal(f'if-suffix{node.operator}')
             else:
-                self.push('if-suffix')
-            self.push('if-condition-end')
-        self.push('if-then')
-        self.push_block(node.then_block)
+                self.terminal('if-suffix')
+            self.terminal('if-condition-end')
+        self.terminal('if-then')
+        self.block(node.then_block)
         if node.else_block:
             if self.is_defined('if-else-if') and isinstance(node.else_block, IfNode):
-                self.push('if-else-if', push_linefeed_before=True)
-                self.push_block(node.else_block)
+                self.terminal('if-else-if', linefeed_before=True)
+                self.block(node.else_block)
             else:
-                self.push('if-else', push_linefeed_before=True)
-                self.push_block(node.else_block)
-        self.push('if-end', push_linefeed_before=True)
+                self.terminal('if-else', linefeed_before=True)
+                self.block(node.else_block)
+        self.terminal('if-end', linefeed_before=True)
 
     def visitRepeatNode(self, node: RepeatNode):
-        self.push('repeat-begin')
-        self.push_expression(node.count_node)
-        self.push('repeat-times')
-        self.push('repeat-block')
-        self.push_block(node.block_node)
-        self.push('repeat-end', push_linefeed_before=True)
+        self.terminal('repeat-begin')
+        self.expression(node.count_node)
+        self.terminal('repeat-times')
+        self.terminal('repeat-block')
+        self.block(node.block_node)
+        self.terminal('repeat-end', linefeed_before=True)
 
     def visitFuncDefNode(self, node: FuncDefNode):
-        self.push('funcdef-begin')
-        self.push('funcdef-name-begin')
-        self.push_expression(node.name_node)
-        self.push('funcdef-name-end')
+        self.terminal('funcdef-begin')
+        self.terminal('funcdef-name-begin')
+        self.expression(node.name_node)
+        self.terminal('funcdef-name-end')
         if self.is_defined('funcdef-noarg') and len(node.parameters) == 0:
-            self.push('funcdef-noarg')
+            self.terminal('funcdef-noarg')
         else:
-            self.push('funcdef-args-begin')
+            self.terminal('funcdef-args-begin')
             for i, arg_node in enumerate(node.parameters):
                 if i > 0:
-                    self.push('funcdef-arg-separator')
-                self.push_expression(arg_node)
-            self.push('funcdef-args-end')
-        self.push('funcdef-block')
-        self.push_block(node.body)
-        self.push('funcdef-end', push_linefeed_before=True)
+                    self.terminal('funcdef-arg-separator')
+                self.expression(arg_node)
+            self.terminal('funcdef-args-end')
+        self.terminal('funcdef-block')
+        self.block(node.body)
+        self.terminal('funcdef-end', linefeed_before=True)
 
     def visitAssertNode(self, node: AssertNode):
-        self.push('assert-begin')
-        self.push_expression(node.test)
-        self.push('assert-infix')
-        self.push_expression(node.reference)
-        self.push('assert-end')
+        self.terminal('assert-begin')
+        self.expression(node.test)
+        self.terminal('assert-infix')
+        self.expression(node.reference)
+        self.terminal('assert-end')
 
     def visitBlockNode(self, node: BlockNode):
         if not node.top_level:
-            self.push('block-begin')
+            self.terminal('block-begin')
             self.indent += 1
-            self.push_linefeed()
+            self.linefeed()
 
         if len(node.statements) == 0:
-            self.push('pass')
+            self.terminal('pass')
         else: 
             for i, statement in enumerate(node.statements):
                 if i > 0:
-                    self.push_linefeed()
+                    self.linefeed()
                 statement.visit(self)
-                self.push_comment(statement.comment)
+                self.terminal("block-separator")
+                self.comment(statement.comment)
 
         if not node.top_level:
             self.indent -= 1
-            self.push('block-end', push_linefeed_before=True)
+            self.terminal('block-end', linefeed_before=True)
 
 set_from_outside(YuiParser, CodingVisitor)

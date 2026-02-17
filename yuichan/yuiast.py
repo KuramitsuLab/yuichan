@@ -737,7 +737,7 @@ class YuiData(object):
             key = YuiData.ensure_string(index)
             YuiData.type_check(self, 'object', node, env)
             obj = YuiData.ensure_object(self)
-            return obj.get(key, None)
+            return obj.get(key) #, None)
         YuiData.type_check(index, 'number', node, env)
         index = int(YuiData.ensure_number(index))
         if self.elements is None:
@@ -774,11 +774,7 @@ class YuiData(object):
 
 @dataclass
 class ExpressionNode(ASTNode):
-    """
-    式（Expression）の基底クラス
-
-    数値、文字列、変数、関数呼び出しなど、値を返す式を表現します。
-    """
+    """式（Expression）の基底クラス"""
     def __init__(self):
         super().__init__()
 
@@ -1054,7 +1050,7 @@ class FuncAppNode(ExpressionNode):
         if isinstance(self.name_node, NameNode):
             name = f'@{self.name_node.name}'
             if not runtime.hasenv(name):
-                raise YuiError(("undefined", "function" "❌{self.name_node.name}"), self.name_node, runtime)
+                raise YuiError(("undefined", "function", f"❌{self.name_node.name}"), self.name_node, runtime)
             function = runtime.getenv(name)
         if not isinstance(function, YuiFunction):
             raise YuiError(("expected", "function", f"❌{function}"), self.name_node, runtime)
