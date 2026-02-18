@@ -50,6 +50,7 @@
     "property-accessor": "の",
     "property-length": "大きさ|個数|文字数|要素数",
     "property-type": "型",
+    
     "funcapp-suffix": "\\(",
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
@@ -69,6 +70,7 @@
     "increment-begin": "",
     "increment-infix": "を",
     "increment-end": "増やす",
+    "increment-lookahead": "増やす",
     
     "decrement-begin": "",
     "decrement-infix": "を",

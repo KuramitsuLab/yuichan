@@ -14,24 +14,12 @@ def set_from_outside(parser, visitor):
     CodeVisitor = visitor
 
 class YuiRuntime(object):
-    """
-    Yui言語のランタイムシステム
-
+    """Yui言語のランタイムシステム
     プログラムの実行を制御し、以下の機能を提供します：
     - プログラムのパースと実行
     - タイムアウト制御
     - 実行統計の収集（インクリメント、デクリメント、比較の回数）
     - 再帰呼び出しの追跡
-
-    Attributes:
-        source: 実行中のソースコード
-        increment_count: インクリメント操作の回数
-        decrement_count: デクリメント操作の回数
-        compare_count: 比較操作の回数
-        call_frames: 関数呼び出しスタック
-        shouldStop: 手動停止フラグ
-        timeout: タイムアウト時間（秒）
-        interactive_mode: インタラクティブモードフラグ
     """
 
     enviroments: List[dict]
@@ -41,6 +29,7 @@ class YuiRuntime(object):
     decrement_count: int
     compare_count: int
     test_passed: List[str]
+    source: str
 
     def __init__(self, init_env: Dict[str, Any] = None):
         """YuiRuntimeを初期化する"""
@@ -86,6 +75,25 @@ class YuiRuntime(object):
     def popenv(self):
         """現在の環境に変数を設定する"""
         return self.enviroments.pop()
+    
+    def stringfy_env(self, stack=-1, indent_prefix: str = "") -> str:
+        """環境をJSON形式の文字列として出力する"""
+        if indent_prefix is None:
+            indent_prefix = ""
+            inner_indent_prefix = None
+            LF = ""
+        else:
+            inner_indent_prefix = indent_prefix + "  "
+            LF = "\n"
+        lines = [f"{indent_prefix}<{self.stringfy_call_frames(stack=stack)}>{LF}{{"]
+        for i, (key, value) in enumerate(self.enviroments[stack].items()):
+            if key.startswith("@"): continue 
+            lines.append(f"{LF}{indent_prefix}  \"{key}\": ")
+            lines.append(f"{YuiData.stringfy_value(value, inner_indent_prefix)}")
+            if i < len(self.enviroments[stack]) - 1:
+                lines.append(", ")
+        lines.append(f"{LF}{indent_prefix}}}")
+        return ''.join(lines)
 
     def push_call_frame(self, func_name: str, args: List[Any], node):
         """関数呼び出しフレームをスタックに追加"""
@@ -94,6 +102,14 @@ class YuiRuntime(object):
     def pop_call_frame(self):
         """関数呼び出しフレームをスタックから削除"""
         self.call_frames.pop()
+
+    def stringfy_call_frames(self, stack=-1)->str:
+        """再帰呼び出しの深さをチェック"""
+        if len(self.call_frames) == 0:
+            return "global"
+        call_frame = self.call_frames[stack]
+        args = ", ".join(YuiData.stringfy_value(arg, indent_prefix=None) for arg in call_frame[1])
+        return f"{call_frame[0]}({args})]"
 
     def check_recursion_depth(self):
         """再帰呼び出しの深さをチェック"""
@@ -135,15 +151,6 @@ class YuiRuntime(object):
         """Python関数をYui関数として読み込む"""
         return NativeFunction(function)
 
-    def context_info(self) -> str:
-        """現在の実行コンテキスト情報を返す"""
-        contexts = []
-        for func_name, args, pos, end_pos in reversed(self.call_frames):
-            line, _, snipet = YuiError.parse_linenum(self.source, pos, end_pos)
-            args_str = ",".join(str(YuiData.yui2py(arg)) for arg in args)
-            contexts.append(f"{func_name}({args_str}) {line}行目 🔍{snipet.strip()}")
-        return contexts
-
     def print(self, value: Any, node: 'ASTNode'):
         """値を出力する"""
         line, _, snippet = node.extract()
@@ -161,54 +168,15 @@ class YuiRuntime(object):
         self.startTime = time.time()
 
     def check_execution(self, node):
-        """
-        実行状態をチェックする
-
-        手動停止フラグとタイムアウトをチェックし、
-        必要に応じてYuiErrorを発生させます。
-
-        Args:
-            node: エラー位置情報を持つASTノード
-
-        Raises:
-            YuiError: 手動停止またはタイムアウト時
-        """
+        """実行状態をチェックする"""
         # 手動停止フラグのチェック
         if self.shouldStop:
-            raise YuiError(('プログラムが手動で停止されました'), node, self)
+            raise YuiError(('interruptted'), node, self)
 
         # タイムアウトチェック
         if self.timeout > 0 and (time.time() - self.startTime) > self.timeout:
-            raise YuiError((f'タイムアウト({self.timeout}秒)になりました'), node, self)
+            raise YuiError(('timeout', f'🕰️{self.timeout}[sec]'), node, self)
     
-    def stringfy_as_json(self, env: Dict[str, Any]) -> str:
-        """
-        環境をJSON形式の文字列として出力する
-
-        Args:
-            env: 出力する環境
-
-        Returns:
-            JSON形式の文字列
-        """
-        env = YuiData.py2yui(env)
-        lines = ["{"]
-        indent = "    "
-
-        for key, value in env.items():
-            key_str = f"{indent}\"{key}\":"
-            if isinstance(value, (int, float)):
-                lines.append(f"{key_str} {int(value)},")
-            if isinstance(value, YuiData):
-                content = value.emit("js", indent)
-                lines.append(f"{key_str} {content},")
-            if value is None:
-                lines.append(f"{key_str} null,")
-        if len(lines) > 1:
-            lines[-1] = lines[-1][:-1]  # 最後のカンマを削除
-        lines.append("}")
-        return '\n'.join(lines)
-
 @dataclass
 class Operator(ABC):
     symbol: str
@@ -397,19 +365,18 @@ class YuiError(RuntimeError):
     messages: tuple
     error_node: Optional[ASTNode]
     runtime: Optional[YuiRuntime]
-    avoid_backtrack: bool
+    BK: bool
     
     def __init__(self, messages: tuple, 
                  error_node: Optional[ASTNode] = None,
                  runtime: Optional[YuiRuntime] = None,
-                 avoid_backtrack: bool = False):
+                 BK: bool = False):
         """YuiErrorを初期化する"""
         super().__init__(' '.join(messages))
         self.messages = messages
         self.error_node = error_node
         self.runtime = runtime
-        self.avoid_backtrack = avoid_backtrack
-
+        self.BK = BK
 
     @property
     def lineno(self) -> int:
@@ -440,19 +407,18 @@ class YuiError(RuntimeError):
         message = ' '.join(self.messages)
         if self.error_node:
             line, col, snippet = self.error_node.extract()
-            # エラー範囲の長さを計算（最小4文字）
-            length = max(self.error_node.end_pos - self.error_node.pos, 4) if self.error_node.end_pos is not None else 4
+            # エラー範囲の長さを計算（最小3文字）
+            length = max(self.error_node.end_pos - self.error_node.pos, 3) if self.error_node.end_pos is not None else 3
             # エラー位置を指すポインタを作成
             make_pointer = marker * min(length, 16)
-            snippet = snippet.split('\n')[0]
+            snippet = snippet.split('\n')[0]  # エラー行の最初の行だけを表示
             indent = " " * (col - 1)
-            message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet.rstrip()}\n{prefix}{indent}{make_pointer}"
+            message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
         if self.runtime is None:
             message = f"[構文エラー] {message}"
         else:
-            message = f"[実行時エラー] {message}\n[環境] {self.runtime}"
+            message = f"[実行時エラー] {message}\n[環境] {self.runtime.stringfy_env(stack=-1)}\n"
         return message
-
 
 class YuiData(object):
     """Yui言語のデータ型"""
@@ -549,22 +515,9 @@ class YuiData(object):
 
     @staticmethod
     def float_to_array(x: float) -> List[int]:
-        """
-        浮動小数点数を符号付き一桁整数配列に変換
-
-        浮動小数点数を [sign, d1, d2, d3, ...] の形式に変換します。
-        小数点以下6桁の精度で格納します。
-
-        Args:
-            x: 変換する浮動小数点数
-
-        Returns:
-            符号と桁のリスト [sign, d1, d2, ...]
-
+        """浮動小数点数を符号付き一桁整数配列に変換
         Example:
-            >>> YuiData.float_to_array(3.14)
             [1, 3, 1, 4, 0, 0]  # 3.1400
-            >>> YuiData.float_to_array(-2.5)
             [-1, 2, 5, 0, 0, 0]  # -2.5000
         """
         sign = -1 if x < 0 else 1
@@ -575,17 +528,7 @@ class YuiData(object):
 
     @staticmethod
     def array_to_float(digits: List[int]) -> float:
-        """
-        符号付き一桁整数配列を浮動小数点数に変換
-
-        float_to_arrayの逆変換を行います。
-
-        Args:
-            digits: [sign, d1, d2, ...] 形式の桁リスト
-
-        Returns:
-            浮動小数点数
-
+        """符号付き一桁整数配列を浮動小数点数に変換
         Example:
             >>> array_to_float([1, 3, 1, 4, 0, 0])
             3.14
@@ -607,7 +550,6 @@ class YuiData(object):
         else:
             # 小数点を6桁前に挿入
             value = float(s[:-6] + '.' + s[-6:])
-
         return sign * value
     
     @staticmethod
@@ -711,6 +653,73 @@ class YuiData(object):
                 raise YuiError(("expected", "type", "int", f"❌{value}"), node, env)
             return
         raise YuiError(("undefined", "type", f"❌{expected_type}"), node, env)
+
+    def stringfy(self, indent_prefix: str = "", inner_view: bool = False, width=80) -> str:
+        self.sync()
+        if self.view == "string":
+            if inner_view:
+                return f"{self.array}"
+            content = self.native_value.replace('"', '\\"').replace('\n', '\\n')
+            return f'"{content}"'
+        if self.view == "float":
+            if inner_view:
+                return f"{self.array}"
+            return f"{self.native_value:.6f}"
+        if indent_prefix is None:
+            indent_prefix = ""
+            inner_indent_prefix = None
+            LF = ""
+        else:
+            inner_indent_prefix = indent_prefix + "  "
+            LF = "\n"
+        if self.view == "array":
+            flat_view = False
+            if len(self.elements) > 0 and isinstance(self.elements[0], int):
+                flat_view = True
+            if flat_view:
+                buffer = ["["]
+                for i, element in enumerate(self.elements):
+                    if i > 0:
+                        buffer.append(", ")
+                    if isinstance(element, YuiData):
+                        buffer.append(element.stringfy(inner_indent_prefix, inner_view=False, width=width))
+                    else: 
+                        buffer.append(f"{element}")
+                buffer.append("]")  
+                content = ''.join(buffer)
+                if len(indent_prefix) + len(content) <= width:
+                    return content
+        if self.view == "object":
+            if not inner_view:
+                buffer = ["{"]
+                for i, (key, value) in enumerate(self.native_value.items()):
+                    if i > 0:
+                        buffer.append(", ")
+                    buffer.append(f'{LF}{inner_indent_prefix}"{key}" :')
+                    if isinstance(value, YuiData):
+                        buffer.append(value.stringfy(inner_indent_prefix, inner_view=False, width=width))
+                    else: 
+                        buffer.append(f"{value}")
+                buffer.append(f"{LF}{indent_prefix}}}")
+                return ''.join(buffer)
+        buffer = ["["]
+        for i, element in enumerate(self.elements):
+            buffer.append(f"{LF}{inner_indent_prefix}")
+            if isinstance(element, YuiData):
+                buffer.append(element.stringfy(inner_indent_prefix, inner_view=False, width=width))
+            else:
+                buffer.append(f"{element}")
+        if i < len(self.elements) - 1:
+            buffer.append(", ")
+        buffer.append(f"{LF}{indent_prefix}]")
+        return ''.join(buffer)
+
+    @staticmethod
+    def stringfy_value(value: Any, indent_prefix: str = "") -> str:
+        """値をJSON形式の文字列として出力する"""
+        if isinstance(value, YuiData):
+            return value.stringfy(indent_prefix, inner_view=False)
+        return f"{value}"
 
     @staticmethod
     def compare(v: Any, v2: Any, node = None, env = None) -> int:

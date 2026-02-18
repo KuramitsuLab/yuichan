@@ -9,7 +9,7 @@ py_syntax = load_syntax('pylike')
 class TestSource:
     """式の評価に関するテストクラス"""
 
-    def test_syntax(self):
+    def test_is_defined(self):
         source = Source('', syntax=yui_syntax)
         source.update_syntax(**{
             "line-feed": r"\n",
@@ -21,19 +21,19 @@ class TestSource:
 
     def test_consume(self):
         source = Source("X  abc", pos=1)
-        assert source.is_match("whitespaces") == True
+        assert source.is_match("whitespaces", lskip_ws=False) == True
         assert source.pos == 3
 
         source = Source("X  abc", pos=1)
-        assert source.is_match("whitespace") == True
+        assert source.is_match("whitespace", lskip_ws=False) == True
         assert source.pos == 2
 
         source = Source("Xabc", pos=1)
-        assert source.is_match("whitespaces") == False
+        assert source.is_match("whitespaces", lskip_ws=False) == False
         assert source.pos == 1
         with pytest.raises(YuiError) as excinfo:
             source = Source("Xabc", pos=1)
-            source.try_match("whitespace")
+            source.try_match("whitespace", lskip_ws=False)
             assert source.pos == 1
         assert "expected" in str(excinfo.value)
         assert excinfo.value.error_node.pos == 1
@@ -67,25 +67,35 @@ class TestSource:
         source.skip_whitespaces_and_comments(include_linefeed=True)
         assert source.source[source .pos] == '1'
 
+
 class TestParseExpressionNode:
+
     def test_Number(self):
-        source = Source("01234", pos=1)
-        assert source.is_defined("number-first-char")
-        assert source.is_defined("number-chars")
+        source = Source("01234 #コメント", pos=1)
 
         number_node = parse("@Number", source, pc={})
         assert str(number_node) == '1234'
 
-        source = Source("0123.12", pos=1)
+        source = Source("0123.12 #コメント", pos=1)
         number_node = parse("@Number", source, pc={})
         assert str(number_node) == '123.12'
 
         with pytest.raises(YuiError) as excinfo:
             source = Source("xxx")
-            number_node = parse("@Number", source, pc={})
+            number_node = parse("@Number", source, pc={}, BK=True)
         assert "expected" in str(excinfo.value)
         assert excinfo.value.error_node.pos == 0
         assert excinfo.value.error_node.end_pos == 1
+
+    def test_NumberAsExpression(self):
+        source = Source("01234 #コメント", pos=1)
+
+        number_node = parse("@Expression", source, pc={})
+        assert str(number_node) == '1234'
+
+        source = Source("0123.12 #コメント", pos=1)
+        number_node = parse("@Expression", source, pc={})
+        assert str(number_node) == '123.12'
 
     def test_String(self):
         source = Source('"ABC"', pos=0)
@@ -95,6 +105,21 @@ class TestParseExpressionNode:
         source = Source('"AB{1}C"', pos=0)
         string_node = parse("@String", source, pc={})
         assert str(string_node) == '"AB{1}C"'
+
+    def test_StringAsExpression(self):
+        source = Source('"ABC"', pos=0)
+        string_node = parse("@Expression", source, pc={})
+        assert str(string_node) == '"ABC"'
+
+        source = Source('"AB{1}C"', pos=0)
+        string_node = parse("@Expression", source, pc={})
+        assert str(string_node) == '"AB{1}C"'
+
+    def test_String_wrong_token(self):
+        with pytest.raises(YuiError) as excinfo:
+            source = Source("'A'", pos=0)
+            string_node = parse("@Expression", source, pc={})
+        assert "wrong" in str(excinfo.value)
 
     def test_Array(self):
         source = Source('[1,2]', pos=0)
@@ -141,6 +166,7 @@ class TestParseStatementNode:
         assignment_node = parse("@Assignment", source, pc={})
         assert str(assignment_node) == "x = 1"
 
+    def test_AssignmentAsStatement(self):
         source = Source("x=1 # コメント")
         assignment_node = parse("@Statement", source, pc={})
         assert str(assignment_node) == "x=1"
@@ -153,6 +179,12 @@ class TestParseStatementNode:
         source = Source("xを増やす # コメント")
         increment_node = parse("@Statement", source, pc={})
         assert str(increment_node) == "xを増やす"
+
+    def test_IncrementAsStatement_lookahead(self):
+        source = Source("xに3増やす # コメント")
+        increment_node = parse("@Statement", source, pc={})
+        assert str(increment_node) == "xを増やす"
+
 
     def test_Increment_py(self):
         source = Source("x += 1", syntax=py_syntax)
@@ -227,7 +259,6 @@ class TestParseStatementNode:
         return_node = parse("@Statement", source, pc={})
         assert str(return_node) == "return 1"
 
-
 class TestParseBlockNode:
 
     def test_TopLevel(self):
@@ -243,10 +274,23 @@ class TestParseBlockNode:
         top_level_node = parse("@TopLevel", source, pc={})
         assert str(top_level_node) == "x = 1;y=2"
 
+    def test_TopLevel_error(self):
+        with pytest.raises(YuiError) as excinfo:
+            source = Source("x = 1 知らないよ")
+            top_level_node = parse("@TopLevel", source, pc={})
+            assert str(top_level_node) == "x = 1 知らないよ"
+        assert "wrong" in str(excinfo.value)
+        assert "statement" in str(excinfo.value)
+
     def test_Block(self):
         source = Source("n回 {\n  x = 1\n  y=2\n} くり返す", pos=3)
         block_node = parse("@Block", source, pc={})
         assert str(block_node) == "{\n  x = 1\n  y=2\n}"
+
+    def test_Block_emptyline(self):
+        source = Source("n回 {\n  x = 1\n #a\n\n  y=2\n} くり返す", pos=3)
+        block_node = parse("@Block", source, pc={})
+        assert str(block_node) == "{\n  x = 1\n #a\n\n  y=2\n}"
 
     def test_Repeat(self):
         source = Source("3回くり返す {\n  x = 1\n}")
@@ -258,6 +302,11 @@ class TestParseBlockNode:
         if_node = parse("@If", source, pc={})
         assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
 
+    def test_IfAsStatement(self):
+        source = Source("もしxが1ならば {\n  x = 1\n}")
+        if_node = parse("@Statement", source, pc={})
+        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
+
     def test_If_in(self):
         source = Source("もしxがAのいずれかならば{\n  x = 1\n}")
         if_node = parse("@If", source, pc={})
@@ -267,6 +316,27 @@ class TestParseBlockNode:
         source = Source("もしxがAのいずれでもないならば{\n  x = 1\n}")
         if_node = parse("@If", source, pc={})
         assert str(if_node) == "もしxがAのいずれでもないならば{\n  x = 1\n}"
+
+    def test_NestedIf(self):
+        source = Source("もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1")
+        if_node = parse("@If", source, pc={})
+        assert str(if_node) == "もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}"
+
+    def test_NestedIfAsTopLevel(self):
+        source = Source("もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1")
+        if_node = parse("@TopLevel", source, pc={})
+        assert str(if_node) == "もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1"
+
+    def test_NestedIf_py(self):
+        source = Source("if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=1", syntax=py_syntax)
+        if_node = parse("@If", source, pc={})
+        assert str(if_node) == "if x==1:\n  x=0\n  if x==0:\n    x=1\n\n"
+
+    def test_NestedIfAsTopLevel_py(self):
+        source = Source("if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=2", syntax=py_syntax)
+        if_node = parse("@TopLevel", source, pc={})
+        assert str(if_node) == "if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=2"
+
 
 test_cases = [
 """\n
