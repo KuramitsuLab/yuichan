@@ -1,4 +1,6 @@
 {
+    "syntax": "Yui-Classic",
+
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
     "linefeed": "[\\n]",
@@ -21,6 +23,7 @@
     "string-interpolation-begin": "\\{",
     "string-interpolation-end": "\\}",
     "string-content-end": "\\\\|\\{|\\\"",
+    "!string-begin": "'|f\"",
 
     "array-begin": "\\[",
     "array-end": "\\]",
@@ -51,6 +54,10 @@
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
 
+    "import-standard": "標準ライブラリを使う",
+    "import-begin": "",
+    "import-end": "を使う",
+
     "block-begin": "\\{",
     "block-end": "\\}",
     "block-line": "",
@@ -62,13 +69,13 @@
     "increment-begin": "",
     "increment-infix": "を",
     "increment-end": "増やす",
-
+    
     "decrement-begin": "",
     "decrement-infix": "を",
     "decrement-end": "減らす",
 
     "append-begin": "",
-    "append-infix": "に",
+    "append-infix": "(の末尾)?に",
     "append-suffix": "を",
     "append-end": "追加する",
 
@@ -93,7 +100,7 @@
     "if-condition-end": "",
     "if-prefix": "",
     "if-infix": "が",
-    "if-suffix!=": "でない",
+    "if-suffix!=": "以外",
     "if-suffix<": "より小さい",
     "if-suffix<=": "以下",
     "if-suffix>": "より大きい",
@@ -111,15 +118,11 @@
     "funcdef-arg-separator": "[,、]",
     "funcdef-args-end": "",
     "funcdef-noarg": "入力なし",
-    "funcdef-block": "に対して[、]?",
+    "funcdef-block": "に対し[て]?[、]?",
     "funcdef-end": "",
 
-    "import-begin": "",
-    "import-end": "を使う",
 
     "assert-begin": ">>>\\s+",
     "assert-infix": "[\\n]",
-    "assert-end": "",
-
-    "syntax": "Yui-Classic"
+    "assert-end": ""
 }

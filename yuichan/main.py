@@ -172,7 +172,8 @@ Examples:
             return
 
     except YuiError as e:
-        print(f"\n{e}", file=sys.stderr)
+        print(f"\nError occurred:", file=sys.stderr)
+        print(e.formatted_message("| "), file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}", file=sys.stderr)
@@ -251,7 +252,7 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                 ast.evaluate(runtime)
 
             except YuiError as e:
-                print(f"Error: {e}")
+                print(e.formatted_message("| "))
             except KeyboardInterrupt:
                 print("\nExiting")
                 break
@@ -436,6 +437,11 @@ def test_examples(syntax: str = 'yui'):
             print(f"✓ {example.name:<20} PASSED")
             passed += 1
 
+        except YuiError as e:
+            print(f"✗ {example.name:<20} FAILED")
+            print(e.formatted_message("    | "))
+            failed += 1
+
         except Exception as e:
             print(f"✗ {example.name:<20} FAILED: {e}")
             failed += 1
@@ -451,12 +457,15 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
     """
     Execute multiple script files and calculate pass rate
 
+    - Files ending with _doctest.yui are ignored as standalone targets
+    - For a.yui, if a_doctest.yui exists, both are concatenated and executed together
+
     Args:
         files: List of .yui files to execute
         syntax: Syntax file to use for parsing
     """
-    # Filter .yui files only
-    yui_files = [f for f in files if f.endswith('.yui')]
+    # Filter .yui files, excluding _doctest.yui
+    yui_files = [f for f in files if f.endswith('.yui') and not f.endswith('_doctest.yui')]
 
     if not yui_files:
         print("Error: No .yui files specified", file=sys.stderr)
@@ -466,9 +475,19 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
 
     for filename in yui_files:
         try:
-            # Read and execute file
+            # Read main file
             with open(filename, 'r', encoding='utf-8') as f:
                 code = f.read()
+
+            # Check for corresponding _doctest.yui
+            base = filename[:-len('.yui')]
+            doctest_file = base + '_doctest.yui'
+            if os.path.exists(doctest_file):
+                with open(doctest_file, 'r', encoding='utf-8') as f:
+                    code = code + '\n' + f.read()
+                label = f"{filename} + {os.path.basename(doctest_file)}"
+            else:
+                label = filename
 
             # Parse and execute
             parser = YuiParser(syntax)
@@ -479,7 +498,7 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
 
             # Success
             results.append(1)
-            print(f"✓ {filename}")
+            print(f"✓ {label}")
 
         except FileNotFoundError:
             # File not found
@@ -489,13 +508,13 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
         except YuiError as e:
             # Yui syntax or runtime error
             results.append(0)
-            print(f"✗ {filename}")
-            print(f"  | {e}")
+            print(f"✗ {label}")
+            print(e.formatted_message("  | "))
 
         except Exception as e:
             # Other errors
             results.append(0)
-            print(f"✗ {filename}")
+            print(f"✗ {label}")
             print(f"  | Error: {e}")
 
     # Calculate pass rate
