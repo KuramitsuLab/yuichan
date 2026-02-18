@@ -246,8 +246,8 @@ result = add(10, 20)
 
 ```json
 {
-  "number-begin": "[0-9]",
-  "identifier-begin": "[A-Za-z_]",
+  "number-first-char": "[0-9]",
+  "name-first-char": "[A-Za-z_]",
   "string-begin": "\"",
   "string-end": "\"",
 

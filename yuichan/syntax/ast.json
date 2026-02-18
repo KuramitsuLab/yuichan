@@ -36,8 +36,8 @@
     "object-separator": ",",
     "key-value-separator": ",",
 
-    "group-begin!": "\\(",
-    "group-end!": "\\)",
+    "grouping-begin!": "\\(",
+    "grouping-end!": "\\)",
     "length-begin": "ArrayLenNode\\(",
     "length-end": "\\)",
     "minus-begin": "MinusNode\\(",

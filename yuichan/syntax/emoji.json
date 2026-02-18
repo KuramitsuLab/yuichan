@@ -5,13 +5,15 @@
     "whitespaces": "[ \\t\\r　]+",
     "word-segmenter": " ",
     "linefeed": "[\\n]",
-    "line-comment-begin": "[💭🗨️📌⚠️🚧🔜]",
+    "line-comment-begin": "💭|🗨️|📌|⚠️",
     "comment-begin": "",
     "comment-end": "",
 
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
     "number-dot-char": "[\\.]",
+    "boolean-true": "👍",
+    "boolean-false": "👎",
 
     "name-first-char": "[A-Za-z_]",
     "name-chars": "[A-Za-z0-9_]*",
@@ -33,19 +35,17 @@
     "object-separator": ",",
     "key-value-separator": ":",
 
-    "group-begin!": "\\(",
-    "group-end!": "\\)",
-    "length-begin": "📏\\s*\\(",
-    "length-end": "\\)",
+    "grouping-begin": "\\(",
+    "grouping-end": "\\)",
 
+    "unary-": "-",
+    "unary-length": "📐",
+    "unary-inspect": "🔍|👀",
     "binary+": "➕",
     "binary-": "➖",
     "binary*": "✖️",
     "binary/": "➗",
-    "binary%": "％",
-    "unary-": "-",
-    "unary-length": "[📏📐]",
-    "unary-inspect": "[🔍👀]",
+    "binary%": "🍕",
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
@@ -56,11 +56,11 @@
     "funcapp-end": "\\)",
     "funcapp-separator": ",",
 
-    "block-begin": "[👉🚩]",
+    "block-begin": "👉",
     "block-end": "🔚",
     "block-line": "",
 
-    "assignment-begin": "",
+    "assignment-begin": "📦",
     "assignment-infix": "⬅️",
     "assignment-end": "",
 
@@ -73,26 +73,25 @@
     "decrement-end": "",
 
     "append-begin": "",
-    "append-infix": "[📎🧲]",
+    "append-infix": "📎|🧲",
     "append-suffix": "",
     "append-end": "",
 
-    "print-begin": "[✍️✏️]",
+    "print-begin": "",
     "print-end": "",
 
-    "break": "🛑",
-    "continue": "⏭️",
+    "break": "🚀|🛑",
     "pass": "",
 
-    "return-begin": "[✅💡]",
+    "return-begin": "✅|💡",
     "return-end": "",
 
-    "repeat-begin": "[🌀🔁🎯]",
+    "repeat-begin": "🌀|🔁|🎯",
     "repeat-times": "",
     "repeat-block": "",
     "repeat-end": "",
 
-    "if-begin": "[🤔❓]",
+    "if-begin": "❓|🤔",
     "if-condition-begin": "",
     "if-condition-end": "",
     "if-prefix": "",
@@ -105,11 +104,11 @@
     "if-infixin": "📥",
     "if-infixnotin": "🚫📥",
     "if-then": "",
-    "else-if": "[🙅❗][🙆❓]",
-    "if-else": "[🙅❗]",
+    "else-if": "❗❓",
+    "if-else": "❗|🙅",
     "if-end": "",
 
-    "funcdef-begin": "[🛠️🧩🎲]",
+    "funcdef-begin": "🛠️|🧩",
     "funcdef-name-begin": "",
     "funcdef-name-end": "",
     "funcdef-args-begin": "\\(",
@@ -119,10 +118,10 @@
     "funcdef-block": "",
     "funcdef-end": "",
 
-    "assert-begin": "[🧪🧬]",
-    "assert-infix": "[✅🎯💡]",
+    "assert-begin": "🧪|🧬",
+    "assert-infix": "✅|🎯|💡",
     "assert-end": "",
 
-    "import-begin": "[🗝️🛒]",
+    "import-begin": "🗝️|🛒",
     "import-end": ""
 }

@@ -32,8 +32,8 @@
     "object-separator": ",",
     "key-value-separator": ":",
 
-    "group-begin!": "\\(",
-    "group-end!": "\\)",
+    "grouping-begin!": "\\(",
+    "grouping-end!": "\\)",
     "length-begin": "len\\s*\\(",
     "length-end": "\\)  ",
 
@@ -110,7 +110,7 @@
     "funcdef-name-end": "",
     "funcdef-args-begin": "\\(",
     "funcdef-noarg": "",
-    "funcdef-arg-separator": "\\,",
+    "funcdef-arg-separator": ",",
     "funcdef-args-end": "\\)",
     "funcdef-block": "",
     "funcdef-end": "",

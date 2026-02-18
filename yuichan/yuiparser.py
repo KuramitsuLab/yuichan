@@ -24,13 +24,15 @@ from .yuiast import (
 def get_example_from_pattern(pattern: str) -> str:
     """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
     # エスケープされた文字を一時的に置換
+    original_pattern = pattern
     ESC = [
-        (r'\|', '▁｜▁'), (r'\[', '▁［▁'), (r'\]', '▁］▁'),
-        (r'\(', '▁（▁'), (r'\)', '▁）▁'), (r'\*', '▁＊▁'), (r'\?', '▁？▁'),
-        (r'\+', '▁＋▁'), (r'+', ''), (r'*', '?')
+        (r'\|', '▁｜'), (r'\[', '▁［'), (r'\]', '▁］'),
+        (r'\(', '▁（'), (r'\)', '▁）'), (r'\*', '▁＊'), (r'\?', '▁？'),
+        (r'\+', '▁＋'), (r'+', ''), (r'*', '?')
     ]
     for a, b in ESC:
         pattern = pattern.replace(a, b)
+    #print(f"@pattern: `{original_pattern}` -> `{pattern}`")  # デバッグ用   
     processed = ''
     while len(pattern) > 0:
         s_pos = pattern.find('(') # シングルループだけ対応
@@ -45,13 +47,15 @@ def get_example_from_pattern(pattern: str) -> str:
             pattern = pattern[1:]
         else:
             processed += get_example_from_pattern_inner(inner)
+    #print(f"@processed: `{pattern}` -> `{processed}`")  # デバッグ用
     # 置換した文字を元に戻す
     ESC2 = [
-        ('▁｜▁', r'|'), ('▁［▁', r'['), ('▁］▁', r']'), ('▁（▁', r'('),
-        ('▁）▁', r')'), ('▁＊▁', r'*'), ('▁？▁', r'?'), ('▁＋▁', r'+'),
+        ('▁｜', r'|'), ('▁［', r'['), ('▁］', r']'), ('▁（', r'('),
+        ('▁）', r')'), ('▁？', r'?'), ('▁＋', r'+'), ('▁＊', r'*'),
     ]
     for a, b in ESC2:
         processed = processed.replace(a, b)
+    assert '▁' not in processed, f"Unprocessed escape sequences remain in `{original_pattern}`: `{processed}`"
     return processed
 
 def split_heading_char(s: str):
@@ -74,10 +78,11 @@ def split_heading_char(s: str):
             heading_char = 'a'
         else:
             heading_char = s[1]
-    elif s.startswith('▁', 0) and s.endswith('▁', 2):
-        heading_char = s[0:3]
-        remaining = s[3:]
-    elif s.startswith('\uFE0F', 1) or s.startswith('\u200D', 1): #合字や絵文字のバリエーションセレクタを考慮
+    elif s.startswith('▁', 0):
+        heading_char = s[0:2]
+        remaining = s[2:]
+    elif s.startswith('\uFE0F', 1) or s.startswith('\u200D', 1): 
+        #合字や絵文字のバリエーションセレクタを考慮
         heading_char = s[0:2]
         remaining = s[2:]
     else:
@@ -294,7 +299,7 @@ class Source(object):
             if unconsumed:
                 self.pos = saved_pos
             return True
-        return self.is_match("linefeed", lskip_ws=lskip_ws, lskip_lf=False, unconsumed=unconsumed)
+        return self.is_match("linefeed", lskip_ws=False, lskip_lf=False, unconsumed=unconsumed)
 
     def consume_until(self, terminal:str, until_eof=True, disallow_string:str=None):
         pattern = self.get_pattern(terminal)
@@ -362,7 +367,7 @@ class Source(object):
         start_pos = self.pos
         while self.pos < self.length:
             if self.is_match("linefeed", lskip_ws=False, unconsumed=True) or \
-                self.is_match("line-comment-begin", lskip_ws=False, unconsumed=True) or \
+                 self.is_match("line-comment-begin", lskip_ws=False, unconsumed=True) or \
                 self.is_match("comment-begin", lskip_ws=False, unconsumed=True) or \
                 self.is_match("statement-separator", lskip_ws=False, unconsumed=True):
                 captured = self.source[start_pos:self.pos]
@@ -370,7 +375,7 @@ class Source(object):
                 return captured
             self.pos += 1
         self.pos = start_pos
-        return self.source[start_pos:]
+        return self.source[start_pos:].split('\n')[0]
 
     def capture_comment(self):
         """コメントを位置を変えずに習得する。行コメントとブロックコメントの両方に対応。"""
@@ -602,9 +607,9 @@ LITERALS = ["@Number","@String","@Array","@Object","@Boolean"]
 class TermParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         opening_pos = source.pos
-        if source.is_match("group-begin"):
+        if source.is_match("grouping-begin"):
             expression_node = parse("@Expression", source, pc)
-            source.try_match("group-end", opening_pos=opening_pos)
+            source.try_match("grouping-end", opening_pos=opening_pos)
             return expression_node
         if source.is_match("length-begin"):
             expression_node = parse("@Expression", source, pc)

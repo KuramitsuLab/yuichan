@@ -46,10 +46,16 @@ class TestGetFirstMatchString:
         result = get_example_from_pattern(pattern)
         assert result == '['
 
-    def test_bracket(self):
+    def test_bar(self):
         pattern = r'\|'
         result = get_example_from_pattern(pattern)
         assert result == '|'
+
+    def test_paren(self):
+        pattern = r'\('
+        result = get_example_from_pattern(pattern)
+        assert result == '('
+
 
     def test_emoji(self):
         pattern = r'[⬇️⬆️]'
