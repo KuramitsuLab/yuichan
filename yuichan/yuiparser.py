@@ -886,7 +886,7 @@ class IfParser(ParserCombinator):
             right_node = parse("@Expression", source, pc, BK=BK)
             
             if not operator:
-                operator = source.find_match('if-suffix', ['!=', '<=', '<', '>=', '>', 'notin', 'in'])
+                operator = source.find_match('if-suffix', ['!=', '<=', '<', '>=', '>', 'notin', 'in', '=='])
                 source.skip_whitespaces_and_comments()
                 if operator is None:
                     operator = "=="
@@ -1074,6 +1074,7 @@ class CodingVisitor:
     def emit(self, node: ASTNode) -> str:
         self.buffer = []
         self.indent = 0
+        self.linefeeded = True
         node.visit(self)
         return ''.join(self.buffer)
 
@@ -1086,10 +1087,12 @@ class CodingVisitor:
         if text == " " and len(self.buffer) > 0 and self.buffer[-1][-1] == ' ':
             return
         self.buffer.append(text)
+        self.linefeeded = False
     
     def linefeed(self, ignore = False):
-        if not ignore:
-            self.buffer.append('\n' + '   ' * self.indent)
+        if not ignore and not self.linefeeded:
+            self.buffer.append('\n' + '  ' * self.indent)
+            self.linefeeded = True
 
     def word_segment(self, always=False, no_space_last_chars=' \n([{'):
         if always or self.is_defined('word-segmenter'):
@@ -1099,6 +1102,7 @@ class CodingVisitor:
                     return # 日本語向けのアドホック 
                 if last_char not in no_space_last_chars:
                     self.buffer.append(' ')
+                    self.linefeeded = False
 
     def terminal(self, terminal: str, if_undefined = None, linefeed_before=False):
         pattern = None
@@ -1117,13 +1121,14 @@ class CodingVisitor:
             if linefeed_before:
                 self.linefeed()
             self.buffer.append(token)
+            self.linefeeded = False
 
     def comment(self, comment: str):
         if comment:
-            comment = comment.splitlines()[0]
             if self.is_defined('line-comment-begin'):
-                self.terminal('line-comment-begin')
-                self.print(comment)
+                for line in comment.splitlines():
+                    self.terminal('line-comment-begin')
+                    self.print(f' {line}')
                 return
             if self.is_defined('comment-begin') and self.is_defined('comment-end'):
                 self.terminal('comment-begin')
@@ -1134,7 +1139,7 @@ class CodingVisitor:
         self.word_segment(always=True)
         node.visit(self)
 
-    def push_statement(self, node: ASTNode):
+    def statement(self, node: ASTNode):
         node.visit(self)
         self.comment(node.comment)
 
@@ -1376,7 +1381,11 @@ class CodingVisitor:
                 if i > 0:
                     self.linefeed()
                 statement.visit(self)
+                if isinstance(statement, FuncDefNode):
+                    self.linefeed()
                 self.terminal("block-separator")
+                if isinstance(statement, PassNode):
+                    self.linefeed()
                 self.comment(statement.comment)
 
         if not node.top_level:

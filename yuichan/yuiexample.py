@@ -182,14 +182,25 @@ def example_strings():
         ast_node=BlockNode(statements, top_level=True)
     )
 
-def example_hello_world():
+def example_objects():
+    """オブジェクト操作のサンプル"""
     statements = [
-        PassNode(comment='Print "Hello, world!"'),
-        PrintExpressionNode(StringNode("Hello, world!")),
+        PassNode(comment="Create an object O with properties x and y"),
+        AssignmentNode(NameNode("O"), ObjectNode({
+            "x": NumberNode(0),
+            "y": NumberNode(0)
+        })),
+        PassNode(comment="Set the x property of O to 1"),
+        AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(1)),
+        PassNode(comment="Set the y property of O to 2"),
+        AssignmentNode(GetIndexNode(NameNode("O"), StringNode("y")), NumberNode(2)),
+        PassNode(comment="Test that O has properties x=1 and y=2"),
+        AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(1)),
+        AssertNode(GetIndexNode(NameNode("O"), StringNode("y")), NumberNode(2)),
     ]
     return YuiExample(
-        name="hello_world",
-        description="Print 'Hello, world!'",
+        name="objects",
+        description="Object creation and property manipulation",
         ast_node=BlockNode(statements, top_level=True)
     )
 
@@ -255,13 +266,15 @@ def example_recursive_function():
                 IfNode(NameNode("n"), "==", NumberNode(0),
                     BlockNode([ReturnNode(NumberNode(1))]),
                     BlockNode([
-                        PassNode(comment="Yui does not have arithmetic operators. You have to define them yourself."),
-                        ReturnNode(FuncAppNode(NameNode("multiplex"), [NameNode("n"), FuncAppNode(NameNode("fact"), [FuncAppNode(NameNode("decrease"), [NameNode("n")])])]))
+                        PassNode(comment="Yui does not have arithmetic operators."),
+                        ReturnNode(FuncAppNode(NameNode("multiplex"), 
+                        [NameNode("n"), FuncAppNode(NameNode("fact"), 
+                                                    [FuncAppNode(NameNode("decrease"), [NameNode("n")])])]))
                     ])
                 )
             ])
         ),
-        PassNode(comment="Let's define multiplex(a, b) function for a * b."),
+        PassNode(comment="multiplex(a, b) function for a * b."),
         FuncDefNode(
             NameNode("multiplex"), [NameNode("a"), NameNode("b")], BlockNode([
                 AssignmentNode(NameNode("result"), NumberNode(0)),
@@ -273,7 +286,7 @@ def example_recursive_function():
                 ReturnNode(NameNode("result"))
             ])
         ),
-        PassNode(comment="Let's define decrease(n) function for n-1."),
+        PassNode(comment="decrease(n) function for n-1."),
         FuncDefNode(
             NameNode("decrease"), [NameNode("n")], BlockNode([
                 DecrementNode(NameNode("n")),

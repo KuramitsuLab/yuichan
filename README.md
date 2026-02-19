@@ -3,17 +3,23 @@
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Yui（ゆい）** は、構文をカスタマイズ可能なプログラミング言語です。日本語風の自然な構文から、Python風の構文まで、JSONファイルで自由に定義できます。
+**Yui（ゆい）** は、構文をカスタマイズ可能なプログラミング言語です。日本語風の自然な構文から、Python風の構文、絵文字構文まで、JSONファイルで自由に定義できます。
 
 ## 特徴
 
 ✨ **構文のカスタマイズ性**
 - JSON形式の構文定義ファイルで自由に文法を変更可能
-- 日本語、英語、その他の言語で独自の構文を定義
+- 日本語、英語、絵文字など多様な構文を定義可能
 
 🔄 **構文変換機能**
-- あるYuiコードを別の構文に自動変換（CodeVisitor使用）
-- Markdownファイル内のコードブロックも一括変換
+- あるYuiコードを別の構文に自動変換（`--convert-to`）
+- 変換結果は `<構文名>/` ディレクトリに保存
+- Markdownファイル内の `yui` コードブロックも一括変換
+
+📊 **テスト支援**
+- `--pass@1`: 複数スクリプトを実行して成功率（pass@1）を計算
+- `--test-examples`: 組み込みサンプルをすべてテスト
+- `_doctest.yui` 規約: `a.yui` + `a_doctest.yui` を自動連結して実行
 
 🎯 **シンプルな言語仕様**
 - 変数、配列、オブジェクト
@@ -40,11 +46,11 @@ pip install -e .
 ### 1. 基本的な使い方
 
 ```bash
-# ファイルを実行
-yui examples/hello.yui
+# ファイルを実行（--syntax は必須）
+yui --syntax yui examples/hello.yui
 
 # 対話モード
-yui -i
+yui --syntax yui -i
 
 # ヘルプを表示
 yui --help
@@ -88,10 +94,10 @@ if x == 13:
 
 ```bash
 # ファイルを実行
-yui file.yui
+yui --syntax yui file.yui
 
 # 対話モード（インタラクティブREPL）
-yui -i
+yui --syntax yui -i
 
 # バージョン表示
 yui --version
@@ -101,14 +107,14 @@ yui --version
 
 ```bash
 # 環境変数をJSONファイルから読み込んで実行
-yui --input input.json file.yui
+yui --syntax yui --input input.json file.yui
 
 # 実行後の環境変数をJSONファイルに保存
-yui file.yui --output output.json
+yui --syntax yui file.yui --output output.json
 
 # 組み合わせ例（環境をチェーン）
-yui --input env1.json step1.yui --output env2.json
-yui --input env2.json step2.yui --output result.json
+yui --syntax yui --input env1.json step1.yui --output env2.json
+yui --syntax yui --input env2.json step2.yui --output result.json
 ```
 
 **input.json の例:**
@@ -123,22 +129,30 @@ yui --input env2.json step2.yui --output result.json
 ### カスタム構文の使用
 
 ```bash
-# Python風の構文ファイルで実行
+# Python風の構文で実行
 yui --syntax pylike file.yui
 
+# 絵文字構文で実行
+yui --syntax emoji file.yui
+
 # 独自の構文ファイルで実行
-yui --syntax my-syntax.json file.yui
+yui --syntax path/to/my-syntax.json file.yui
 ```
 
-### 構文変換（CodeVisitor）
+### 構文変換（--convert-to）
 
 ```bash
-# Yui構文 → Python風構文に変換
-yui --syntax yui file.yui --syntax-to pylike
+# Yui構文 → Python風構文に変換（pylike/ ディレクトリに保存）
+yui --syntax yui --convert-to pylike file.yui
+
+# 複数ファイルを一括変換
+yui --syntax yui --convert-to pylike *.yui
 
 # Markdownファイル内の ```yui ブロックを変換
-yui --syntax yui README.md --syntax-to pylike > README_py.md
+yui --syntax yui --convert-to pylike README.md
 ```
+
+変換結果は `<target_syntax>/` ディレクトリに元のファイル名で保存されます。
 
 **変換前（Yui構文）:**
 ```yui
@@ -149,12 +163,55 @@ xを増やす
 }
 ```
 
-**変換後（Python風構文）:**
+**変換後（Python風構文）→ `pylike/file.yui` に保存:**
 ```python
 x = 10
 x += 1
 for _ in range(3):
     x += 1
+```
+
+### テスト・成功率計測（--pass@1）
+
+複数のスクリプトファイルを実行し、成功率（pass@1）を計算します。
+
+```bash
+yui --syntax yui --pass@1 test/*.yui
+```
+
+**動作ルール:**
+- `_doctest.yui` で終わるファイルは単独実行の対象から除外
+- `a.yui` を実行する際、`a_doctest.yui` が存在すれば両方を連結して実行
+
+**出力例:**
+```
+✓ test/01_hello.yui
+✓ test/02_fib.yui + 02_fib_doctest.yui
+✗ test/03_sort.yui
+  | Error: ...
+
+==================================================
+Total: 3
+Passed: 2
+Failed: 1
+pass@1: 66.67% (2/3)
+==================================================
+```
+
+### サンプル管理
+
+```bash
+# 利用可能なサンプルを一覧表示
+yui --list-examples
+
+# サンプルを .yui ファイルとして生成（examples/ ディレクトリ）
+yui --syntax yui --make-examples
+
+# 特定のサンプルのみ生成
+yui --syntax yui --make-examples --example hello
+
+# すべてのサンプルをテスト実行
+yui --syntax yui --test-examples
 ```
 
 ## 言語仕様
@@ -181,7 +238,7 @@ person = {"name": "Yui", "age": 20}
 ### 演算
 
 ```yui
-# 算術演算（Python風構文の場合）
+# 算術演算
 x = 10 + 5
 y = 20 - 3
 z = 6 * 7
@@ -242,12 +299,22 @@ result = add(10, 20)
 
 ## 構文定義ファイル
 
-構文は `syntax-*.json` ファイルで定義されます。以下は主要な終端記号の例です：
+構文は `yuichan/syntax/` ディレクトリの JSON ファイルで定義されます。
+
+### 組み込み構文
+
+| 名前 | ファイル | 説明 |
+|------|----------|------|
+| `yui` | `syntax/yui.json` | 日本語風の自然な構文（デフォルト） |
+| `pylike` | `syntax/pylike.json` | Python風の構文 |
+| `emoji` | `syntax/emoji.json` | 絵文字ベースの構文 |
+
+### 構文定義の主要キー
 
 ```json
 {
   "number-first-char": "[0-9]",
-  "name-first-char": "[A-Za-z_]",
+  "name-first-char": "[A-Za-z_\\u4E00-\\u9FFF]",
   "string-begin": "\"",
   "string-end": "\"",
 
@@ -267,11 +334,6 @@ result = add(10, 20)
   "block-end": "\\}"
 }
 ```
-
-### デフォルト構文ファイル
-
-- `yui`: 日本語風の自然な構文（デフォルト）
-- `pylike`: Python風の構文
 
 ## サンプルプログラム
 
@@ -332,6 +394,7 @@ pytest
 # 特定のテストファイル
 pytest yuichan/test_yuiparser.py
 pytest yuichan/test_yuiast.py
+pytest yuichan/test_yuiemit.py
 
 # カバレッジ付き
 pytest --cov=yuichan
@@ -341,6 +404,7 @@ pytest --cov=yuichan
 
 - `test_yuiparser.py`: パーサーのテスト
 - `test_yuiast.py`: ASTノード・ランタイムのテスト
+- `test_yuiemit.py`: コード生成（構文変換）のテスト
 - `test_pattern.py`: 正規表現パターン処理のテスト
 
 ### プロジェクト構成
@@ -350,13 +414,19 @@ yuichan/
 ├── yuichan/
 │   ├── __init__.py          # パッケージ初期化
 │   ├── main.py              # CLIエントリーポイント
-│   ├── yuiparser.py         # パーサー（構文解析）
+│   ├── yuiparser.py         # パーサー（構文解析）・CodingVisitor
 │   ├── yuiast.py            # AST定義・ランタイム
-│   ├── yui      # Yui構文定義
-│   ├── pylike       # Python風構文定義
+│   ├── yuiexample.py        # 組み込みサンプル定義
+│   ├── syntax/
+│   │   ├── yui.json         # 日本語風構文定義
+│   │   ├── pylike.json      # Python風構文定義
+│   │   └── emoji.json       # 絵文字構文定義
 │   ├── test_yuiparser.py    # パーサーテスト
 │   ├── test_yuiast.py       # ASTテスト
+│   ├── test_yuiemit.py      # コード生成テスト
 │   └── test_pattern.py      # パターンテスト
+├── test/                    # .yui テストスクリプト
+├── examples/                # 生成されたサンプルファイル
 ├── pyproject.toml           # プロジェクト設定
 ├── LICENSE                  # MITライセンス
 └── README.md               # このファイル

@@ -302,6 +302,7 @@ class ASTNode(ABC):
         self.pos = 0
         self.end_pos = -1
         self.comment = None
+        self.evaluated_value = None
 
     def setpos(self, source: str, pos: int, end_pos: int = -1, filename: str = "main.yui"):
         self.source = source
@@ -580,6 +581,19 @@ class YuiData(object):
         YuiData.type_check(value, 'float')
         return value
 
+    def is_float_structure(self) -> bool:
+        """このYuiDataがfloat構造を持っているか確認する"""
+        if self.view != "float":
+            elements = self.array
+            if len(elements) < 6:
+                return False
+            if not isinstance(elements[0], int) or elements[0] not in (1, -1):
+                return False
+            for d in elements[1:]:
+                if not isinstance(d, int) or d < 0 or d > 9:
+                    return False
+        return True
+
     @staticmethod
     def is_number(value) -> bool:
         if isinstance(value, YuiData) and value.view == "float":
@@ -604,7 +618,6 @@ class YuiData(object):
         YuiData.type_check(value, 'int')
         return int(value)
 
-
     @staticmethod
     def is_object(value) -> bool:
         if isinstance(value, YuiData) and value.view == "object":
@@ -619,6 +632,7 @@ class YuiData(object):
             return value.native_value
         YuiData.type_check(value, 'object')
         return value
+
 
     @staticmethod
     def type_check(value, expected_type: str, node = None, env = None):
@@ -875,7 +889,7 @@ def standard_lib(modules: list):
         for arg in args[1:]:
             total |= YuiData.ensure_int(arg)
         return total
-    modules.append(('💡✖️|論理和|or', yui_or))
+    modules.append(('💡➕|論理和|or', yui_or))
 
     def yui_xor(*args: Any) -> Any:
         """排他的論理和を返す"""
@@ -884,7 +898,7 @@ def standard_lib(modules: list):
         for arg in args[1:]:
             total ^= YuiData.ensure_int(arg)
         return total
-    modules.append(('💡✖️|排他的論理和|xor', yui_xor))
+    modules.append(('💡🔀|排他的論理和|xor', yui_xor))
 
     def yui_not(*args: Any) -> Any:
         """ビット反転を返す"""
@@ -896,13 +910,13 @@ def standard_lib(modules: list):
         """左シフトを返す"""
         check_number_of_args(args, 2)
         return YuiData.ensure_int(args[0]) << YuiData.ensure_int(args[1])
-    modules.append(('💡⬅️|左シフト|left_shift', yui_left_shift))
+    modules.append(('💡⬅️|左シフト|shl', yui_left_shift))
     
     def yui_right_shift(*args: Any) -> Any:
         """右シフトを返す"""
         check_number_of_args(args, 2)
         return YuiData.ensure_int(args[0]) >> YuiData.ensure_int(args[1])
-    modules.append(('💡➡️|右シフト|right_shift', yui_right_shift))
+    modules.append(('💡➡️|右シフト|shr', yui_right_shift))
 
     def has_float_in_args(args: List[Any]) -> bool:
         """引数リストに少数が含まれているかどうかを判定する"""
@@ -925,7 +939,7 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 total += YuiData.ensure_int(arg)
             return total
-    modules.append(('➕|和|sum', yui_sum))
+    modules.append(('🧮|和|sum', yui_sum))
 
     def yui_sub(*args: Any) -> Any:
         """要素の差を返す"""
@@ -941,7 +955,7 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 total -= YuiData.ensure_int(arg)
             return total
-    modules.append(('➖|差|sub', yui_sub))
+    modules.append(('➖|差|diff', yui_sub))
 
     def yui_accum(*args: Any) -> Any:
         """要素の積を返す"""
@@ -957,7 +971,7 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 total *= YuiData.ensure_int(arg)
             return total
-    modules.append(('✖️|積|accum', yui_accum))
+    modules.append(('✖️|積|product', yui_accum))
 
     def yui_div(*args: Any) -> Any:
         """要素の商を返す"""
@@ -978,7 +992,7 @@ def standard_lib(modules: list):
                     raise YuiError((f"error", "division by zero", f"❌{d}"))
                 total //= d
             return total
-    modules.append(('➗|商|div', yui_div))
+    modules.append(('✂️|商|quotient', yui_div))
 
     def yui_mod(*args: Any) -> Any:
         """剰余を返す"""
@@ -1000,7 +1014,7 @@ def standard_lib(modules: list):
                     raise YuiError((f"error", "division by zero", f"❌{d}"))
                 total %= d
             return total
-    modules.append(('🧮|剰余|mod', yui_mod))
+    modules.append(('🍕|剰余|remainder', yui_mod))
 
     def yui_max(*args: Any) -> Any:
         """最大値を返す"""
@@ -1010,7 +1024,7 @@ def standard_lib(modules: list):
         if isinstance(result, float):
             return YuiData(result)
         return int(result)
-    modules.append(('📏|最大値|max', yui_max))
+    modules.append(('👑|最大値|max', yui_max))
 
     def yui_min(*args: Any) -> Any:
         """最小値を返す"""
@@ -1020,13 +1034,13 @@ def standard_lib(modules: list):
         if isinstance(result, float):
             return YuiData(result)
         return int(result)
-    modules.append(('📏|最小値|min', yui_min))
+    modules.append(('🐜|最小値|min', yui_min))
 
     def yui_isint(*args: Any) -> Any:
-        """整数判定に変換する"""
+        """整数か判定する"""
         check_number_of_args(args, 1)
         return 1 if isinstance(args[0], int) else 0
-    modules.append(('🔢❓|整数判定|isint', yui_isint))
+    modules.append(('💯❓|整数判定|isint', yui_isint))
 
     def yui_toint(*args: Any) -> Any:
         """整数化する"""
@@ -1040,9 +1054,15 @@ def standard_lib(modules: list):
                 raise YuiError((f"error", "conversion", f"❌{string_value}"))
         value = int(YuiData.ensure_number(args[0]))
         return value
-    modules.append(('🔢|整数化|toint', yui_toint))
+    modules.append(('💯|整数化|toint', yui_toint))
 
-    def yui_todecimal(*args: Any) -> Any:
+    def yui_isfloat(*args: Any) -> Any:
+        """小数か判定する"""
+        check_number_of_args(args, 1)
+        return 1 if YuiData.is_float(args[0]) else 0
+    modules.append(('📊❓|少数判定|isfloat', yui_isfloat))
+
+    def yui_tofloat(*args: Any) -> Any:
         """小数化する"""
         check_number_of_args(args, 1)
         value = args[0]
@@ -1054,19 +1074,13 @@ def standard_lib(modules: list):
                 raise YuiError((f"error", "conversion", f"❌{string_value}"))
         value = float(YuiData.ensure_number(args[0]))
         return YuiData(value)
-    modules.append(('📊|少数化|todecimal', yui_todecimal))
-
-    def yui_isdecimal(*args: Any) -> Any:
-        """小数判定に変換する"""
-        check_number_of_args(args, 1)
-        return 1 if YuiData.is_float(args[0]) else 0
-    modules.append(('📊❓|少数判定|isdecimal', yui_isdecimal))
+    modules.append(('📊|少数化|tofloat', yui_tofloat))
 
     def yui_isstring(*args: Any) -> Any:
-        """文字列判定に変換する"""
+        """文字列か判定する"""
         check_number_of_args(args, 1)
         return 1 if YuiData.is_string(args[0]) else 0
-    modules.append(('🔤❓|文字列判定|isstring', yui_isstring))
+    modules.append(('💬❓|文字列判定|isstring', yui_isstring))
 
     def yui_tostring(*args: Any) -> Any:
         """文字列に変換する"""
@@ -1075,10 +1089,10 @@ def standard_lib(modules: list):
             v = YuiData.ensure_float(args[0])
             return YuiData(f"{v:.6f}")
         return YuiData(str(args[0]))
-    modules.append(('🔤|文字列化|tostring', yui_tostring))
+    modules.append(('💬|文字列化|tostring', yui_tostring))
 
     def yui_isobject(*args: Any) -> Any:
-        """オブジェクト判定に変換する"""
+        """オブジェクトか判定する"""
         check_number_of_args(args, 1)
         return 1 if YuiData.is_object(args[0]) else 0
     modules.append(('🗂️❓|オブジェクト判定|isobject', yui_isobject))
@@ -1098,6 +1112,12 @@ def standard_lib(modules: list):
         return YuiData(str(args[0]))
     modules.append(('🗂️|オブジェクト化|toobject', yui_toobject))
 
+    def yui_isarray(*args: Any) -> bool:
+        """オブジェクトか判定する"""
+        check_number_of_args(args, 1)
+        return 1 if isinstance(args[0], YuiData) else 0
+    modules.append(('🍡❓|配列判定|isarray', yui_isarray))
+
     def yui_toarray(*args: Any) -> Any:
         """配列に変換する"""
         check_number_of_args(args, 1)
@@ -1106,7 +1126,7 @@ def standard_lib(modules: list):
             args[0].native_value = None
             return args[0]
         return YuiData(YuiData.ensure_int(args[0]))
-    modules.append(('🚃|配列化|toarray', yui_toarray))
+    modules.append(('🍡|配列化|toarray', yui_toarray))
 
 
 @dataclass
