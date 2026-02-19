@@ -622,12 +622,15 @@ NONTERMINALS["@Term"] = TermParser()
 class PrimaryParser(ParserCombinator):
     def match(self, source: Source, pc: dict):
         start_pos = source.pos
-        if source.is_match('unary-', if_undefined=False):
+        if source.is_match("unary-minus", if_undefined=False):
             node = parse('@Primary', source, pc)
             return source.p(MinusNode(node), start_pos=start_pos)
         if source.is_match('unary-inspection', if_undefined=False):
             node = parse('@Primary', source, pc)
             return source.p(PrintExpressionNode(node, inspection=True), start_pos=start_pos)
+        if source.is_match('unary-length', if_undefined=False):
+            node = parse('@Primary', source, pc)
+            return source.p(ArrayLenNode(node), start_pos=start_pos)
         node = parse("@Term", source, pc, BK=True)
         while source.has_next():
             opening_pos = source.pos
@@ -1199,8 +1202,8 @@ class CodingVisitor:
             self.terminal('minus-begin')
             self.expression(node.element)
             self.terminal('minus-end')
-        elif self.is_defined('unary-'):
-            self.terminal('unary-')
+        elif self.is_defined("unary-minus"):
+            self.terminal("unary-minus")
             node.element.visit(self) # avoid extra word segmenter for negative numbers
         else:
             self.visitASTNode(node)
@@ -1218,10 +1221,12 @@ class CodingVisitor:
             self.expression(node.element)
             self.terminal('property-accessor')
             self.terminal('property-length')
-            return
-        if self.is_defined('length-begin'):
+        elif self.is_defined('unary-length'):
+            self.terminal('unary-length')
+            self.expression(node.element)
+        elif self.is_defined('length-begin'):
             self.terminal('length-begin')
-            node.element.visit(self)
+            self.expression(node.element)
             self.terminal('length-end')
 
     def visitGetIndexNode(self, node: GetIndexNode):

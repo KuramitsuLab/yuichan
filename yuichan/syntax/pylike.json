@@ -42,7 +42,7 @@
     "binary*": "\\*",
     "binary/": "/",
     "binary%": "%",
-    "unary-": "-",
+    "unary-minus": "-",
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",

@@ -38,9 +38,9 @@
     "grouping-begin": "\\(",
     "grouping-end": "\\)",
 
-    "unary-": "-",
+    "unary-minus": "-",
     "unary-length": "📐",
-    "unary-inspect": "🔍|👀",
+    "unary-inspect": "👀",
     "binary+": "➕",
     "binary-": "➖",
     "binary*": "✖️",
@@ -58,7 +58,6 @@
 
     "block-begin": "👉",
     "block-end": "🔚",
-    "block-line": "",
 
     "assignment-begin": "📦",
     "assignment-infix": "⬅️",
@@ -73,20 +72,20 @@
     "decrement-end": "",
 
     "append-begin": "",
-    "append-infix": "📎|🧲",
+    "append-infix": "🧲",
     "append-suffix": "",
     "append-end": "",
 
     "print-begin": "",
     "print-end": "",
 
-    "break": "🚀|🛑",
-    "pass": "",
+    "break": "🚀",
+    "pass": "💤",
 
     "return-begin": "✅|💡",
     "return-end": "",
 
-    "repeat-begin": "🌀|🔁|🎯",
+    "repeat-begin": "🌀",
     "repeat-times": "",
     "repeat-block": "",
     "repeat-end": "",
@@ -108,7 +107,7 @@
     "if-else": "❗|🙅",
     "if-end": "",
 
-    "funcdef-begin": "🛠️|🧩",
+    "funcdef-begin": "🧩",
     "funcdef-name-begin": "",
     "funcdef-name-end": "",
     "funcdef-args-begin": "\\(",
@@ -118,10 +117,12 @@
     "funcdef-block": "",
     "funcdef-end": "",
 
-    "assert-begin": "🧪|🧬",
-    "assert-infix": "✅|🎯|💡",
+    "assert-begin": "🧪",
+    "assert-infix": "✅",
     "assert-end": "",
 
-    "import-begin": "🗝️|🛒",
+    "import-standard": "🗝️\\s+📚",
+    "import-operator": "🗝️\\s+➕➖✖️➗",
+    "import-begin": "🗝️",
     "import-end": ""
 }
