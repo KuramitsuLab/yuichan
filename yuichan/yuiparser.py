@@ -147,13 +147,13 @@ def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
     if filepath is None:
         filepath = "yui"
 
-    if not os.path.exists(filepath):
+    if not os.path.isfile(filepath):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         syntax_dir = os.path.join(current_dir, 'syntax')
         if not filepath.endswith('.json'):
             filepath = f"{filepath}.json"
         new_filepath = os.path.join(syntax_dir, filepath)
-        if os.path.exists(new_filepath):
+        if os.path.isfile(new_filepath):
             filepath = new_filepath
 
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -249,7 +249,7 @@ class Source(object):
             if self.is_defined(wrong_terminal) and self.is_match(wrong_terminal, unconsumed=True, lskip_ws=lskip_ws):
                 expected = self.for_example(terminal)
                 matched = self.matched_string(wrong_terminal)
-                raise YuiError(("wrong", "token", f"❌{matched}", f"✅{expected}"), self.p(length=1))
+                raise YuiError(("wrong", "token", f"❌`{matched}`", f"✅`{expected}`"), self.p(length=1))
         saved_pos = self.pos    
         if lskip_ws or lskip_lf:
             self.skip_whitespaces_and_comments(include_linefeed=lskip_lf)
@@ -261,8 +261,6 @@ class Source(object):
                 self.pos = saved_pos
                 return True
             self.pos += match_length
-            # if skip_ws or skip_linefeed:
-            #     self.skip_whitespaces_and_comments(include_linefeed=skip_linefeed)
             return True
         self.pos = saved_pos
         return False
@@ -273,9 +271,9 @@ class Source(object):
             return
         expected_token = self.for_example(terminal)
         if opening_pos is not None:
-            raise YuiError(("expected", "closing", "token", f"✅`{expected_token}`"), self.p(start_pos=opening_pos))
+            raise YuiError(("expected", "closing", f"✅`{expected_token}`"), self.p(start_pos=opening_pos))
         snippet = self.capture_line()
-        raise YuiError(("expected", "token", f"`{expected_token}`", f"❌`{snippet}`", f"🔍{terminal}"), self.p(length=1), BK=BK)
+        raise YuiError(("expected", "token", f"✅`{expected_token}`", f"❌`{snippet}`", f"🔍{terminal}"), self.p(length=1), BK=BK)
 
     def find_match(self, terminal: str, suffixes: List[str], lskip_lf=False) -> Optional[str]:
         for suffix in suffixes:
@@ -447,7 +445,7 @@ def parse(nonterminal: str, source: Source, pc: dict, lskip_ws=True, lskip_lf=Fa
             if e.BK == True and BK == False:
                 source.pos = saved_pos
                 snippet = source.capture_line()
-                raise YuiError(("expected", "syntax", nonterminal[1:].lower(), f"❌{snippet}", f"⚠️{e}"), source.p(length=1))
+                raise YuiError(("expected", nonterminal[1:].lower(), f"❌{snippet}", f"⚠️{e}"), source.p(length=1))
             raise e
     return result
 
@@ -596,8 +594,6 @@ class NameParser(ParserCombinator):
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
         snippet = source.capture_line().strip()
-        if snippet == "":
-            raise YuiError(("expected", "something"), source.p(length=1), BK=True)
         raise YuiError(("wrong", "name", f"❌{snippet}"), source.p(length=1), BK=True)
 
 NONTERMINALS["@Name"] = NameParser()
@@ -975,24 +971,14 @@ class BlockParser(ParserCombinator):
             if source.consume_string(end_level_indent): 
                 if source.is_match('whitespace', lskip_ws=False): # deeper end_level_indent
                     if source.is_match("block-end", unconsumed=True):
-                        raise YuiError(("bad", "indent", f"☝️`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)))
+                        raise YuiError(("wrong", "indent", f"✅`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)))
                     #print('>>>', source.pos, source.capture_line())
                     statements.extend(parse("@Statement[]", source, pc))
                     #print('<<<', source.pos, source.capture_line())
                     continue
-                # else: # end_level_indent reached
-                #     if source.is_match("linefeed", unconsumed=True):
-                #         continue # ただの空行はブロックの終わりにしない
-                #     source.try_match("block-end", opening_pos=saved_pos)
-                #     return source.p(BlockNode(statements), start_pos=saved_pos)
             if source.is_match("linefeed", unconsumed=True):
                 continue # ただの空行はブロックの終わりにしない              
             break
-        #print(f"@Block out indent='{len(end_level_indent)}'", source.pos, source.capture_line())
-        #print('@@@', source.pos, source.source[source.pos:])
-        # if source.is_defined("block-end"):
-        #     candidate = source.for_example("block-end")
-        #     raise YuiError(("expected", "syntax", "closing", f"✅`{candidate}`"), source.p(start_pos=saved_pos), BK=False)
         source.try_match("block-end", opening_pos=saved_pos)
         return source.p(BlockNode(statements), start_pos=saved_pos)
 
@@ -1023,11 +1009,7 @@ class StatementParser(ParserCombinator):
             try:
                 statement = parse(parser_name, source, pc, BK=True)
                 return statement
-                # if source.is_match("statement-separator", unconsumed=True) or source.is_eos_or_linefeed(unconsumed=True):
-                #     return statement
-                # raise YuiError(("expected", "linefeed", f"❌{source.capture_line()}"), source.p(length=1), BK=False)
             except YuiError as e:
-                # print(f"@fail {parser_name} BK={e.BK} {e}")
                 if e.BK: continue
                 raise e
         source.pos = saved_pos
@@ -1058,8 +1040,6 @@ class TopLevelParser(ParserCombinator):
             statements.extend(parse("@Statement[]", source, pc))
             if cur_pos == source.pos:                
                 break
-            # if not source.is_eos_or_linefeed():
-            #     raise YuiError(("expected", "linefeed"), source.p(length=1))
             source.skip_whitespaces_and_comments(include_linefeed=True)
         return source.p(BlockNode(statements, top_level=True), start_pos=saved_pos)
 

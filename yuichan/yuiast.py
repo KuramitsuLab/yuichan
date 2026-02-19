@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 YuiParser = None  # 循環インポート防止のため、後で設定されます
 CodeVisitor = None  # 循環インポート防止のため、後で設定されます
 
+from .message import to_message as _to_message
+
 def set_from_outside(parser, visitor):
     global YuiParser
     global CodeVisitor
@@ -116,7 +118,7 @@ class YuiRuntime(object):
         if len(self.call_frames) > 512:
             args = ", ".join(str(arg) for arg in self.call_frames[-1][1])
             snippet = f"{self.call_frames[-1][0]}({args})"
-            raise YuiError(("recursion", f"🔍{snippet}"), self.call_frames[-1][2], self)
+            raise YuiError(("error", "recursion", f"🔍{snippet}"), self.call_frames[-1][2], self)
 
     def update_variable(self, name: str, env: Dict[str, Any], pos: int):
         """変数更新時のフック（サブクラスでオーバーライド可能）"""
@@ -175,7 +177,7 @@ class YuiRuntime(object):
 
         # タイムアウトチェック
         if self.timeout > 0 and (time.time() - self.startTime) > self.timeout:
-            raise YuiError(('timeout', f'🕰️{self.timeout}[sec]'), node, self)
+            raise YuiError(("error", "timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node, self)
     
 @dataclass
 class Operator(ABC):
@@ -404,7 +406,7 @@ class YuiError(RuntimeError):
 
     def formatted_message(self, prefix=" ", marker: str = '^', lineoffset: int = 0) -> str:
         """エラーメッセージを整形して返す"""
-        message = ' '.join(self.messages)
+        message = _to_message(self.messages)
         if self.error_node:
             line, col, snippet = self.error_node.extract()
             # エラー範囲の長さを計算（最小3文字）
@@ -626,33 +628,33 @@ class YuiData(object):
     def type_check(value, expected_type: str, node = None, env = None):
         if expected_type == 'data':
             if not isinstance(value, YuiData):
-                raise YuiError(("expected", "type", "data", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<not-int>", f"❌{value}"), node, env)
             return
         if expected_type == 'array':
             if not isinstance(value, YuiData) and value.view == "array":
-                raise YuiError(("expected", "type", "array", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<array>", f"❌{value}"), node, env)
             return
         if expected_type == 'string':
             if not YuiData.is_string(value):
-                raise YuiError(("expected", "type", "string", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<string>", f"❌{value}"), node, env)
             return
         if expected_type == 'float':
             if not YuiData.is_float(value):
-                raise YuiError(("expected", "type",  "float", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<float>", f"❌{value}"), node, env)
             return
         if expected_type == 'number':
             if not YuiData.is_number(value):
-                raise YuiError(("expected", "type", "number", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<number>", f"❌{value}"), node, env)
             return
         if expected_type == 'object':
             if not YuiData.is_object(value):
-                raise YuiError(("expected", "type", "object", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<object>", f"❌{value}"), node, env)
             return
         if expected_type == 'int':
             if not isinstance(value, int):
-                raise YuiError(("expected", "type", "int", f"❌{value}"), node, env)
+                raise YuiError(("error", "type", f"✅<int>", f"❌{value}"), node, env)
             return
-        raise YuiError(("undefined", "type", f"❌{expected_type}"), node, env)
+        assert expected_type is None, f"unknown type: {expected_type}"
 
     def stringfy(self, indent_prefix: str = "", inner_view: bool = False, width=80) -> str:
         self.sync()
@@ -724,8 +726,8 @@ class YuiData(object):
     @staticmethod
     def compare(v: Any, v2: Any, node = None, env = None) -> int:
         if YuiData.is_number(v) and YuiData.is_number(v2):
-            v = YuiData.ensure_number(v)
-            v2 = YuiData.ensure_number(v2)
+            v = round(YuiData.ensure_number(v), 6)
+            v2 = round(YuiData.ensure_number(v2), 6)
             if v < v2:
                 return -1
             elif v > v2:
@@ -741,8 +743,7 @@ class YuiData(object):
                 return 1
             else:
                 return 0
-        raise YuiError(("incomparable", f"❌{v}", "❌{v2}"), node, env)
-
+        raise YuiError(("error", "incomparable", f"❌{v}", f"❌{v2}"), node, env)
 
     def get(self, index: int, node = None, env = None) -> Any:
         if YuiData.is_string(index):
@@ -755,7 +756,7 @@ class YuiData(object):
         if self.elements is None:
             self.sync()
         if index < 0 or index >= len(self.elements):
-            raise YuiError(("out of", "index", f"❌{index}"), node, env)
+            raise YuiError(("error", "index", f"✅<{(len(self.elements))}", f"❌{index}", f"🔍{self.elements}"), node, env)
         return self.elements[index]
 
     def set(self, index: int, value: Any, node = None, env = None) -> Any:
@@ -769,7 +770,7 @@ class YuiData(object):
             index = int(YuiData.ensure_number(index))
             array = self.array
             if index < 0 or index >= len(array):
-                raise YuiError(("out of", "index", f"❌{index}"), node, env)
+                raise YuiError(("error", "index", f"✅<{(len(self.elements))}", f"❌{index}", f"🔍{array}"), node, env)
             array[index] = value
             self.native_value = None
 
@@ -778,7 +779,7 @@ class YuiData(object):
 
     def __str__(self):
         """文字列表現を返す"""
-        return str(self.native)
+        return self.stringfy(indent_prefix=None)
 
     def __repr__(self):
         """デバッグ用文字列表現を返す"""
@@ -810,10 +811,10 @@ def standard_lib(modules: list):
         """関数の引数の数をチェックする"""
         if expected == -1: #少なくとも一つの引数が必要
             if len(args) < 1:
-                raise YuiError(("expected", "function arguments", f"❌{len(args)}"))
+                raise YuiError(("required", "arguments", f"❌{len(args)}", f"✅>0"))
             return
         if len(args) != expected:
-            raise YuiError(("expected", "function arguments", f"✅{expected}", f"❌{len(args)}"))
+            raise YuiError(("expected", "arguments", f"✅{expected}", f"❌{len(args)}"))
 
     def array_to_varargs(args:list) -> list:
         """引数が配列1つの場合、その要素を展開して返す"""
@@ -939,15 +940,14 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 d = float(YuiData.ensure_number(arg))
                 if d == 0.0:
-                    raise YuiError(f"{d}で割ることはできません")
-                total /= d
+                    raise YuiError((f"error", "division by zero", f"❌{d}"))
             return YuiData(total)
         else:
             total = YuiData.ensure_int(args[0])
             for arg in args[1:]:
                 d = YuiData.ensure_int(arg)
                 if d == 0:
-                    raise YuiError(f"{d}で割ることはできません")
+                    raise YuiError((f"error", "division by zero", f"❌{d}"))
                 total //= d
             return total
     modules.append(('商', yui_div))
@@ -961,7 +961,7 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 d = float(YuiData.ensure_number(arg))
                 if d == 0.0:
-                    raise YuiError(f"{d}で割ることはできません")
+                    raise YuiError((f"error", "division by zero", f"❌{d}"))
                 total %= d
             return YuiData(total)
         else:
@@ -969,7 +969,7 @@ def standard_lib(modules: list):
             for arg in args[1:]:
                 d = YuiData.ensure_int(arg)
                 if d == 0:
-                    raise YuiError(f"{d}で割ることはできません")
+                    raise YuiError((f"error", "division by zero", f"❌{d}"))
                 total %= d
             return total
     modules.append(('剰余', yui_mod))
@@ -1009,16 +1009,10 @@ def standard_lib(modules: list):
             try:
                 return int(string_value)
             except ValueError:
-                raise YuiError(f'整数に変換できません: ❌"{string_value}"')
+                raise YuiError((f"error", "conversion", f"❌{string_value}"))
         value = int(YuiData.ensure_number(args[0]))
         return value
     modules.append(('整数化', yui_toint))
-
-    def yui_round(*args: Any) -> Any:
-        """四捨五入する"""
-        check_number_of_args("四捨五入", args, 1)
-        return int(round(YuiData.ensure_number(args[0]), 0))
-    modules.append(('四捨五入', yui_round))
 
     def yui_todecimal(*args: Any) -> Any:
         """小数化する"""
@@ -1029,7 +1023,7 @@ def standard_lib(modules: list):
             try:
                 return YuiData(float(string_value))
             except ValueError:
-                raise YuiError(f'少数に変換できません: ❌"{value}"')
+                raise YuiError((f"error", "conversion", f"❌{string_value}"))
         value = float(YuiData.ensure_number(args[0]))
         return YuiData(value)
     modules.append(('少数化', yui_todecimal))
@@ -1085,15 +1079,12 @@ def node(node: Any) -> ASTNode:
         return StringNode(node)
     if isinstance(node, list):
         return ArrayNode([node(e) for e in node])
-    if isinstance(node, ASTNode):
-        return node
-    raise YuiError(("expected", "node", f"❌{node}"), None, None)
+    assert isinstance(node, ASTNode)
+    return node
 
 @dataclass
 class NullNode(ExpressionNode):
-    """
-    null値（?）を表すノード
-    """
+    """null値（?）を表すノード"""
     def __init__(self):
         super().__init__()
 
@@ -1289,7 +1280,7 @@ class LocalFunction(YuiFunction):
         # 新しい環境を作成
         runtime.pushenv()
         if len(self.parameters) != len(arguments):
-            raise YuiError(("mismatch", "argument", f"❌{arguments}"), node, runtime)
+            raise YuiError(("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arguments)}"), node, runtime)
 
         for parameter, parameter_value in zip(self.parameters, arguments):
             runtime.setenv(parameter, parameter_value)
@@ -1328,7 +1319,7 @@ class NativeFunction(YuiFunction):
             e.runtime = runtime
             raise e
         except Exception as e:
-            raise YuiError(("internal", f"🔍{self.name}", f"🔍{e}"), node, runtime)
+            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node, runtime)
 
 
 @dataclass
@@ -1352,7 +1343,7 @@ class FuncAppNode(ExpressionNode):
                 raise YuiError(("undefined", "function", f"❌{self.name_node.name}"), self.name_node, runtime)
             function = runtime.getenv(name)
         if not isinstance(function, YuiFunction):
-            raise YuiError(("expected", "function", f"❌{function}"), self.name_node, runtime)
+            raise YuiError(("error", "type", "✅<function>", f"❌{function}"), self.name_node, runtime)
         arguments = [argument.evaluate(runtime) for argument in self.arguments]
         if self.snippet == '':
             args = ', '.join(f'{arg}' for arg in arguments)
@@ -1637,5 +1628,5 @@ class AssertNode(StatementNode):
                 return
         except Exception as e:
             pass
-        raise YuiError(("failed", f"test:{str(self.test)}", f"❌{test_value}", f"✅{reference_value}"), self, runtime)
+        raise YuiError(("failed", "test", f"🔍{self.test}", f"❌{test_value}", f"✅{reference_value}"), self, runtime)
 

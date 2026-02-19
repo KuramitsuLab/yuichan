@@ -16,9 +16,10 @@ except ImportError:
     READLINE_AVAILABLE = False
 
 from yuichan import __version__
-from .yuiparser import YuiParser, CodingVisitor
-from .yuiast import YuiRuntime, YuiError
+from .yuiparser import YuiParser, CodingVisitor, load_syntax
+from .yuiast import YuiRuntime, YuiError, IncrementNode, NameNode
 from . import yuiexample
+from . import message as _message
 
 
 def main(argv=None):
@@ -32,17 +33,29 @@ def main(argv=None):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  yui file.yui                              # Execute a file
-  yui -i                                    # Interactive mode
-  yui --input input.json file.yui           # Load environment and execute
-  yui file.yui --output output.json         # Save environment after execution
-  yui --syntax pylike file.yui     # Execute with custom syntax
-  yui --syntax yui file.yui --syntax-to pylike  # Convert syntax
-  yui --syntax yui file.md --syntax-to pylike   # Convert Markdown
-  yui --list-examples                       # List available examples
-  yui --make-examples                       # Generate all examples (Yui + Python style)
-  yui --make-examples --example loop        # Generate specific example only
-  yui --make-examples --syntax yui  # Generate with Yui syntax only
+  yui --syntax yui file.yui                          # Execute a file
+  yui --syntax yui -i                                # Interactive mode
+  yui --syntax yui --input env.json file.yui         # Load environment and execute
+  yui --syntax yui file.yui --output result.json     # Save environment after execution
+  yui --syntax yui --convert-to pylike file.yui      # Convert a file (saved to pylike/)
+  yui --syntax yui --convert-to pylike *.yui         # Convert multiple files
+  yui --syntax yui --convert-to pylike file.md       # Convert Markdown code blocks
+  yui --syntax yui --pass@1 test/*.yui               # Run tests and show pass rate
+  yui --syntax yui --test-examples                   # Test built-in examples
+  yui --syntax yui --make-examples                   # Generate example .yui files
+  yui --list-examples                                # List available examples
+  yui --list-syntax                                  # List syntax files with examples
+  yui --find-syntax file.yui                        # Find syntax that can parse given files
+  yui --find-syntax test/*.yui                      # Find syntax matching multiple files
+
+Syntax files (yuichan/syntax/):
+  yui      - Japanese-style natural syntax (default)
+  pylike   - Python-style syntax
+  emoji    - Emoji-based syntax
+
+Error message languages (--lang):
+  ja       - Japanese (default)
+  (others) - raw message fallback
 """
     )
 
@@ -52,8 +65,8 @@ Examples:
                         help='Start in interactive mode')
     parser.add_argument('--syntax', type=str, metavar='FILE',
                         help='Specify syntax file (JSON) - required for execution')
-    parser.add_argument('--syntax-to', type=str, metavar='FILE',
-                        help='Target syntax file for conversion (use with --syntax)')
+    parser.add_argument('--convert-to', type=str, metavar='SYNTAX',
+                        help='Convert files to target syntax and save in <SYNTAX>/ directory')
     parser.add_argument('--input', type=str, metavar='FILE',
                         help='Load environment variables from JSON file')
     parser.add_argument('--output', type=str, metavar='FILE',
@@ -68,14 +81,35 @@ Examples:
                         help='Generate specific example only (use with --make-examples)')
     parser.add_argument('--list-examples', action='store_true',
                         help='List available examples')
+    parser.add_argument('--list-syntax', action='store_true',
+                        help='List available syntax files with examples')
+    parser.add_argument('--find-syntax', action='store_true',
+                        help='Find syntax files that can parse all given files')
+    parser.add_argument('--lang', type=str, metavar='LANG', default='ja',
+                        help='Error message language (default: ja)')
     parser.add_argument('file', nargs='*', help='Yui file(s) to execute')
 
     args = parser.parse_args(argv)
+
+    _message.set_language(args.lang)
 
     try:
         # List examples
         if args.list_examples:
             list_examples()
+            return
+
+        # List syntax
+        if args.list_syntax:
+            list_syntax()
+            return
+
+        # Find syntax
+        if args.find_syntax:
+            if not args.file:
+                print("Error: --find-syntax requires at least one file", file=sys.stderr)
+                sys.exit(1)
+            find_syntax(args.file)
             return
 
         # Pass@1 mode
@@ -143,11 +177,12 @@ Examples:
             print(f"Environment loaded: {args.input}")
 
         # Syntax conversion mode
-        if args.syntax_to:
+        if args.convert_to:
             if not args.file:
-                print("Error: --syntax-to requires an input file", file=sys.stderr)
+                print("Error: --convert-to requires at least one input file", file=sys.stderr)
                 sys.exit(1)
-            convert_syntax(args.file, syntax, args.syntax_to)
+            for filename in args.file:
+                convert_and_save(filename, syntax, args.convert_to)
             return
 
         # Execute file(s)
@@ -267,69 +302,72 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                 pass
 
 
-def convert_syntax(input_file: str, source_syntax: str, target_syntax: str):
-    """Convert syntax"""
+def convert_and_save(input_file: str, source_syntax: str, target_syntax: str):
+    """Convert a file to target syntax and save in <target_syntax>_examples/ directory"""
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Markdown file conversion
+    # Convert first, then save
     if input_file.endswith('.md'):
-        convert_markdown(content, source_syntax, target_syntax)
+        converted = convert_markdown_to_string(content, source_syntax, target_syntax)
     else:
-        # Regular file conversion
         parser = YuiParser(source_syntax)
         ast = parser.parse(content)
-
         visitor = CodingVisitor(target_syntax)
         converted = visitor.emit(ast)
 
-        print(converted)
+    # Derive short name for directory (strip path and .json if given)
+    target_name = os.path.basename(target_syntax)
+    if target_name.endswith('.json'):
+        target_name = target_name[:-len('.json')]
+
+    out_dir = target_name
+    os.makedirs(out_dir, exist_ok=True)
+
+    out_filename = os.path.join(out_dir, os.path.basename(input_file))
+    with open(out_filename, 'w', encoding='utf-8') as f:
+        f.write(converted)
+    print(f"Converted: {input_file} -> {out_filename}")
 
 
-def convert_markdown(content: str, source_syntax: str, target_syntax: str):
-    """Convert code blocks in Markdown files"""
+def convert_markdown_to_string(content: str, source_syntax: str, target_syntax: str) -> str:
+    """Convert code blocks in Markdown content and return as string"""
     lines = content.split('\n')
+    out_lines = []
     in_code_block = False
     current_block = []
 
     for line in lines:
         stripped = line.strip()
 
-        # Detect blocks starting with ```yui
         if stripped.startswith("```yui") and not in_code_block:
             in_code_block = True
             current_block = []
-            print(line)  # Output code block start as-is
+            out_lines.append(line)
             continue
 
-        # End of code block
         if stripped.startswith("```") and in_code_block:
-            # Convert code block
             code = '\n'.join(current_block)
             if code.strip():
                 try:
                     parser = YuiParser(source_syntax)
                     ast = parser.parse(code)
-
                     visitor = CodingVisitor(target_syntax)
-                    converted = visitor.emit(ast)
-
-                    print(converted)
+                    out_lines.append(visitor.emit(ast))
                 except Exception as e:
-                    print(f"# Conversion error: {e}")
-                    print(code)
-
-            print(line)  # Output code block end as-is
+                    out_lines.append(f"# Conversion error: {e}")
+                    out_lines.append(code)
+            out_lines.append(line)
             in_code_block = False
             current_block = []
             continue
 
-        # Inside code block
         if in_code_block:
             current_block.append(line)
         else:
-            # Outside code block - output as-is
-            print(line)
+            out_lines.append(line)
+
+    return '\n'.join(out_lines)
 
 
 def load_env_from_json(filename: str) -> Dict[str, Any]:
@@ -354,6 +392,81 @@ def list_examples():
         print(f"{ex.name:<20} {ex.description}")
 
 
+def list_syntax():
+    """List available syntax files with an increment example for each"""
+    syntax_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
+    json_files = sorted(f for f in os.listdir(syntax_dir) if f.endswith('.json'))
+
+    # Build example AST: x を増やす (IncrementNode)
+    example_node = IncrementNode(NameNode("x"))
+
+    print("\nAvailable syntax files:")
+    print(f"{'Name':<12}  {'File':<20}  {'x += 1 equivalent'}")
+    print("-" * 60)
+
+    for filename in json_files:
+        name = filename[:-len('.json')]
+        filepath = os.path.join(syntax_dir, filename)
+        try:
+            terminals = load_syntax(name)
+            syntax_label = terminals.get('syntax', name)
+            visitor = CodingVisitor(terminals)
+            code = visitor.emit(example_node).strip()
+            if not code:
+                code = "(no increment syntax defined)"
+        except Exception as e:
+            syntax_label = name
+            code = f"(error: {e})"
+        print(f"{name:<12}  {filename:<20}  {code}")
+
+
+def find_syntax(files: list):
+    """Find syntax files that can successfully parse all given files"""
+    syntax_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
+    json_files = sorted(f for f in os.listdir(syntax_dir) if f.endswith('.json'))
+
+    # Read all source files upfront
+    sources = {}
+    for filename in files:
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                sources[filename] = f.read()
+        except FileNotFoundError:
+            print(f"Error: File not found - {filename}", file=sys.stderr)
+            sys.exit(1)
+
+    print(f"\nTrying {len(json_files)} syntax file(s) against {len(files)} file(s)...\n")
+
+    matched = []
+
+    for json_file in json_files:
+        name = json_file[:-len('.json')]
+        errors = []
+
+        for filename, code in sources.items():
+            try:
+                parser = YuiParser(name)
+                parser.parse(code)
+            except Exception as e:
+                errors.append((filename, e))
+                break  # no need to try remaining files
+
+        if not errors:
+            matched.append(name)
+            status = "OK"
+        else:
+            fname, err = errors[0]
+            status = f"FAIL ({os.path.basename(fname)}: {err})"
+
+        print(f"  {'✓' if not errors else '✗'}  {name:<12}  {status}")
+
+    print()
+    if matched:
+        print(f"Matching syntax: {', '.join(matched)}")
+    else:
+        print("No syntax matched all files.")
+
+
 def make_examples(example_name: str = None, syntax: str = 'yui'):
     """
     Generate sample code files
@@ -364,20 +477,13 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
     """
     examples = yuiexample.get_all_examples()
 
-    # Create examples directory if it doesn't exist
-    examples_dir = 'examples'
-    if not os.path.exists(examples_dir):
-        os.makedirs(examples_dir)
-        print(f"Created directory: {examples_dir}/")
+    # Derive syntax short name for directory (strip path and .json if given)
+    syntax_name = os.path.basename(syntax)
+    if syntax_name.endswith('.json'):
+        syntax_name = syntax_name[:-len('.json')]
 
-    # Determine file extension from syntax
-    syntax_basename = os.path.basename(syntax)
-    if 'py' in syntax_basename:
-        ext = 'py'
-    elif 'emoji' in syntax_basename:
-        ext = 'yui'  # Use .yui for emoji syntax
-    else:
-        ext = 'yui'
+    examples_dir = f"{syntax_name}_examples"
+    os.makedirs(examples_dir, exist_ok=True)
 
     # Generate specific example only
     if example_name:
@@ -390,7 +496,7 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
             sys.exit(1)
 
         code = example.generate(syntax)
-        filename = os.path.join(examples_dir, f"{example.name}.{ext}")
+        filename = os.path.join(examples_dir, f"{example.name}.yui")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(code)
         print(f"Generated: {filename}")
@@ -399,7 +505,7 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
     # Generate all examples
     for example in examples:
         code = example.generate(syntax)
-        filename = os.path.join(examples_dir, f"{example.name}.{ext}")
+        filename = os.path.join(examples_dir, f"{example.name}.yui")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(code)
         print(f"Generated: {filename}")
