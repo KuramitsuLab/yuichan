@@ -8,7 +8,7 @@ emoji_syntax = load_syntax('emoji')
 class TestParseStatementNode:
 
     def test_Assignment_emoji(self):
-        source = Source("x ⬅️ 1 # コメント", syntax=emoji_syntax)
+        source = Source("📦x ⬅️ 1 # コメント", syntax=emoji_syntax)
         assignment_node = parse("@Assignment", source, pc={})
         assert str(assignment_node) == "x ⬅️ 1"
 

@@ -297,7 +297,6 @@ def example_recursive_function():
         AssertNode(FuncAppNode(NameNode("fact"),[NumberNode(0)]), NumberNode(1)),
         PassNode(comment="Test that fact(5) is 120"),
         AssertNode(FuncAppNode(NameNode("fact"),[NumberNode(5)]), NumberNode(120)),
-
     ]
     return YuiExample(
         name="recursive_function",
@@ -324,86 +323,80 @@ def get_all_examples() -> List[YuiExample]:
     ]
 
 
-def print_example(example: YuiExample, syntaxes: List[str] = None):
-    """
-    サンプルを複数の構文で出力
+# def print_example(example: YuiExample, syntaxes: List[str] = None):
+#     """サンプルを複数の構文で出力"""
+#     if syntaxes is None:
+#         syntaxes = ['yui']
 
-    Args:
-        example: YuiExampleオブジェクト
-        syntaxes: 構文ファイルのリスト（Noneの場合はデフォルト構文のみ）
-    """
-    if syntaxes is None:
-        syntaxes = ['yui']
+#     print(f"\n{'='*60}")
+#     print(f"サンプル名: {example.name}")
+#     print(f"説明: {example.description}")
+#     print(f"{'='*60}")
 
-    print(f"\n{'='*60}")
-    print(f"サンプル名: {example.name}")
-    print(f"説明: {example.description}")
-    print(f"{'='*60}")
-
-    for syntax in syntaxes:
-        try:
-            import os
-            syntax_basename = os.path.basename(syntax)
-            syntax_name = syntax_basename.replace('syntax-', '').replace('.json', '')
-            code = example.generate(syntax)
-            print(f"\n--- {syntax_name} 構文 ---")
-            print(code)
-        except Exception as e:
-            print(f"\n--- {syntax_name} 構文 (エラー) ---")
-            print(f"エラー: {e}")
+#     for syntax in syntaxes:
+#         try:
+#             import os
+#             syntax_basename = os.path.basename(syntax)
+#             syntax_name = syntax_basename.replace('syntax-', '').replace('.json', '')
+#             code = example.generate(syntax)
+#             print(f"\n--- {syntax_name} 構文 ---")
+#             print(code)
+#         except Exception as e:
+#             print(f"\n--- {syntax_name} 構文 (エラー) ---")
+#             print(f"エラー: {e}")
 
 
-def main():
-    """メイン関数 - すべてのサンプルを出力"""
-    import argparse
+# def main():
+#     """メイン関数 - すべてのサンプルを出力"""
+#     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Yui言語のサンプルコード生成ツール'
-    )
-    parser.add_argument(
-        '--syntax',
-        nargs='+',
-        default=['yui', 'pylike'],
-        help='使用する構文ファイル（複数指定可）'
-    )
-    parser.add_argument(
-        '--example',
-        type=str,
-        help='特定のサンプルのみ生成（サンプル名を指定）'
-    )
-    parser.add_argument(
-        '--list',
-        action='store_true',
-        help='利用可能なサンプルの一覧を表示'
-    )
+#     parser = argparse.ArgumentParser(
+#         description='Yui言語のサンプルコード生成ツール'
+#     )
+#     parser.add_argument(
+#         '--syntax',
+#         nargs='+',
+#         default=['yui', 'pylike'],
+#         help='使用する構文ファイル（複数指定可）'
+#     )
+#     parser.add_argument(
+#         '--example',
+#         type=str,
+#         help='特定のサンプルのみ生成（サンプル名を指定）'
+#     )
+#     parser.add_argument(
+#         '--list',
+#         action='store_true',
+#         help='利用可能なサンプルの一覧を表示'
+#     )
 
-    args = parser.parse_args()
+#     args = parser.parse_args()
 
-    examples = get_all_examples()
+#     examples = get_all_examples()
 
-    # サンプル一覧を表示
-    if args.list:
-        print("\n利用可能なサンプル:")
-        for ex in examples:
-            print(f"  {ex.name:20s} - {ex.description}")
-        return
+#     # サンプル一覧を表示
+#     if args.list:
+#         print("\n利用可能なサンプル:")
+#         for ex in examples:
+#             print(f"  {ex.name:20s} - {ex.description}")
+#         return
 
-    # 特定のサンプルのみ生成
-    if args.example:
-        example = next((ex for ex in examples if ex.name == args.example), None)
-        if example:
-            print_example(example, args.syntax)
-        else:
-            print(f"エラー: サンプル '{args.example}' が見つかりません")
-            print("\n利用可能なサンプル:")
-            for ex in examples:
-                print(f"  - {ex.name}")
-        return
+#     # 特定のサンプルのみ生成
+#     if args.example:
+#         example = next((ex for ex in examples if ex.name == args.example), None)
+#         if example:
+#             print_example(example, args.syntax)
+#         else:
+#             print(f"エラー: サンプル '{args.example}' が見つかりません")
+#             print("\n利用可能なサンプル:")
+#             for ex in examples:
+#                 print(f"  - {ex.name}")
+#         return
 
-    # すべてのサンプルを生成
-    for example in examples:
-        print_example(example, args.syntax)
+#     # すべてのサンプルを生成
+#     for example in examples:
+#         print_example(example, args.syntax)
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

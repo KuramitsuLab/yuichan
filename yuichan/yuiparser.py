@@ -21,93 +21,6 @@ from .yuiast import (
 )
 
 
-def get_example_from_pattern(pattern: str) -> str:
-    """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
-    # エスケープされた文字を一時的に置換
-    original_pattern = pattern
-    ESC = [
-        (r'\|', '▁｜'), (r'\[', '▁［'), (r'\]', '▁］'),
-        (r'\(', '▁（'), (r'\)', '▁）'), (r'\*', '▁＊'), (r'\?', '▁？'),
-        (r'\+', '▁＋'), (r'+', ''), (r'*', '?')
-    ]
-    for a, b in ESC:
-        pattern = pattern.replace(a, b)
-    #print(f"@pattern: `{original_pattern}` -> `{pattern}`")  # デバッグ用   
-    processed = ''
-    while len(pattern) > 0:
-        s_pos = pattern.find('(') # シングルループだけ対応
-        if s_pos == -1:
-            processed += get_example_from_pattern_inner(pattern)
-            break
-        e_pos = pattern.find(')', s_pos+1)
-        processed += get_example_from_pattern_inner(pattern[:s_pos])
-        inner = pattern[s_pos+1:e_pos]
-        pattern = pattern[e_pos+1:]
-        if pattern.startswith('?'):
-            pattern = pattern[1:]
-        else:
-            processed += get_example_from_pattern_inner(inner)
-    #print(f"@processed: `{pattern}` -> `{processed}`")  # デバッグ用
-    # 置換した文字を元に戻す
-    ESC2 = [
-        ('▁｜', r'|'), ('▁［', r'['), ('▁］', r']'), ('▁（', r'('),
-        ('▁）', r')'), ('▁？', r'?'), ('▁＋', r'+'), ('▁＊', r'*'),
-    ]
-    for a, b in ESC2:
-        processed = processed.replace(a, b)
-    assert '▁' not in processed, f"Unprocessed escape sequences remain in `{original_pattern}`: `{processed}`"
-    return processed
-
-def split_heading_char(s: str):
-    if s.startswith("\\"):
-        # エスケープシーケンスの処理
-        remaining = s[2:]
-        if s.startswith('\\', 1):  # バックスラッシュ
-            heading_char = '\\'
-        elif s.startswith('s', 1):  # 空白文字
-            heading_char = ' '
-        elif s.startswith('t', 1):  # タブ
-            heading_char = '\t'
-        elif s.startswith('n', 1):  # 改行
-            heading_char = '\n'
-        elif s.startswith('r', 1):  # キャリッジリターン
-            heading_char = '\r'
-        elif s.startswith('d', 1):  # 数字
-            heading_char = '1'
-        elif s.startswith('w', 1):  # 単語文字
-            heading_char = 'a'
-        else:
-            heading_char = s[1]
-    elif s.startswith('▁', 0):
-        heading_char = s[0:2]
-        remaining = s[2:]
-    elif s.startswith('\uFE0F', 1) or s.startswith('\u200D', 1): 
-        #合字や絵文字のバリエーションセレクタを考慮
-        heading_char = s[0:2]
-        remaining = s[2:]
-    else:
-        heading_char = s[0]
-        remaining = s[1:]
-    if remaining.startswith("?"):
-        return '', remaining[1:]
-    return heading_char, remaining
-
-def get_example_from_pattern_inner(pattern: str)-> str:
-    if pattern == "":
-        return ""
-    # 選択肢（|）の処理：最初の選択肢を使用
-    if "|" in pattern:
-        pattern = pattern.split("|")[0]
-    # 文字クラス [abc] の処理 
-    if pattern.startswith("["):
-        end_pos = pattern.find("]")
-        if pattern.startswith('?', end_pos + 1):
-            return get_example_from_pattern_inner(pattern[end_pos+2:])
-        heading_char, _ = split_heading_char(pattern[1:end_pos])
-        return heading_char + get_example_from_pattern_inner(pattern[end_pos+1:])
-    heading_char, remaining = split_heading_char(pattern)
-    return heading_char + get_example_from_pattern_inner(remaining)
-
 def is_all_alnum(s: str) -> bool:
     for ch in s:
         if not (('a' <= ch <= 'z') or ('A' <= ch <= 'Z') or ('0' <= ch <= '9') or (ch == '_')):
@@ -142,32 +55,6 @@ def extract_identifiers(text):
     # print(f"@Extracted identifiers: {identifiers}")  
     return list(set(identifiers))
 
-def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
-    """JSON文法ファイルから終端記号をロードする"""
-    if filepath is None:
-        filepath = "yui"
-
-    if not os.path.isfile(filepath):
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        syntax_dir = os.path.join(current_dir, 'syntax')
-        if not filepath.endswith('.json'):
-            filepath = f"{filepath}.json"
-        new_filepath = os.path.join(syntax_dir, filepath)
-        if os.path.isfile(new_filepath):
-            filepath = new_filepath
-
-    with open(filepath, 'r', encoding='utf-8') as f:
-        terminals = json.load(f)
-    
-    if 'keywords' not in terminals:
-        keywords = set()
-        for key, pattern in terminals.items():
-            word = get_example_from_pattern(pattern).strip()
-            if is_all_alnum(word):
-                if word not in keywords:
-                    keywords.add(word)
-        terminals['keywords'] = keywords        
-    return terminals
 
 @dataclass
 class SourceNode(ASTNode):
@@ -217,22 +104,22 @@ class Source(object):
             return True
         return False
     
-    def is_defined(self, terminal: str) -> bool:
-        return self.terminals.get(terminal, "") != ""
+    # def is_defined(self, terminal: str) -> bool:
+    #     return self.terminals.get(terminal, "") != ""
 
-    def get_pattern(self, terminal: str, if_undefined = "") -> re.Pattern:
-        pattern = self.terminals.get(terminal, if_undefined)
-        if isinstance(pattern, str):
-            try:
-                pattern = re.compile(pattern)
-            except re.error:
-                raise ValueError(f"Invalid regex '{terminal}': {pattern}")
-            self.terminals[terminal] = pattern
-        return pattern
+    # def get_pattern(self, terminal: str, if_undefined = "") -> re.Pattern:
+    #     pattern = self.terminals.get(terminal, if_undefined)
+    #     if isinstance(pattern, str):
+    #         try:
+    #             pattern = re.compile(pattern)
+    #         except re.error:
+    #             raise ValueError(f"Invalid regex '{terminal}': {pattern}")
+    #         self.terminals[terminal] = pattern
+    #     return pattern
 
-    def for_example(self, terminal: str) -> str:
-        pattern = self.get_pattern(terminal)
-        return get_example_from_pattern(pattern.pattern)
+    # def for_example(self, terminal: str) -> str:
+    #     pattern = self.get_pattern(terminal)
+    #     return get_example_from_pattern(pattern.pattern)
 
     def matched_string(self, terminal: str) -> Optional[str]:
         pattern = self.get_pattern(terminal)
@@ -495,7 +382,7 @@ NONTERMINALS["@Number"] = NumberParser()
 class StringParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("string-begin", if_undefined=r'"', unconsumed=True)
+        return source.is_match("string-begin", unconsumed=True)
     
     def match(self, source: Source, pc: dict):
         opening_quote_pos = source.pos
@@ -506,7 +393,7 @@ class StringParser(ParserCombinator):
             while source.pos < source.length:
                 source.consume_until("string-content-end", until_eof=True)
                 string_content.append(source.source[opening_pos:source.pos])
-                if source.is_match("string-end", if_undefined=r'"', unconsumed=True):
+                if source.is_match("string-end", unconsumed=True):
                     break
                 if source.is_match("string-escape"):
                     if source.is_eos():
@@ -556,13 +443,13 @@ NONTERMINALS["@Array"] = ArrayParser()
 
 class ObjectParser(ParserCombinator):
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("object-begin", if_undefined=r"\{", unconsumed=True)
+        return source.is_match("object-begin", unconsumed=True)
     
     def match(self, source: Source, pc: dict):
         opening_pos = source.pos
         if source.is_match("object-begin", lskip_lf=True):
             arguments = []
-            while not source.is_match("object-end", if_undefined=r"\}", lskip_lf=True, unconsumed=True):
+            while not source.is_match("object-end", lskip_lf=True, unconsumed=True):
                 arguments.append(parse("@String", source, pc, lskip_lf=True))
                 source.try_match("object-key-value-separator", if_undefined=r"\:", lskip_lf=True)
                 arguments.append(parse("@Expression", source, pc, lskip_lf=True))
@@ -634,11 +521,11 @@ class PrimaryParser(ParserCombinator):
         node = parse("@Term", source, pc, BK=True)
         while source.has_next():
             opening_pos = source.pos
-            if source.is_match("funcapp-args-suffix", if_undefined=r"\("):
+            if source.is_match("funcapp-args-suffix"):
                 arguments = []
-                while not source.is_match("funcapp-args-end", if_undefined=r"\)", unconsumed=True):
+                while not source.is_match("funcapp-args-end", unconsumed=True):
                     arguments.append(parse("@Expression", source, pc, lskip_lf=True))
-                    if source.is_match("funcapp-args-separator", if_undefined=r"\,"):
+                    if source.is_match("funcapp-args-separator"):
                         continue
                     #break
                 source.try_match("funcapp-args-end", opening_pos=opening_pos)
@@ -1062,334 +949,4 @@ class YuiParser:
         return parse("@TopLevel", source, {})
 
 
-class CodingVisitor:
-    def __init__(self, syntax: Union[str, dict] = 'yui'):
-        self.buffer = []
-        self.indent = 0
-        if isinstance(syntax, dict):
-            self.terminals = syntax.copy()
-        else:
-            self.terminals = load_syntax(syntax)
-    
-    def emit(self, node: ASTNode) -> str:
-        self.buffer = []
-        self.indent = 0
-        self.linefeeded = True
-        node.visit(self)
-        return ''.join(self.buffer)
-
-    def is_defined(self, terminal: str) -> bool:
-        return self.terminals.get(terminal, "") != ""
-
-    def print(self, text: str):
-        if len(text) == 0:
-            return
-        if text == " " and len(self.buffer) > 0 and self.buffer[-1][-1] == ' ':
-            return
-        self.buffer.append(text)
-        self.linefeeded = False
-    
-    def linefeed(self, ignore = False):
-        if not ignore and not self.linefeeded:
-            self.buffer.append('\n' + '  ' * self.indent)
-            self.linefeeded = True
-
-    def word_segment(self, always=False, no_space_last_chars=' \n([{'):
-        if always or self.is_defined('word-segmenter'):
-            if len(self.buffer) > 0:
-                last_char = self.buffer[-1][-1]
-                if not self.is_defined('word-segmenter') and ord(last_char) > 127:
-                    return # 日本語向けのアドホック 
-                if last_char not in no_space_last_chars:
-                    self.buffer.append(' ')
-                    self.linefeeded = False
-
-    def terminal(self, terminal: str, if_undefined = None, linefeed_before=False):
-        pattern = None
-        if terminal == 'linefeed':
-            self.linefeed()
-            return
-        if self.is_defined(terminal):
-            pattern = self.terminals[terminal]
-        elif if_undefined is not None:
-            pattern = if_undefined
-        if pattern: 
-            token = get_example_from_pattern(pattern)
-            if token == "": return
-            if token[0] not in ",()[]{}:\"'.":
-                self.word_segment()
-            if linefeed_before:
-                self.linefeed()
-            self.buffer.append(token)
-            self.linefeeded = False
-
-    def comment(self, comment: str):
-        if comment:
-            if self.is_defined('line-comment-begin'):
-                for line in comment.splitlines():
-                    self.terminal('line-comment-begin')
-                    self.print(f' {line}')
-                return
-            if self.is_defined('comment-begin') and self.is_defined('comment-end'):
-                self.terminal('comment-begin')
-                self.print(comment)
-                self.terminal('comment-end')
-
-    def expression(self, node: ASTNode):
-        self.word_segment(always=True)
-        node.visit(self)
-
-    def statement(self, node: ASTNode):
-        node.visit(self)
-        self.comment(node.comment)
-
-    def block(self, node: ASTNode):
-        if not isinstance(node, BlockNode):
-            BlockNode([node]).visit(self)
-        else:
-            node.visit(self)
-
-    def visitASTNode(self, node: ASTNode):
-        self.print(f'FIXME: {node.__class__.__name__}')
-
-    def visitNumberNode(self, node: NumberNode):
-        self.terminal("number-begin")
-        self.print(str(node.value))
-        self.terminal("number-end")
-
-    def visitStringNode(self, node: StringNode):
-        self.terminal('string-begin', if_undefined=r'"')
-        if isinstance(node.contents,str):
-            self.print(node.contents.replace('"', '\\"').replace('\n', '\\n'))
-        else:
-            for content in node.contents:
-                if isinstance(content, str):
-                    self.print(content.replace('"', '\\"').replace('\n', '\\n'))
-                else:
-                    self.terminal('string-interpolation-begin', if_undefined=r"\{")
-                    content.visit(self)
-                    self.terminal('string-interpolation-end', if_undefined=r"\}")
-        self.terminal('string-end', if_undefined=r'"')
-    
-    def visitNameNode(self, node: NameNode):
-        self.terminal("name-begin")
-        self.print(node.name)
-        self.terminal("name-end")
-
-    def visitArrayNode(self, node: ArrayNode):
-        self.terminal('array-begin', if_undefined=r'\[')
-        for i, element in enumerate(node.elements):
-            if i > 0:
-                self.terminal('array-separator', if_undefined=r'\,')
-            self.expression(element)
-        self.terminal('array-end', if_undefined=r'\]')
-
-    def visitObjectNode(self, node: ObjectNode):
-        ignore_linefeed = "\n" not in str(node)
-        self.terminal('object-begin', if_undefined=r'\{')
-        self.indent += 1
-        self.linefeed(ignore=ignore_linefeed)
-        for i in range(0, len(node.elements), 2):
-            if i > 0:
-                self.terminal('object-separator', if_undefined=r'\,')
-                self.linefeed(ignore=ignore_linefeed)
-            key_node = node.elements[i]
-            value_node = node.elements[i+1]
-            self.expression(key_node)
-            self.terminal('key-value-separator', if_undefined=r'\:')
-            self.expression(value_node)
-        self.indent -= 1
-        self.linefeed(ignore=ignore_linefeed)
-        self.terminal('object-end', if_undefined=r'\}')
-
-    def visitMinusNode(self, node: MinusNode):
-        if self.is_defined('minus-begin'):
-            self.terminal('minus-begin')
-            self.expression(node.element)
-            self.terminal('minus-end')
-        elif self.is_defined("unary-minus"):
-            self.terminal("unary-minus")
-            node.element.visit(self) # avoid extra word segmenter for negative numbers
-        else:
-            self.visitASTNode(node)
-
-    def visitBinaryNode(self, node: BinaryNode):
-        self.expression(node.left_node)
-        self.word_segment()
-        # 演算子をそのまま出力（*, /, %, +, -, ==, != など）
-        self.terminal(f"binary{node.operator}", if_undefined=node.operator)
-        self.word_segment()
-        self.expression(node.right_node)
-
-    def visitArrayLenNode(self, node: ArrayLenNode):
-        if self.is_defined('property-length'):
-            self.expression(node.element)
-            self.terminal('property-accessor')
-            self.terminal('property-length')
-        elif self.is_defined('unary-length'):
-            self.terminal('unary-length')
-            self.expression(node.element)
-        elif self.is_defined('length-begin'):
-            self.terminal('length-begin')
-            self.expression(node.element)
-            self.terminal('length-end')
-
-    def visitGetIndexNode(self, node: GetIndexNode):
-        self.terminal('array-indexer-begin')
-        self.expression(node.collection)
-        self.terminal('array-indexer-suffix')
-        self.expression(node.index_node)
-        self.terminal('array-indexer-end')
-    
-    def visitFuncAppNode(self, node: FuncAppNode):
-        self.terminal('funcapp-begin')
-        self.expression(node.name_node)
-        self.terminal('funcapp-suffix', if_undefined=r'\(')
-        for i, arg in enumerate(node.arguments):
-            if i > 0:
-                self.terminal('funcapp-separator', if_undefined=r'\,')
-            self.expression(arg)
-        self.terminal('funcapp-end', if_undefined=r'\)')
-
-    def visitAssignmentNode(self, node: AssignmentNode):
-        self.terminal('assignment-begin')
-        self.expression(node.variable)
-        self.terminal('assignment-infix')
-        self.expression(node.expression)
-        self.terminal('assignment-end')
-    
-    def visitIncrementNode(self, node: IncrementNode):
-        self.terminal('increment-begin')
-        self.expression(node.variable)
-        self.terminal('increment-infix')
-        self.terminal('increment-end')
-
-    def visitDecrementNode(self, node: DecrementNode):
-        self.terminal('decrement-begin')
-        self.expression(node.variable)
-        self.terminal('decrement-infix')
-        self.terminal('decrement-end')
-
-    def visitAppendNode(self, node: AppendNode):
-        self.terminal('append-begin')
-        self.expression(node.variable)
-        self.terminal('append-infix')
-        self.expression(node.expression)
-        self.terminal('append-suffix')
-        self.terminal('append-end')
-
-    def visitBreakNode(self, node: BreakNode):
-        self.terminal('break')
-    
-    def visitPassNode(self, node: PassNode):
-        # block 内で処理される
-        # self.terminal('pass')
-        pass
-
-    def visitReturnNode(self, node: ReturnNode):
-        if isinstance(node.expression, ASTNode):
-            self.terminal('return-begin')
-            self.expression(node.expression)
-            self.terminal('return-end')
-        else:
-            self.terminal('return-none')
-        
-    def visitPrintExpressionNode(self, node: PrintExpressionNode):
-        if node.groping:
-            self.terminal('groping-begin', if_undefined=r"\(")
-            self.expression(node.expression)
-            self.terminal('groping-end', if_undefined=r"\)")
-        elif node.inspection and self.is_defined('unary-inspection'):
-            self.terminal('unary-inspection')
-            self.expression(node.expression)
-        else:
-            self.terminal('print-begin')
-            self.expression(node.expression)
-            self.terminal('print-end')
-
-    def visitIfNode(self, node: IfNode):
-        self.terminal('if-begin')
-        self.terminal('if-condition-begin')
-        self.expression(node.left)
-        if isinstance(node.left, BinaryNode) and node.left.comparative:
-            pass
-        else:
-            if self.is_defined(f'if-infix{node.operator}'):
-                self.terminal(f'if-infix{node.operator}')
-            else:
-                self.terminal('if-infix')
-            self.expression(node.right)
-            if self.is_defined(f'if-suffix{node.operator}'):
-                self.terminal(f'if-suffix{node.operator}')
-            else:
-                self.terminal('if-suffix')
-            self.terminal('if-condition-end')
-        self.terminal('if-then')
-        self.block(node.then_block)
-        if node.else_block:
-            if self.is_defined('if-else-if') and isinstance(node.else_block, IfNode):
-                self.terminal('if-else-if', linefeed_before=True)
-                self.block(node.else_block)
-            else:
-                self.terminal('if-else', linefeed_before=True)
-                self.block(node.else_block)
-        self.terminal('if-end', linefeed_before=True)
-
-    def visitRepeatNode(self, node: RepeatNode):
-        self.terminal('repeat-begin')
-        self.expression(node.count_node)
-        self.terminal('repeat-times')
-        self.terminal('repeat-block')
-        self.block(node.block_node)
-        self.terminal('repeat-end', linefeed_before=True)
-
-    def visitFuncDefNode(self, node: FuncDefNode):
-        self.terminal('funcdef-begin')
-        self.terminal('funcdef-name-begin')
-        self.expression(node.name_node)
-        self.terminal('funcdef-name-end')
-        if self.is_defined('funcdef-noarg') and len(node.parameters) == 0:
-            self.terminal('funcdef-noarg')
-        else:
-            self.terminal('funcdef-args-begin')
-            for i, arg_node in enumerate(node.parameters):
-                if i > 0:
-                    self.terminal('funcdef-arg-separator')
-                self.expression(arg_node)
-            self.terminal('funcdef-args-end')
-        self.terminal('funcdef-block')
-        self.block(node.body)
-        self.terminal('funcdef-end', linefeed_before=True)
-
-    def visitAssertNode(self, node: AssertNode):
-        self.terminal('assert-begin')
-        self.expression(node.test)
-        self.terminal('assert-infix')
-        self.expression(node.reference)
-        self.terminal('assert-end')
-
-    def visitBlockNode(self, node: BlockNode):
-        if not node.top_level:
-            self.terminal('block-begin')
-            self.indent += 1
-            self.linefeed()
-
-        if len(node.statements) == 0:
-            self.terminal('pass')
-        else: 
-            for i, statement in enumerate(node.statements):
-                if i > 0:
-                    self.linefeed()
-                statement.visit(self)
-                if isinstance(statement, FuncDefNode):
-                    self.linefeed()
-                self.terminal("block-separator")
-                if isinstance(statement, PassNode):
-                    self.linefeed()
-                self.comment(statement.comment)
-
-        if not node.top_level:
-            self.indent -= 1
-            self.terminal('block-end', linefeed_before=True)
-
-set_from_outside(YuiParser, CodingVisitor)
+set_from_outside(YuiParser, None)

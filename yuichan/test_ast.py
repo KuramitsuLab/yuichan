@@ -1,6 +1,7 @@
 import pytest
+
 from .yuiast import (
-    YuiError, YuiRuntime, YuiData,
+    YuiError, YuiRuntime, YuiValue, YuiType,
     NumberNode,StringNode,
     ArrayNode, ObjectNode,
     NameNode,
@@ -11,177 +12,399 @@ from .yuiast import (
     PrintExpressionNode, AssertNode
 )
 
-class TestExpression:
+class TestLiteral:
     """式の評価に関するテストクラス"""
 
     def init_runtime(self):
         runtime = YuiRuntime()
-        runtime.setenv("x", 1)
-        runtime.setenv("A", YuiData([1, 2, 3]))
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
         return runtime  
 
     def test_int(self):
         runtime = self.init_runtime()
         expression = NumberNode(42)
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 42) == 0
+        result = YuiType.to_native(result)
+        assert result == 42
 
     def test_float(self):
         runtime = self.init_runtime()
         expression = NumberNode(42.0)
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 42.0) == 0
+        result = YuiType.to_native(result)
+        assert result == 42.0
 
     def test_string(self):
         runtime = self.init_runtime()
         expression = StringNode("A")
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, YuiData("A")) == 0
+        result = YuiType.to_native(result)
+        assert result == "A"
 
     def test_string_interpolation(self):
         runtime = self.init_runtime()
         expression = StringNode(["A", NumberNode(1), "B"])
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, YuiData("A1B")) == 0
+        result = YuiType.to_native(result)
+        assert result == "A1B"
+
+    def test_array(self):
+        runtime = self.init_runtime()
+        expression = ArrayNode([1, 2, 3])
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == [1, 2, 3]
+
+    def test_object(self):
+        runtime = self.init_runtime()
+        expression = ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2), StringNode("z"), NumberNode(3)])
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == {"x": 1, "y": 2, "z": 3}
+
+class TestVariable:
+    """式の評価に関するテストクラス"""
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        return runtime  
 
     def test_variable(self):
         runtime = self.init_runtime()
         expression = NameNode("x")
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 1) == 0
+        result = YuiType.to_native(result)
+        assert result == 1
 
     def test_undefined_variable(self):
         runtime = self.init_runtime()
         expression = NameNode("y")
         with pytest.raises(YuiError) as excinfo:    
             result = expression.evaluate(runtime)
-            assert YuiData.compare(result, 1) == 0
+            result = YuiType.to_native(result)
+            assert result == 1
         assert "undefined" in str(excinfo.value.args[0])
         assert "variable" in str(excinfo.value.args[0])
 
+class TestUnaryOperator:
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        return runtime
+    
     def test_minus_int(self):
         runtime = self.init_runtime()
         expression = MinusNode(NumberNode(1))
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, -1) == 0
+        result = YuiType.to_native(result)
+        assert result == -1
 
     def test_minus_float(self):
         runtime = self.init_runtime()
         expression = MinusNode(NumberNode(1.0))
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, -1.0) == 0
+        result = YuiType.to_native(result)
+        assert result == -1.0
 
     def test_minus_string(self):
         runtime = self.init_runtime()
         expression = MinusNode(StringNode("A"))
         with pytest.raises(YuiError) as excinfo:    
             result = expression.evaluate(runtime)
-            assert YuiData.compare(result, "A") == 0
-        assert "expected" in str(excinfo.value.args[0])
-        assert "number" in str(excinfo.value.args[0])
+            result = YuiType.to_native(result)
+            assert result == "A"
+        assert "type" in str(excinfo.value)
 
-    def test_array(self):
-        runtime = self.init_runtime()
-        expression = ArrayNode([1, 2, 3])
-        result = expression.evaluate(runtime)
-        assert YuiData.compare(result, YuiData([1, 2, 3])) == 0
-
-    def test_array_length(self):
+    def test_length_array(self):
         runtime = self.init_runtime()
         expression = ArrayLenNode(NameNode("A"))
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 3) == 0
+        result = YuiType.to_native(result)
+        assert result == 3
 
-    def test_int_length(self):
+    def test_length_string(self):
+        runtime = self.init_runtime()
+        expression = ArrayLenNode(StringNode("abc"))
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == 3
+
+    def test_length_int(self):
         runtime = self.init_runtime()
         expression = ArrayLenNode(NumberNode(1))
-        with pytest.raises(YuiError) as excinfo:    
-            result = expression.evaluate(runtime)
-        assert "expected" in str(excinfo.value.args[0])
-        assert "data" in str(excinfo.value.args[0])
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == 32
 
-    def test_array_get_index(self):
+class TestGetIndex:
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
+
+    def test_get_array(self):
         runtime = self.init_runtime()
         expression = GetIndexNode(NameNode("A"), NumberNode(1))
         result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 2) == 0
+        result = YuiType.to_native(result)
+        assert result == 2
 
-    def test_array_out_of_index(self):
+    def test_get_string(self):
+        runtime = self.init_runtime()
+        expression = GetIndexNode(NameNode("s"), NumberNode(1))
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == 98 # 'b'のASCIIコード
+
+    def test_get_charcode(self):
+        runtime = self.init_runtime()
+        expression = GetIndexNode(StringNode("b"), NumberNode(0))
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == 98 # 'b'のASCIIコード
+
+    def test_object_string(self):
+        runtime = self.init_runtime()
+        expression = GetIndexNode(NameNode("O"), StringNode("y"))
+        result = expression.evaluate(runtime)
+        result = YuiType.to_native(result)
+        assert result == 2
+
+    def test_get_array_out_of_index(self):
         runtime = self.init_runtime()
         expression = GetIndexNode(NameNode("A"), NumberNode(3))
         with pytest.raises(YuiError) as excinfo:    
             result = expression.evaluate(runtime)
-        assert "out of index" in str(excinfo.value.args[0])
+        assert "index" in str(excinfo.value)
+
+class TestAssignment:
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
 
     def test_variable_assignment(self):
         runtime = self.init_runtime()
-        expression = AssignmentNode(NameNode("A"), NumberNode(3))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("A"), 3) == 0
+        statement = AssignmentNode(NameNode("A"), NumberNode(3))
+        statement.evaluate(runtime)
+        assert YuiType.compare(runtime.getenv("A"), 3) == 0
 
     def test_string_assignment(self):
         runtime = self.init_runtime()
         with pytest.raises(YuiError) as excinfo:
-            expression = AssignmentNode(StringNode("A"), NumberNode(3))
-            expression.evaluate(runtime)
-        assert "expected" in str(excinfo.value.args[0])
-        assert "variable" in str(excinfo.value.args[0])
+            statement = AssignmentNode(StringNode("A"), NumberNode(3))
+            statement.evaluate(runtime)
+        assert "expected" in str(excinfo.value)
+        assert "variable" in str(excinfo.value)
 
     def test_variable_increment(self):
         runtime = self.init_runtime()
-        expression = IncrementNode(NameNode("x"))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
+        statement = IncrementNode(NameNode("x"))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("x")) == 2
 
     def test_variable_decrement(self):
         runtime = self.init_runtime()
-        expression = DecrementNode(NameNode("x"))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 0) == 0
+        statement = DecrementNode(NameNode("x"))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("x")) == 0
 
     def test_array_assignment(self):
         runtime = self.init_runtime()
-        expression = AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)), NumberNode(3))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("A"), YuiData([3, 2, 3])) == 0
+        statement = AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)), NumberNode(3))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("A").get_item(0)) == 3
 
     def test_array_increment(self):
         runtime = self.init_runtime()
-        expression = IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0)))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("A"), YuiData([2, 2, 3])) == 0
+        statement = IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0)))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("A").get_item(0)) == 2
 
     def test_array_decrement(self):
         runtime = self.init_runtime()
-        expression = DecrementNode(GetIndexNode(NameNode("A"), NumberNode(1)))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("A"), YuiData([1, 1, 3])) == 0
-
-    def test_array_append(self):
-        runtime = self.init_runtime()
-        expression = AppendNode(NameNode("A"), NumberNode(0))
-        result = expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("A"), YuiData([1, 2, 3, 0])) == 0
-
-    def test_object(self):
-        runtime = self.init_runtime()
-        expression = ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2), StringNode("z"), NumberNode(3)])
-        result = expression.evaluate(runtime)
-        assert YuiData.compare(result, YuiData({"x": 1, "y": 2, "z": 3})) == 0
-
-    def test_object_get(self):
-        runtime = self.init_runtime()
-        runtime.setenv("p", YuiData({"x": 1, "y": 2, "z": 3}))
-        expression = GetIndexNode(NameNode("p"), StringNode("x"))
-        result = expression.evaluate(runtime)
-        assert YuiData.compare(result, 1) == 0
+        statement = DecrementNode(GetIndexNode(NameNode("A"), NumberNode(1)))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("A").get_item(1)) == 1
 
     def test_object_assignment(self):
         runtime = self.init_runtime()
-        runtime.setenv("p", YuiData({"x": 1, "y": 2, "z": 3}))
-        expression = AssignmentNode(GetIndexNode(NameNode("p"), StringNode("x")), NumberNode(3))
-        expression.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("p"), YuiData({"x": 3, "y": 2, "z": 3})) == 0
+        statement = AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(3))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("O").get_item("x")) == 3
+
+class TestAppend:
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
+
+    def test_append_array(self):
+        runtime = self.init_runtime()
+        statement = AppendNode(NameNode("A"), NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("A").get_item(3)) == 0
+
+    def test_append_string(self):
+        runtime = self.init_runtime()
+        statement = AppendNode(NameNode("s"), NumberNode(ord("d")))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("s").get_item(3)) == ord("d")
+
+    def test_append_int(self):
+        runtime = self.init_runtime()
+        statement = AppendNode(NameNode("x"), NumberNode(1))
+        with pytest.raises(YuiError) as excinfo:
+            statement.evaluate(runtime)
+            assert YuiType.to_native(runtime.getenv("x")) == 2
+        assert "array" in str(excinfo.value)
+
+class TestIfCondition:
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
+
+    def make_if_statement(self, left, operator, right):
+        return IfNode(left, operator, right,
+            AssignmentNode(NameNode("result"), 1),
+            AssignmentNode(NameNode("result"), 0)
+        )
+
+    def test_if_eq(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "==", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "==", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+    def test_if_ne(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+    def test_if_lt(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(2))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+    def test_if_le(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(2))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+    def test_if_gt(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(2))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+    def test_if_ge(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(0))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("x")) == 1
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(1))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(2))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+    def test_if_eq_string(self):
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("s"), "==", StringNode("abc"))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+        runtime = self.init_runtime()
+        statement = self.make_if_statement(NameNode("s"), "==", StringNode("ABC"))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+    def test_if_eq_float(self):
+        runtime = self.init_runtime()
+        runtime.setenv("f", YuiValue(3.14))
+        statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.14))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 1
+        runtime = self.init_runtime()
+        runtime.setenv("f", YuiValue(3.1))
+        statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.145))
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("result")) == 0
+
+
+class TestStatement:
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
 
     def test_block(self):
         runtime = self.init_runtime()
@@ -191,115 +414,13 @@ class TestExpression:
             IncrementNode(NameNode("x")),
         ])
         statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 12) == 0
+        assert YuiType.to_native(runtime.getenv("x")) == 12
     
-    def test_if_eq(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "==", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "==", 0,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
-
-    def test_if_ne(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "!=", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
-
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "!=", 0,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-    def test_if_lt(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "<", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
-
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "<", 2,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-    def test_if_le(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "<=", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), "<=", 0,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
-
-    def test_if_gt(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), ">", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 2) == 0
-
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), ">", 0,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-    def test_if_ge(self):
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), ">=", 1,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-        runtime = self.init_runtime()
-        statement = IfNode(NameNode("x"), ">=", 0,
-            AssignmentNode(NameNode("x"), 1),
-            AssignmentNode(NameNode("x"), 2)
-        )
-        statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 1) == 0
-
-
     def test_repeat(self):
         runtime = self.init_runtime()
         statement = RepeatNode(3,IncrementNode(NameNode("x")))
         statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 4) == 0
+        assert YuiType.to_native(runtime.getenv("x")) == 4
 
     def test_repeat_break(self):
         runtime = self.init_runtime()
@@ -316,82 +437,8 @@ class TestExpression:
             ])
         )
         statement.evaluate(runtime)
-        assert YuiData.compare(runtime.getenv("x"), 4) == 0
+        assert YuiType.to_native(runtime.getenv("x")) == 4
 
-    def test_function(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(10), NumberNode(20)]
-        )
-        result = func_app.evaluate(runtime)
-        assert YuiData.compare(result, 10) == 0
-
-    def test_function_return_none(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([AssignmentNode(NameNode("a"), 1),AssignmentNode(NameNode("c"), 3)])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(0), NumberNode(1)]
-        )
-        result = func_app.evaluate(runtime)
-        assert YuiData.is_object(result)
-        assert result.get(YuiData("a")) == 1
-        assert result.get(YuiData("b")) == 1
-        assert result.get(YuiData("c")) == 3
-        # assert str(result) == "" for debug
-
-    def test_function_undefined(self):
-        runtime = self.init_runtime()
-        func_app = FuncAppNode(
-            name=NameNode("sub"),
-            arguments=[NumberNode(10), NumberNode(20)]
-        )
-        with pytest.raises(YuiError) as excinfo:    
-            result = func_app.evaluate(runtime)
-        assert "undefined" in str(excinfo.value.args[0])
-        assert "function" in str(excinfo.value.args[0])
-    
-    def test_function_argument_mismatch(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(10)]
-        )
-        with pytest.raises(YuiError) as excinfo:    
-            result = func_app.evaluate(runtime)
-        assert "mismatch" in str(excinfo.value.args[0])
-        assert "argument" in str(excinfo.value.args[0]) 
-
-    def test_function_no_return(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(1), NumberNode(2)]
-        )
-        result = func_app.evaluate(runtime)
-        assert YuiData.is_object(result)
-        assert result.get("a") == 1
-    
     def test_print_expression(self, capsys):
         runtime = self.init_runtime()
         expression = PrintExpressionNode(
@@ -435,48 +482,110 @@ class TestExpression:
 
     def test_assert(self):
         runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([ReturnNode(NumberNode(0))])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(1), NumberNode(2)]
-        )
-        expression = AssertNode(
-            func_app, NumberNode(0)
-        )
+        expression = AssertNode(NameNode("x"), NumberNode(1))
         expression.evaluate(runtime)
         assert len(runtime.test_passed) == 1
 
     def test_assert_fail(self):
         runtime = self.init_runtime()
+        expression = AssertNode(NameNode("x"), NumberNode(0))
+        with pytest.raises(YuiError) as excinfo:
+            expression.evaluate(runtime)
+            assert len(runtime.test_passed) == 0
+        assert "failed" in str(excinfo.value.args[0])
+
+class TestFunction:
+
+    def init_runtime(self):
+        runtime = YuiRuntime()
+        runtime.setenv("x", YuiValue(1))
+        runtime.setenv("s", YuiValue("abc"))
+        runtime.setenv("A", YuiValue([1, 2, 3]))
+        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
+        return runtime
+
+    def test_function(self):
+        runtime = self.init_runtime()
         func_def = FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([ReturnNode(NumberNode(0))])
+            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
         )
         func_def.evaluate(runtime)
         func_app = FuncAppNode(
             name=NameNode("add"),
-            arguments=[NumberNode(1), NumberNode(2)]
+            arguments=[NumberNode(10), NumberNode(20)]
         )
-        expression = AssertNode(
-            func_app, NumberNode(3)
+        result = func_app.evaluate(runtime)
+        assert YuiType.to_native(result) == 10
+
+    def test_function_return_none(self):
+        runtime = self.init_runtime()
+        func_def = FuncDefNode(
+            NameNode("add"),[NameNode("a"), NameNode("b")],
+            BlockNode([
+                AssignmentNode(NameNode("a"), 1),
+                AssignmentNode(NameNode("c"), 3)
+            ])
         )
-        with pytest.raises(YuiError) as excinfo:
-            expression.evaluate(runtime)
-        assert "failed" in str(excinfo.value.args[0])
+        func_def.evaluate(runtime)
+        func_app = FuncAppNode(
+            name=NameNode("add"),
+            arguments=[NumberNode(0), NumberNode(1)]
+        )
+        result = func_app.evaluate(runtime)
+        assert YuiType.is_object(result)
+        result = YuiType.to_native(result)
+        assert result["a"] == 1
+        assert result["b"] == 1
+        assert result["c"] == 3
 
+    def test_function_undefined(self):
+        runtime = self.init_runtime()
+        func_app = FuncAppNode(
+            name=NameNode("sub"),
+            arguments=[NumberNode(10), NumberNode(20)]
+        )
+        with pytest.raises(YuiError) as excinfo:    
+            result = func_app.evaluate(runtime)
+        assert "undefined" in str(excinfo.value.args[0])
+        assert "function" in str(excinfo.value.args[0])
+    
+    def test_function_argument_mismatch(self):
+        runtime = self.init_runtime()
+        func_def = FuncDefNode(
+            NameNode("add"),[NameNode("a"), NameNode("b")],
+            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
+        )
+        func_def.evaluate(runtime)
+        func_app = FuncAppNode(
+            name=NameNode("add"),
+            arguments=[NumberNode(10)]
+        )
+        with pytest.raises(YuiError) as excinfo:    
+            result = func_app.evaluate(runtime)
+        assert "mismatch" in str(excinfo.value.args[0])
+        assert "argument" in str(excinfo.value.args[0]) 
 
-class TestExampleAST:
-    def test_example_function(self):
+    
+class TestExample:
+
+    def get_example_ast(self, name):
+        from .yuiexample import get_all_examples
+        examples = get_all_examples()
+        for example in examples:
+            if name in example.name:
+                return example.ast_node
+
+    def test_example_hello_world(self):
         runtime = YuiRuntime()
-        block = BlockNode([
-            FuncDefNode(
-                NameNode("point"), [NameNode("x"), NameNode("y")], BlockNode([])
-            ),
-            AssignmentNode(NameNode("O"), FuncAppNode(NameNode("point"), [NumberNode(0), NumberNode(0)])),
-            AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(0)),
-        ], top_level=True)
-        block.evaluate(runtime)
+        program = self.get_example_ast("hello")
+        program.evaluate(runtime)
+
+    def test_all_examples(self):
+        from .yuiexample import get_all_examples
+        examples = get_all_examples()
+        for example in examples:
+            runtime = YuiRuntime()
+            program = example.ast_node
+            program.evaluate(runtime)
+
