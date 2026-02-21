@@ -306,6 +306,104 @@ def example_recursive_function():
     )
 
 
+def example_float_add():
+    """float 配列の加算（stdlib なし）
+
+    float の内部表現: [sign, d1, d2, d3, d4, d5, d6, d7]
+      sign: 1 (正) または -1 (負)
+      d1..d7: abs(value) * 1e6 の各桁 (合計7桁)
+      例) 3.14 → [1, 3, 1, 4, 0, 0, 0, 0]
+         -2.5 → [-1, 2, 5, 0, 0, 0, 0, 0]
+
+    float_add(a, b): 同符号の float 配列を足し合わせる
+    アルゴリズム: i=7 から i=1 まで逆順に桁ごとに加算し繰り上がりを伝播する
+    """
+    statements = [
+        PassNode(comment="float format: [sign, d1..d7]  sign=1 or -1, d1..d7 = abs(x)*1e6 digits"),
+        PassNode(comment="float_add(a, b): add two same-sign float arrays (no stdlib)"),
+        FuncDefNode(
+            NameNode("float_add"), [NameNode("a"), NameNode("b")],
+            BlockNode([
+                # result = [1, 0, 0, 0, 0, 0, 0, 0]  (sign は後で a[0] を設定)
+                AssignmentNode(NameNode("result"), ArrayNode([
+                    GetIndexNode(NameNode("a"), NumberNode(0)),
+                    NumberNode(0), NumberNode(0), NumberNode(0),
+                    NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
+                ])),
+                AssignmentNode(NameNode("carry"), NumberNode(0)),
+                AssignmentNode(NameNode("i"), NumberNode(7)),
+                # i=7 から i=1 まで 7 回くり返す
+                RepeatNode(NumberNode(7), BlockNode([
+                    # sum = carry
+                    AssignmentNode(NameNode("sum"), NameNode("carry")),
+                    # sum を a[i] 回増やす
+                    RepeatNode(GetIndexNode(NameNode("a"), NameNode("i")), BlockNode([
+                        IncrementNode(NameNode("sum")),
+                    ])),
+                    # sum を b[i] 回増やす
+                    RepeatNode(GetIndexNode(NameNode("b"), NameNode("i")), BlockNode([
+                        IncrementNode(NameNode("sum")),
+                    ])),
+                    # carry = 0
+                    AssignmentNode(NameNode("carry"), NumberNode(0)),
+                    # もし sum >= 10 ならば: carry=1, sum -= 10
+                    IfNode(NameNode("sum"), ">=", NumberNode(10), BlockNode([
+                        IncrementNode(NameNode("carry")),
+                        RepeatNode(NumberNode(10), BlockNode([
+                            DecrementNode(NameNode("sum")),
+                        ])),
+                    ])),
+                    # result[i] = sum
+                    AssignmentNode(
+                        GetIndexNode(NameNode("result"), NameNode("i")),
+                        NameNode("sum"),
+                    ),
+                    # i -= 1
+                    DecrementNode(NameNode("i")),
+                ])),
+                ReturnNode(NameNode("result")),
+            ])
+        ),
+        PassNode(comment="3.14 + 2.50 = 5.64"),
+        AssignmentNode(NameNode("a"), ArrayNode([
+            NumberNode(1), NumberNode(3), NumberNode(1), NumberNode(4),
+            NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
+        ])),
+        AssignmentNode(NameNode("b"), ArrayNode([
+            NumberNode(1), NumberNode(2), NumberNode(5), NumberNode(0),
+            NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
+        ])),
+        AssignmentNode(NameNode("c"),
+            FuncAppNode(NameNode("float_add"), [NameNode("a"), NameNode("b")])),
+        PassNode(comment="c == [1, 5, 6, 4, 0, 0, 0, 0]  (5.640000)"),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(0)), NumberNode(1)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(1)), NumberNode(5)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(2)), NumberNode(6)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(3)), NumberNode(4)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(4)), NumberNode(0)),
+        PassNode(comment="1.99 + 1.01 = 3.00  (tests carry propagation)"),
+        AssignmentNode(NameNode("a"), ArrayNode([
+            NumberNode(1), NumberNode(1), NumberNode(9), NumberNode(9),
+            NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
+        ])),
+        AssignmentNode(NameNode("b"), ArrayNode([
+            NumberNode(1), NumberNode(1), NumberNode(0), NumberNode(1),
+            NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
+        ])),
+        AssignmentNode(NameNode("c"),
+            FuncAppNode(NameNode("float_add"), [NameNode("a"), NameNode("b")])),
+        PassNode(comment="c == [1, 3, 0, 0, 0, 0, 0, 0]  (3.000000)"),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(1)), NumberNode(3)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(2)), NumberNode(0)),
+        AssertNode(GetIndexNode(NameNode("c"), NumberNode(3)), NumberNode(0)),
+    ]
+    return YuiExample(
+        name="float_add",
+        description="Add two same-sign floats as digit arrays (no stdlib)",
+        ast_node=BlockNode(statements, top_level=True)
+    )
+
+
 def example_null_assignment():
     """null の代入と比較"""
     statements = [
@@ -398,6 +496,7 @@ def get_all_examples() -> List[YuiExample]:
         example_function_no_argument(),
         example_function_without_return(),
         example_recursive_function(),
+        example_float_add(),
         example_null_assignment(),
         example_boolean_assignment(),
         example_boolean_branch(),
