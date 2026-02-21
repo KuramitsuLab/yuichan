@@ -511,6 +511,22 @@ class YuiStringType(YuiType):
             return left_value < right_value
         return False
 
+def _array_equal(a, b) -> bool:
+    """配列の再帰的等価比較（文字コード配列と文字列の相互比較を含む）"""
+    if isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            return False
+        return all(_array_equal(x, y) for x, y in zip(a, b))
+    if isinstance(a, list) and isinstance(b, str):
+        try:
+            return ''.join(chr(c) for c in a) == b
+        except (TypeError, ValueError):
+            return False
+    if isinstance(a, str) and isinstance(b, list):
+        return _array_equal(b, a)
+    return a == b
+
+
 class YuiArrayType(YuiType):
     def __init__(self):
         super().__init__("array", TY_ARRAY)
@@ -560,8 +576,9 @@ class YuiArrayType(YuiType):
         return ''.join(buffer)
 
     def equals(self, left_node: Any, right_node: Any) -> bool:
-        print(f"TODO: array equality check for {left_node} and {right_node}")
-        return False
+        left_native = YuiType.to_native(left_node)
+        right_native = YuiType.to_native(right_node)
+        return _array_equal(left_native, right_native)
 
 
 class YuiObjectType(YuiType):
@@ -715,6 +732,18 @@ class YuiValue(object):
 
     def is_primitive(self) -> bool:
         return isinstance(self.type, (YuiNullType, YuiBooleanType, YuiIntType, YuiFloatType, YuiStringType))
+
+    @staticmethod
+    def stringfy_value(value: Any, indent_prefix: str = "", width=80) -> str:
+        """YuiValue または任意の値を文字列に変換する（クラスメソッドとして呼び出し可能）"""
+        if isinstance(value, YuiValue):
+            return value.stringfy(indent_prefix=indent_prefix, width=width)
+        return str(value)
+
+    @property
+    def array(self):
+        """arrayview の別名（後方互換）"""
+        return self.arrayview
 
     def stringfy(self, indent_prefix: str = "", arrayview: bool = False, width=80) -> str:
         if arrayview:
