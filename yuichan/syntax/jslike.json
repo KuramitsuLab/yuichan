@@ -68,7 +68,7 @@
     "decrement-end": "1",
  
     "append-begin": "",
-    "append-infix": ".append\\s*\\(",
+    "append-infix": ".push\\s*\\(",
     "append-suffix": "\\)",
     "append-end": "",
 
@@ -81,7 +81,7 @@
 
     "break": "break\\s?",
     "continue": "continue\\s?",
-    "pass": "pass\\s?",
+    "pass": "",
 
     "return-begin": "return\\s",
     "return-end": "",
@@ -92,8 +92,8 @@
     "repeat-end": "",
 
     "if-begin": "if\\s",
-    "if-condition-begin": "\\(?",
-    "if-condition-end": "\\)?",
+    "if-condition-begin": "\\(",
+    "if-condition-end": "\\)",
     "if-prefix": "",
     "if-infix==": "==",
     "if-infix!=": "!=",
@@ -107,7 +107,7 @@
     "if-else": "else\\s*",
     "if-end": "",
 
-    "funcdef-begin": "def\\s",
+    "funcdef-begin": "function\\s",
     "funcdef-name-begin": "",
     "funcdef-name-end": "",
     "funcdef-args-begin": "\\(",
@@ -117,7 +117,7 @@
     "funcdef-block": "",
     "funcdef-end": "",
 
-    "assert-begin": "assert\\s",
+    "assert-begin": "assert\\s*",
     "assert-infix": "==",
     "assert-end": ""
 
