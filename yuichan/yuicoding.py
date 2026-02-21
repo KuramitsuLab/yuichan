@@ -1,24 +1,16 @@
-# Source
-from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Union
-from types import FunctionType
-from abc import ABC, abstractmethod
-from typing import Union, Any, List
-import re
-import json
-import os
+from typing import Dict
 
 from .yuiast import (
-    YuiType, ASTNode, NameNode,
+    ASTNode, NameNode,
     StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode, 
+    AssertNode, ImportNode,
 )
-
+from .yuitypes import YuiType
 from .yuisyntax import load_syntax, YuiSyntax
 
 class CodingVisitor(YuiSyntax):

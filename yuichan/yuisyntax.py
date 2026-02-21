@@ -161,9 +161,9 @@ DEFAULT_SYNTAX_JSON = {
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
     
-    "funcapp-suffix": "\\(",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 }
 
 def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:

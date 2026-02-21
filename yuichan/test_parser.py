@@ -1,7 +1,7 @@
 import pytest
-from .yuiparser import (
-    Source, parse, YuiError, load_syntax 
-)
+from .yuiparser import Source, parse
+from .yuitypes import YuiError
+from .yuisyntax import load_syntax
 
 yui_syntax = load_syntax('yui')
 py_syntax = load_syntax('pylike')
@@ -145,7 +145,21 @@ class TestParseExpressionNode:
         name_node = parse("@Expression", source, pc={})
         assert str(name_node) == "x[0]"
 
-    def test_FuncApp(self):
+    def test_FuncAppAsExpression(self):
+        source = Source("x(0)")
+        name_node = parse("@Primary", source, pc={})
+        assert str(name_node) == "x(0)"
+
+        source = Source("x()")
+        name_node = parse("@Primary", source, pc={})
+        assert str(name_node) == "x()"
+
+        source = Source("x(1, 2)")
+        name_node = parse("@Primary", source, pc={})
+        assert str(name_node) == "x(1, 2)"
+
+
+    def test_FuncAppAsExpression(self):
         source = Source("x(0)")
         name_node = parse("@Expression", source, pc={})
         assert str(name_node) == "x(0)"
@@ -182,9 +196,10 @@ class TestParseStatementNode:
 
     def test_IncrementAsStatement_lookahead(self):
         source = Source("xに3増やす # コメント")
-        increment_node = parse("@Statement", source, pc={})
-        assert str(increment_node) == "xを増やす"
-
+        with pytest.raises(YuiError) as excinfo:
+            increment_node = parse("@Statement", source, pc={})
+            assert str(increment_node) == "xを増やす"
+        assert "expected" in str(excinfo.value)
 
     def test_Increment_py(self):
         source = Source("x += 1", syntax=py_syntax)

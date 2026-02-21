@@ -1,204 +1,102 @@
 from dataclasses import dataclass
-import time
 from typing import List, Optional, Dict, Any, Union
-from types import FunctionType
 from abc import ABC, abstractmethod
 
-from .yuitypes import (
-    YuiValue, YuiType, YuiError, ASTNode,
-    OPERATORS,
-)
+OPERATORS = None
 
-YuiParser = None  # 循環インポート防止のため、後で設定されます
-CodeVisitor = None  # 循環インポート防止のため、後で設定されます
+def set_operators(operators: dict):
+    global OPERATORS
+    OPERATORS = operators
 
-from .message import to_message as _to_message
-
-def set_from_outside(parser, visitor):
-    global YuiParser
-    global CodeVisitor
-    YuiParser = parser
-    CodeVisitor = visitor
-
-class YuiRuntime(object):
-    """Yui言語のランタイムシステム
-    プログラムの実行を制御し、以下の機能を提供します：
-    - プログラムのパースと実行
-    - タイムアウト制御
-    - 実行統計の収集（インクリメント、デクリメント、比較の回数）
-    - 再帰呼び出しの追跡
-    """
-
-    enviroments: List[dict]
-    filesystems: Dict[str, str]  # 仮想ファイルシステム
-    call_frames: List[tuple]  # (func_name, args, pos, end_pos)
-    increment_count: int
-    decrement_count: int
-    compare_count: int
-    test_passed: List[str]
-    test_failed: List[tuple]
+@dataclass
+class ASTNode(ABC):
+    """抽象構文木（AST）の基底クラス"""
+    filename: str
     source: str
-
-    def __init__(self, init_env: Dict[str, Any] = None):
-        """YuiRuntimeを初期化する"""
-        self.enviroments = [{} if init_env is None else init_env]
-        self.filesystems = {}
-        self.call_frames = []
-        
-        self.shouldStop = False
-        self.timeout = 0
-        self.interactive_mode = False
+    pos: int
+    end_pos: int
+    comment: Optional[str]
+    evaluated_value: Optional[Any]
+    
+    def __init__(self):
+        """ASTNodeを初期化する"""
+        self.filename = "main.yui"
         self.source = ""
-        self.reset_stats()
+        self.pos = 0
+        self.end_pos = -1
+        self.comment = None
+        self.evaluated_value = None
 
-    def reset_stats(self):
-        """実行統計をリセットする"""
-        self.increment_count = 0
-        self.decrement_count = 0
-        self.compare_count = 0
-        self.test_passed = []
-
-    def hasenv(self, name) -> bool:
-        """現在の環境に変数が存在するか確認する"""
-        for env in reversed(self.enviroments):
-            if name in env:
-                return True
-        return False
-
-    def getenv(self, name) -> Any:
-        """現在の環境から変数を取得する"""
-        for env in reversed(self.enviroments):
-            if name in env:
-                return env[name]
-        return None
-
-    def setenv(self, name, value) -> Any:
-        """現在の環境に変数を設定する"""
-        self.enviroments[-1][name] = value  
-
-    def pushenv(self):
-        """現在の環境に変数を設定する"""
-        self.enviroments.append({})
-
-    def popenv(self):
-        """現在の環境に変数を設定する"""
-        return self.enviroments.pop()
-    
-    def stringfy_env(self, stack=-1, indent_prefix: str = "") -> str:
-        """環境をJSON形式の文字列として出力する"""
-        if indent_prefix is None:
-            indent_prefix = ""
-            inner_indent_prefix = None
-            LF = ""
-        else:
-            inner_indent_prefix = indent_prefix + "  "
-            LF = "\n"
-        lines = [f"{indent_prefix}<{self.stringfy_call_frames(stack=stack)}>{LF}{{"]
-        for i, (key, value) in enumerate(self.enviroments[stack].items()):
-            if key.startswith("@"): continue 
-            lines.append(f"{LF}{indent_prefix}  \"{key}\": ")
-            lines.append(f"{YuiValue.stringfy_value(value, inner_indent_prefix)}")
-            if i < len(self.enviroments[stack]) - 1:
-                lines.append(", ")
-        lines.append(f"{LF}{indent_prefix}}}")
-        return ''.join(lines)
-
-    def push_call_frame(self, func_name: str, args: List[Any], node):
-        """関数呼び出しフレームをスタックに追加"""
-        self.call_frames.append((func_name, args, node))
-
-    def pop_call_frame(self):
-        """関数呼び出しフレームをスタックから削除"""
-        self.call_frames.pop()
-
-    def stringfy_call_frames(self, stack=-1)->str:
-        """スタックトレースを文字列として出力する"""
-        if len(self.call_frames) == 0:
-            return "global"
-        call_frame = self.call_frames[stack]
-        args = ", ".join(YuiValue.stringfy_value(arg, indent_prefix=None) for arg in call_frame[1])
-        return f"{call_frame[0]}({args})]"
-
-    def check_recursion_depth(self):
-        """再帰呼び出しの深さをチェック"""
-        if len(self.call_frames) > 512:
-            args = ", ".join(str(arg) for arg in self.call_frames[-1][1])
-            snippet = f"{self.call_frames[-1][0]}({args})"
-            raise YuiError(("error", "recursion", f"🔍{snippet}"), self.call_frames[-1][2], self)
-
-    def update_variable(self, name: str, env: Dict[str, Any], pos: int):
-        """変数更新時のフック（サブクラスでオーバーライド可能）"""
-        pass
-
-    def count_inc(self):
-        """インクリメント操作のカウントを増やす"""
-        self.increment_count += 1
-
-    def count_dec(self):
-        """デクリメント操作のカウントを増やす"""
-        self.decrement_count += 1
-
-    def count_compare(self):
-        """比較操作のカウントを増やす"""
-        self.compare_count += 1
-
-    def exec(self, source: str, syntax: Union[str,dict] = 'yui', timeout: int = 30, eval_mode: bool = True):
-        """Yuiプログラムを実行する"""
+    def setpos(self, source: str, pos: int, end_pos: int = -1, filename: str = "main.yui"):
         self.source = source
-
-        # パースして実行
-        parser = YuiParser()
-        program = parser.parse(source)
-        self.start(timeout)
-        value = program.evaluate(self)
-
-        # 結果を返す
-        return YuiValue.yui_to_native(value) if eval_mode else self.enviroments[-1]
-
-    def load(self, function: FunctionType):
-        """Python関数をYui関数として読み込む"""
-        return NativeFunction(function)
-
-    def print(self, value: Any, node: 'ASTNode'):
-        """値を出力する"""
-        line, _, snippet = node.extract()
-        if self.interactive_mode or isinstance(node, StringNode):
-            print(f"{value}")
-        elif isinstance(node, FuncAppNode):
-            print(f"#line: {line} {snippet.strip()}\n>>> {node.snippet}\n{value}")
-        else:
-            print(f"#line: {line}\n>>> {snippet.strip()}\n{value}")
-
-    def start(self, timeout: int = 30):
-        """実行を開始する"""
-        self.shouldStop = False
-        self.timeout = timeout
-        self.startTime = time.time()
-
-    def check_execution(self, node):
-        """実行状態をチェックする"""
-        # 手動停止フラグのチェック
-        if self.shouldStop:
-            raise YuiError(('interruptted'), node, self)
-
-        # タイムアウトチェック
-        if self.timeout > 0 and (time.time() - self.startTime) > self.timeout:
-            raise YuiError(("error", "timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node, self)
+        self.pos = pos
+        self.end_pos = end_pos
+        self.filename = filename
+        self.comment = None
+        return self
     
+    def __str__(self) -> str:
+        """ノードに対応するソースコードのスニペットを返す"""
+        return self.source[self.pos:self.end_pos]
+
+    def evaluate(self, runtime: 'YuiRuntime') -> 'YuiValue': # type: ignore
+        return self.visit(runtime)
+
+    def visit(self, visitor):
+        """ノードを訪問する"""
+        method_name = 'visit' + self.__class__.__name__
+        visit = getattr(visitor, method_name, visitor.visitASTNode)
+        return visit(self)
+    
+    def extract(self) -> tuple:
+        """ソースコード内の位置をエラー表示用の情報に変換する
+
+        Returns:
+            tuple: (line, col, snippet)
+                - line: 行番号（1始まり）
+                - col: 列番号（1始まり）
+                - snippet: エラー行のコードスニペット
+        """
+        linenum = 1
+        col = 1
+        start = 0
+
+        # エラー位置まで文字を辿り、行番号と列番号を計算
+        for i, char in enumerate(self.source):
+            if i == self.pos:
+                break
+            if char == '\n':
+                linenum += 1
+                col = 1
+                start = i + 1
+            else:
+                col += 1
+
+        # エラー行の終端を見つける
+        end_pos = self.source.find('\n', start)
+        if end_pos == -1:
+            end_pos = len(self.source)
+        return linenum, col, self.source[start:end_pos]
+
+def _eval(node_or_value):
+    if isinstance(node_or_value, ASTNode):
+        return node_or_value.evaluated_value
+    return node_or_value
+
 @dataclass
 class ExpressionNode(ASTNode):
     """式（Expression）の基底クラス"""
     def __init__(self):
         super().__init__()
 
-def node(node: Any) -> ASTNode:
+def _node(node: Any) -> ASTNode:
     if node is None: return None
     if isinstance(node, (int, float)):
         return NumberNode(node)
     if isinstance(node, str):
         return StringNode(node)
     if isinstance(node, list):
-        return ArrayNode([node(e) for e in node])
+        return ArrayNode([_node(e) for e in node])
     assert isinstance(node, ASTNode)
     return node
 
@@ -208,9 +106,9 @@ class NullNode(ExpressionNode):
     def __init__(self):
         super().__init__()
 
-    def evaluate(self, runtime: YuiRuntime) -> Union[int, YuiValue]:
-        self.evaluated_value = YuiValue.NullValue
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitNullNode(self)
+
 
 @dataclass
 class NumberNode(ExpressionNode):
@@ -221,10 +119,8 @@ class NumberNode(ExpressionNode):
         super().__init__()
         self.native_value = value
 
-    def evaluate(self, runtime: YuiRuntime) -> Union[int, YuiValue]:
-        """数値を返す"""
-        self.evaluated_value = YuiValue(self.native_value)
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitNumberNode(self)
 
 @dataclass
 class ArrayLenNode(ExpressionNode):
@@ -235,11 +131,8 @@ class ArrayLenNode(ExpressionNode):
         super().__init__()
         self.element = element
 
-    def evaluate(self, runtime: YuiRuntime) -> Union[int, YuiValue]:
-        """配列の長さを返す"""
-        value = self.element.evaluate(runtime)
-        self.evaluated_value = YuiValue(len(value.arrayview))
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitArrayLenNode(self)
 
 @dataclass
 class MinusNode(ExpressionNode):
@@ -250,13 +143,8 @@ class MinusNode(ExpressionNode):
         super().__init__()
         self.element = element
 
-    def evaluate(self, runtime: YuiRuntime) -> Union[int, YuiValue]:
-        """式を評価して符号を反転する"""
-        self.element.evaluate(runtime)
-        YuiType.NumberType.match_or_raise(self.element, runtime)
-        value = YuiType.matched_native(self.element)
-        self.evaluated_value = YuiValue(-value)
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitMinusNode(self)
 
 @dataclass
 class StringNode(ExpressionNode):
@@ -267,20 +155,8 @@ class StringNode(ExpressionNode):
         super().__init__()
         self.contents = contents
 
-    def evaluate(self, runtime: YuiRuntime) -> YuiValue:
-        if isinstance(self.contents, str):
-            self.evaluated_value = YuiValue(self.contents)
-            return self.evaluated_value
-        string_values = []
-        for content in self.contents:
-            if isinstance(content, str):
-                string_values.append(content)
-            else: # string埋め込み式
-                value = content.evaluate(runtime)
-                value = YuiType.yui_to_native(value)
-                string_values.append(f'{value}')
-        self.evaluated_value = YuiValue(''.join(string_values))
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitStringNode(self)
 
 @dataclass
 class ArrayNode(ExpressionNode):
@@ -289,16 +165,10 @@ class ArrayNode(ExpressionNode):
 
     def __init__(self, elements: List[Any]):
         super().__init__()
-        self.elements = [node(e) for e in elements]
+        self.elements = [_node(e) for e in elements]
 
-    def evaluate(self, runtime: YuiRuntime):
-        """各要素を評価してYuiValueを作成する"""
-        array_value = YuiValue([])
-        for element in self.elements:
-            element.evaluate(runtime)
-            array_value.append(element, runtime)
-        self.evaluated_value = array_value
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitArrayNode(self)
 
 @dataclass
 class ObjectNode(ExpressionNode):
@@ -307,17 +177,10 @@ class ObjectNode(ExpressionNode):
 
     def __init__(self, elements: List[Any]):
         super().__init__()
-        self.elements = [node(e) for e in elements]
+        self.elements = [_node(e) for e in elements]
 
-    def evaluate(self, runtime: YuiRuntime) -> YuiValue:
-        """各要素を評価してYuiValueを作成する"""
-        object_value = YuiValue({})
-        for i in range(0, len(self.elements), 2):
-            self.elements[i].evaluate(runtime)
-            self.elements[i+1].evaluate(runtime)
-            object_value.set_item(self.elements[i], self.elements[i+1], runtime)
-        self.evaluated_value = object_value
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitObjectNode(self)
 
 @dataclass
 class NameNode(ExpressionNode):
@@ -328,16 +191,12 @@ class NameNode(ExpressionNode):
         super().__init__()
         self.name = name
 
-    def evaluate(self, runtime: YuiRuntime)-> YuiValue:
-        """変数の値を返す（インデックスがあれば配列要素を返す）"""
-        if not runtime.hasenv(self.name):
-            raise YuiError(("undefined", "variable", f"❌{self.name}"), self, runtime)
-        self.evaluated_value = runtime.getenv(self.name)
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitNameNode(self)
     
-    def update(self, value_node: ASTNode, runtime: YuiRuntime):
+    def update(self, value_node: ASTNode, visitor: 'YuiRuntime'):
         """変数の値を更新する"""
-        runtime.setenv(self.name, YuiType.evaluated(value_node))
+        visitor.setenv(self.name, _eval(value_node))
 
 @dataclass
 class GetIndexNode(ASTNode):
@@ -347,21 +206,17 @@ class GetIndexNode(ASTNode):
 
     def __init__(self, collection: ExpressionNode, index: ExpressionNode):
         super().__init__()
-        self.collection = node(collection)
-        self.index_node = node(index)
+        self.collection = _node(collection)
+        self.index_node = _node(index)
 
-    def evaluate(self, runtime: YuiRuntime)-> YuiValue:
-        """配列またはオブジェクトから値を取得する"""
-        collection_value = self.collection.evaluate(runtime)
-        self.index_node.evaluate(runtime)
-        self.evaluated_value = collection_value.get_item(self.index_node, runtime)
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitGetIndexNode(self)
     
-    def update(self, value_node: ASTNode, runtime: YuiRuntime):
+    def update(self, value_node: ASTNode, visitor): 
         """変数の値を更新する"""
-        collection_value = self.collection.evaluate(runtime)
-        self.index_node.evaluate(runtime)
-        collection_value.set_item(self.index_node, value_node, runtime)
+        collection = _eval(self.collection.visit(visitor))
+        self.index_node.visit(visitor)
+        collection.set_item(self.index_node, value_node) 
 
 @dataclass
 class BinaryNode(ASTNode):
@@ -373,78 +228,13 @@ class BinaryNode(ASTNode):
 
     def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode, comparative: bool = False):
         super().__init__()
-        self.left_node = node(left)
+        self.left_node = _node(left)
         self.operator = operator
-        self.right_node = node(right)
+        self.right_node = _node(right)
         self.comparative = comparative
 
-    def evaluate(self, runtime):
-        raise YuiError(("error", "internal", f"🔍{self.operator} operator is not implemented"), self, runtime)
-
-
-class YuiFunction(ABC):
-    name: str
-    def __init__(self, name: str):
-        self.name = name
-
-    @abstractmethod
-    def call(self, arguments: List[Any], node: ASTNode, runtime: YuiRuntime) -> YuiValue:
-        pass
-
-class LocalFunction(YuiFunction):
-    """ユーザが関数の型"""
-    
-    def __init__(self, name: str, parameters: List[str], body: ASTNode):
-        super().__init__(name)
-        self.parameters = parameters
-        self.body = body
-
-    def call(self, arguments: List[Any], node: ASTNode, runtime: YuiRuntime) -> YuiValue:
-        # 新しい環境を作成
-        runtime.pushenv()
-        if len(self.parameters) != len(arguments):
-            raise YuiError(("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arguments)}"), node, runtime)
-
-        for parameter_name, parameter_value in zip(self.parameters, arguments):
-            runtime.setenv(parameter_name, parameter_value.evaluated_value)
-
-        try:
-            # 関数本体を評価
-            runtime.push_call_frame(self.name, arguments, node)
-            runtime.check_recursion_depth()
-            self.body.evaluate(runtime)
-        except YuiReturnException as e:
-            # return 文で値が返された
-            if e.value is not None:
-                runtime.pop_call_frame()
-                runtime.popenv()
-                return e.value
-        # return 文がない場合は変更された変数のみ返す
-        runtime.pop_call_frame()
-        return YuiValue(runtime.popenv())
-        
-class NativeFunction(YuiFunction):
-    """ネイティブ関数の型"""
-    is_ffi: bool = True
-    name: str
-    function: callable
-
-    def __init__(self, function: callable, is_ffi=False):
-        super().__init__(function.__name__)
-        self.function = function
-        self.is_ffi = is_ffi
-
-    def call(self, arguments: List[ASTNode], node: ASTNode, runtime: YuiRuntime) -> YuiValue:
-        try:
-            return self.function(*arguments)
-        except YuiError as e:
-            if e.error_node is None:
-                e.error_node = node
-            e.runtime = runtime
-            raise e
-        except Exception as e:
-            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node, runtime)
-
+    # def evaluate(self, runtime):
+    #     raise YuiError(("error", "internal", f"🔍{self.operator} operator is not implemented"), self, runtime)
 
 @dataclass
 class FuncAppNode(ExpressionNode):
@@ -455,30 +245,12 @@ class FuncAppNode(ExpressionNode):
 
     def __init__(self, name: ExpressionNode, arguments: List[ExpressionNode]):
         super().__init__()
-        self.name_node = NameNode(name) if isinstance(name, str) else node(name)
-        self.arguments = [node(arg) for arg in arguments]
+        self.name_node = NameNode(name) if isinstance(name, str) else _node(name)
+        self.arguments = [_node(arg) for arg in arguments]
         self.snippet = str(self)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """関数を呼び出して結果を返す"""
-        if isinstance(self.name_node, NameNode):
-            name = f'@{self.name_node.name}'
-            if not runtime.hasenv(name):
-                raise YuiError(("undefined", "function", f"❌{self.name_node.name}"), self.name_node, runtime)
-            function = runtime.getenv(name)
-        if not isinstance(function, YuiFunction):
-            raise YuiError(("error", "type", "✅<function>", f"❌{function}"), self.name_node, runtime)
-        
-        arguments = []
-        for argnone in self.arguments:
-            argnone.evaluate(runtime)
-            arguments.append(argnone)
-        
-        if self.snippet == '':
-            args = ', '.join(f'{YuiType.evaluated(argnode)}' for argnode in arguments)
-            self.snippet = f'{self.name_node}({args})'
-        self.evaluated_value = function.call(arguments, self, runtime)
-        return self.evaluated_value
+    def visit(self, visitor):
+        return visitor.visitFuncAppNode(self)
 
 
 @dataclass
@@ -495,15 +267,11 @@ class AssignmentNode(StatementNode):
 
     def __init__(self, variable: NameNode, expression: ExpressionNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
-        self.expression = node(expression)
+        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        self.expression = _node(expression)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """式を評価して変数に代入する"""
-        if not hasattr(self.variable, 'update'):
-            raise YuiError(("expected", "variable", f"❌{self.variable}"), self.variable, runtime)
-        self.expression.evaluate(runtime)
-        self.variable.update(self.expression, runtime)
+    def visit(self, visitor):
+        return visitor.visitAssignmentNode(self)
 
 @dataclass
 class IncrementNode(StatementNode):
@@ -512,15 +280,10 @@ class IncrementNode(StatementNode):
 
     def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
+        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """変数を1増やす"""
-        self.variable.evaluate(runtime)
-        YuiType.IntType.match_or_raise(self.variable, runtime)
-        self.variable.evaluated_value = YuiValue(YuiType.matched_native(self.variable) + 1)
-        self.variable.update(self.variable, runtime)
-        runtime.count_inc()
+    def visit(self, visitor):
+        return visitor.visitIncrementNode(self)
 
 @dataclass
 class DecrementNode(StatementNode):
@@ -529,15 +292,10 @@ class DecrementNode(StatementNode):
 
     def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
+        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """変数を1減らす"""
-        self.variable.evaluate(runtime)
-        YuiType.IntType.match_or_raise(self.variable, runtime)
-        self.variable.evaluated_value = YuiValue(YuiType.matched_native(self.variable) - 1)
-        self.variable.update(self.variable, runtime)
-        runtime.count_dec()
+    def visit(self, visitor):
+        return visitor.visitDecrementNode(self)
 
 @dataclass
 class AppendNode(StatementNode):
@@ -547,14 +305,11 @@ class AppendNode(StatementNode):
 
     def __init__(self, variable: NameNode, expression: ExpressionNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else node(variable)
-        self.expression = node(expression)
+        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        self.expression = _node(expression)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """値を評価して配列に追加する"""
-        array = self.variable.evaluate(runtime)
-        self.expression.evaluate(runtime)
-        array.append(self.expression, runtime)
+    def visit(self, visitor):
+        return visitor.visitAppendNode(self)
 
 @dataclass
 class BlockNode(StatementNode):
@@ -570,9 +325,8 @@ class BlockNode(StatementNode):
             self.statements = statements
         self.top_level = top_level
 
-    def evaluate(self, runtime: YuiRuntime):
-        for statement in self.statements:
-            statement.evaluate(runtime)
+    def visit(self, visitor):
+        return visitor.visitBlockNode(self)
 
 @dataclass
 class IfNode(StatementNode):
@@ -587,40 +341,22 @@ class IfNode(StatementNode):
                  left: ExpressionNode, operator: str, right: ExpressionNode,
                  then_block: BlockNode, else_block: Optional[BlockNode] = None):
         super().__init__()
-        self.left = node(left)
+        self.left = _node(left)
         self.operator = OPERATORS[operator]
-        self.right = node(right)
+        self.right = _node(right)
         self.then_block = then_block
         self.else_block = else_block
 
-    def evaluate(self, runtime: YuiRuntime):
-        """条件を評価して適切なブロックを実行する"""
-        self.left.evaluate(runtime)
-        self.right.evaluate(runtime)
-        result = self.operator.evaluate(self.left, self.right, runtime)
-        runtime.count_compare()
-
-        # 結果に応じてブロックを実行
-        if result:
-            self.then_block.evaluate(runtime)
-        elif self.else_block:
-            self.else_block.evaluate(runtime)
-
-
-class YuiBreakException(RuntimeError):
-    """ループを抜けるための例外"""
-    def __init__(self):
-        pass
-
+    def visit(self, visitor):
+        return visitor.visitIfNode(self)
 
 @dataclass
 class BreakNode(StatementNode):
     def __init__(self):
         super().__init__()
 
-    def evaluate(self, runtime: YuiRuntime):
-        raise YuiBreakException()
-
+    def visit(self, visitor):
+        return visitor.visitBreakNode(self)
 
 @dataclass
 class PassNode(StatementNode):
@@ -628,8 +364,8 @@ class PassNode(StatementNode):
         super().__init__()
         self.comment = comment
 
-    def evaluate(self, runtime: YuiRuntime):
-        pass
+    def visit(self, visitor):
+        return visitor.visitPassNode(self)
 
 @dataclass
 class RepeatNode(StatementNode):
@@ -639,20 +375,11 @@ class RepeatNode(StatementNode):
 
     def __init__(self, count_node: ExpressionNode, block_node: BlockNode):
         super().__init__()
-        self.count_node = node(count_node)    
+        self.count_node = _node(count_node)    
         self.block_node = block_node
 
-    def evaluate(self, runtime: YuiRuntime):
-        """ループを実行する"""
-        count = self.count_node.evaluate(runtime)
-        YuiType.IntType.match_or_raise(self.count_node, runtime)
-        count = YuiType.matched_native(self.count_node)
-        try:
-            for _ in range(abs(count)):
-                runtime.check_execution(self)
-                self.block_node.evaluate(runtime)
-        except YuiBreakException:
-            pass
+    def visit(self, visitor):
+        return visitor.visitRepeatNode(self)
 
 @dataclass
 class ImportNode(StatementNode):
@@ -661,20 +388,10 @@ class ImportNode(StatementNode):
 
     def __init__(self, module_name: str = None):
         super().__init__()
-        self.module_name = NameNode(module_name) if isinstance(module_name, str) else node(module_name)
+        self.module_name = NameNode(module_name) if isinstance(module_name, str) else _node(module_name)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """ライブラリを環境に追加する"""
-        modules = []
-        if self.module_name is None:
-            standard_lib(modules)
-        for name, func in modules:
-            runtime.setenv(f'@{name}', NativeFunction(func))
-
-class YuiReturnException(RuntimeError):
-    """関数から値を返すための例外"""
-    def __init__(self, value=None):
-        self.value = value
+    def visit(self, visitor):
+        return visitor.visitImportNode(self)
 
 @dataclass
 class ReturnNode(StatementNode):
@@ -683,11 +400,10 @@ class ReturnNode(StatementNode):
 
     def __init__(self, expression: ExpressionNode):
         super().__init__()
-        self.expression = node(expression)
+        self.expression = _node(expression)
 
-    def evaluate(self, runtime: YuiRuntime):
-        value = self.expression.evaluate(runtime)
-        raise YuiReturnException(value)
+    def visit(self, visitor):
+        return visitor.visitReturnNode(self)
 
 @dataclass
 class FuncDefNode(StatementNode):
@@ -698,15 +414,13 @@ class FuncDefNode(StatementNode):
 
     def __init__(self, name_node: NameNode, parameters: List[NameNode], body: BlockNode):
         super().__init__()
-        self.name_node = NameNode(name_node) if isinstance(name_node, str) else node(name_node)
-        self.parameters = [NameNode(param) if isinstance(param, str) else node(param) for param in parameters]
+        self.name_node = NameNode(name_node) if isinstance(name_node, str) else _node(name_node)
+        self.parameters = [NameNode(param) if isinstance(param, str) else _node(param) for param in parameters]
         self.body = body
 
-    def evaluate(self, runtime: YuiRuntime):
-        params = [param.name for param in self.parameters]
-        function = LocalFunction(self.name_node.name, params, self.body)
-        runtime.setenv(f'@{self.name_node.name}', function)
-        return function
+    def visit(self, visitor):
+        return visitor.visitFuncDefNode(self)
+
 
 @dataclass
 class PrintExpressionNode(StatementNode):
@@ -717,20 +431,12 @@ class PrintExpressionNode(StatementNode):
 
     def __init__(self, expression: ExpressionNode, inspection: bool = False, groping: bool = False):
         super().__init__()
-        self.expression = node(expression)
+        self.expression = _node(expression)
         self.inspection = inspection
         self.groping = groping
 
-    def evaluate(self, runtime: YuiRuntime):
-        """式を評価して結果を出力する"""
-        if isinstance(self.expression, MinusNode):  
-            value = self.expression.element.evaluate(runtime)  # マイナス記号は出力しない
-            return value
-        if isinstance(self.expression, FuncAppNode):
-            self.expression.snippet = '' # 表示の用のスニペットをクリア
-        value = self.expression.evaluate(runtime)
-        runtime.print(value, self.expression)
-        return value
+    def visit(self, visitor):
+        return visitor.visitPrintExpressionNode(self)
 
 @dataclass
 class AssertNode(StatementNode):
@@ -740,19 +446,10 @@ class AssertNode(StatementNode):
 
     def __init__(self, test: ExpressionNode, reference: ExpressionNode):
         super().__init__()
-        self.test = node(test)
-        self.reference = node(reference)
+        self.test = _node(test)
+        self.reference = _node(reference)
 
-    def evaluate(self, runtime: YuiRuntime):
-        """式を評価して期待値と比較する"""
-        try:
-            tested = self.test.evaluate(runtime)
-            reference_value = self.reference.evaluate(runtime)
-            if tested.type.equals(self.test, self.reference):
-                runtime.test_passed.append(str(self.test))
-                return
-        except Exception as e:
-            print(f"Error during test evaluation: {e}")
-            pass
-        raise YuiError(("failed", "test", f"🔍{self.test}", f"❌{tested}", f"✅{reference_value}"), self, runtime)
+    def visit(self, visitor):
+        return visitor.visitAssertNode(self)
+
 

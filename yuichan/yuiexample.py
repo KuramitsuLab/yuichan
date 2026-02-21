@@ -15,7 +15,8 @@ from .yuiast import (
     PrintExpressionNode,
     BinaryNode, GetIndexNode, AssertNode
 )
-from .yuiparser import CodingVisitor, load_syntax
+from .yuicoding import CodingVisitor
+from .yuisyntax import load_syntax
 
 
 class YuiExample:

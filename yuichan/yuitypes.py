@@ -2,88 +2,16 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Union
 from abc import ABC, abstractmethod
 
-@dataclass
-class ASTNode(ABC):
-    """抽象構文木（AST）の基底クラス"""
-    filename: str
-    source: str
-    pos: int
-    end_pos: int
-    comment: Optional[str]
-    evaluated_value: Optional[Any]
-    
-    def __init__(self):
-        """ASTNodeを初期化する"""
-        self.filename = "main.yui"
-        self.source = ""
-        self.pos = 0
-        self.end_pos = -1
-        self.comment = None
-        self.evaluated_value = None
-
-    def setpos(self, source: str, pos: int, end_pos: int = -1, filename: str = "main.yui"):
-        self.source = source
-        self.pos = pos
-        self.end_pos = end_pos
-        self.filename = filename
-        self.comment = None
-        return self
-    
-    def __str__(self) -> str:
-        """ノードに対応するソースコードのスニペットを返す"""
-        return self.source[self.pos:self.end_pos]
-
-    @abstractmethod
-    def evaluate(self, runtime: 'YuiRuntime') -> 'YuiValue': # type: ignore
-        pass
-
-    def visit(self, visitor):
-        """ノードを訪問する"""
-        method_name = 'visit' + self.__class__.__name__
-        visit = getattr(visitor, method_name, visitor.visitASTNode)
-        return visit(self)
-    
-    def extract(self) -> tuple:
-        """ソースコード内の位置をエラー表示用の情報に変換する
-
-        Returns:
-            tuple: (line, col, snippet)
-                - line: 行番号（1始まり）
-                - col: 列番号（1始まり）
-                - snippet: エラー行のコードスニペット
-        """
-        linenum = 1
-        col = 1
-        start = 0
-
-        # エラー位置まで文字を辿り、行番号と列番号を計算
-        for i, char in enumerate(self.source):
-            if i == self.pos:
-                break
-            if char == '\n':
-                linenum += 1
-                col = 1
-                start = i + 1
-            else:
-                col += 1
-
-        # エラー行の終端を見つける
-        end_pos = self.source.find('\n', start)
-        if end_pos == -1:
-            end_pos = len(self.source)
-        return linenum, col, self.source[start:end_pos]
+from .yuiast import ASTNode, _eval, set_operators
 
 class YuiError(RuntimeError):
-    """
-    Yui言語のエラーを表現するクラス
-    """
+    """Yui言語のエラーを表現するクラス"""
     messages: tuple
     error_node: Optional[ASTNode]
     runtime: Optional['YuiRuntime'] # type: ignore
     BK: bool
     
-    def __init__(self, messages: tuple, 
-                 error_node: Optional[ASTNode] = None,
+    def __init__(self, messages: tuple, error_node: Optional[ASTNode] = None,
                  runtime: Optional['YuiRuntime'] = None, #type: ignore
                  BK: bool = False):
         """YuiErrorを初期化する"""
@@ -119,7 +47,8 @@ class YuiError(RuntimeError):
 
     def formatted_message(self, prefix=" ", marker: str = '^', lineoffset: int = 0) -> str:
         """エラーメッセージを整形して返す"""
-        message = _to_message(self.messages)
+        # message = _to_message(self.messages)
+        message = ' '.join(self.messages)   
         if self.error_node:
             line, col, snippet = self.error_node.extract()
             # エラー範囲の長さを計算（最小3文字）
@@ -160,17 +89,17 @@ class YuiType(ABC):
     def match(self, value: Any) -> bool:
         pass
 
-    def match_or_raise(self, node_or_value, runtime = None):
-        value = YuiType.evaluated(node_or_value)
+    def match_or_raise(self, node_or_value = None):
+        value = _eval(node_or_value)
         if not self.match(value):
-            raise YuiError(("error", "type", f"✅<{self.emoji}{self.name}>", f"❌{value}"), node_or_value, runtime)
+            raise YuiError(("error", "type", f"✅<{self.emoji}{self.name}>", f"❌{value}"), node_or_value)
 
     @abstractmethod
     def to_arrayview(self, n: int) -> List[int]:
         pass
 
     @abstractmethod
-    def to_native(self, elements: List[int], node=None, runtime=None) -> Any:
+    def to_native(self, elements: List[int], node=None) -> Any:
         pass
 
     @abstractmethod
@@ -182,10 +111,10 @@ class YuiType(ABC):
         right_value = YuiType.to_native((right_node))
         return left_value == right_value    
 
-    def less_than(self, left_node: Any, right_node: Any, op = "<", runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
-        right_value = YuiType.evaluated(right_node)
-        raise YuiError(("unsupported", "comparison", f"❌{left_value} {op} {right_value}"), left_node, runtime)
+    def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
+        left_value = _eval(left_node)
+        right_value = _eval(right_node)
+        raise YuiError(("unsupported", "comparison", f"❌{left_value} {op} {right_value}"), left_node)
 
 
     # クラス変数として各型のインスタンスを定義
@@ -229,7 +158,7 @@ class YuiType(ABC):
 
     @staticmethod
     def matched_native(node_or_value) -> None:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         if isinstance(value, YuiValue):
             return value.native
         return value # 型チェック済みを想定
@@ -242,7 +171,7 @@ class YuiType(ABC):
 
     @staticmethod
     def into_arrayview(node_or_value) -> Any:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         if isinstance(value, YuiValue) and value.is_primitive():
             return value.native
         if isinstance(value, (int, float, str)) or value is None:
@@ -263,7 +192,7 @@ class YuiType(ABC):
     
     @staticmethod
     def to_native(node_or_value) -> Any:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         if isinstance(value, YuiValue):
             return value.native
         if isinstance(value, list):
@@ -288,7 +217,7 @@ class YuiType(ABC):
         if isinstance(value, YuiValue):
             return value.native
         if isinstance(value, list):
-            return [yui.yui_to_native(e) for e in value]
+            return [YuiType.yui_to_native(e) for e in value]
         if isinstance(value, dict):
             new_value = {}
             for key, item in value.items():
@@ -297,7 +226,7 @@ class YuiType(ABC):
         return value
 
     @staticmethod
-    def compare(left_node_or_value, right_node_or_value: Any, runtime = None) -> int:
+    def compare(left_node_or_value, right_node_or_value: Any) -> int:
         print(f"Comparing {left_node_or_value} and {right_node_or_value}")
         if YuiType.is_number(left_node_or_value) and YuiType.is_number(right_node_or_value):
             left_value = round(YuiType.matched_native(left_node_or_value), 6)
@@ -307,8 +236,8 @@ class YuiType(ABC):
             left_value = YuiType.matched_native(left_node_or_value)
             right_value = YuiType.matched_native(right_node_or_value)
             return _compare(left_value, right_value)
-        left_value = YuiType.evaluated(left_node_or_value)
-        right_value = YuiType.evaluated(right_node_or_value)        
+        left_value = _eval(left_node_or_value)
+        right_value = _eval(right_node_or_value)        
         if not isinstance(right_value, YuiValue):
             right_value = YuiValue(right_value.native)
         return _compare(left_value.arrayview, right_value.arrayview)
@@ -326,16 +255,16 @@ class YuiNullType(YuiType):
         super().__init__("null", TY_NULL)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return value is None or (isinstance(value, YuiValue) and isinstance(value.type, YuiNullType))
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
-        raise YuiError(("immutable", f"❌{self}"), node_or_value, runtime)
+    def check_element(self, node_or_value: Any) -> None:
+        raise YuiError(("immutable", f"❌{self}"), node_or_value)
 
     def to_arrayview(self, n: None) -> List[int]:
         return []
 
-    def to_native(self, elements: List[int], node=None, runtime=None) -> None:
+    def to_native(self, elements: List[int], node=None) -> None:
         return None
     
     def stringfy(self, native_value: None, indent_prefix: str = "", width=80) -> str:
@@ -347,14 +276,14 @@ class YuiIntType(YuiType):
         super().__init__("int", TY_INT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return isinstance(value, int) or (isinstance(value, YuiValue) and isinstance(value.type, YuiIntType))
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
-        YuiType.IntType.match_or_raise(node_or_value, runtime)
+    def check_element(self, node_or_value: Any) -> None:
+        YuiType.IntType.match_or_raise(node_or_value)
         value = self.matched_native(node_or_value)
         if value != 0 and value != 1:
-            raise YuiError(("error", "value", f"✅0/1", f"❌{value}"), node_or_value, runtime)
+            raise YuiError(("error", "value", f"✅0/1", f"❌{value}"), node_or_value)
 
     def to_arrayview(self, n: int) -> List[int]:
         """整数を32ビットの2の補数表現の整数配列に変換"""
@@ -367,10 +296,10 @@ class YuiIntType(YuiType):
             bits.append(value) # int はそのまま
         return bits
 
-    def to_native(self, bits: List[int], node=None, runtime=None) -> int:
+    def to_native(self, bits: List[int], node=None) -> int:
         """32ビットの2の補数表現の整数配列を整数に変換"""
         if len(bits) != 32:
-            raise YuiError(("array", "format", f"❌{len(bits)}", "✅32"), node, runtime)
+            raise YuiError(("array", "format", f"❌{len(bits)}", "✅32"), node)
         
         # ビット列を符号なし整数に変換
         n_unsigned = 0
@@ -394,14 +323,14 @@ class YuiIntType(YuiType):
             return round(float(left_value), 6) == round(right_value, 6)
         return left_value == right_value    
 
-    def less_than(self, left_node: Any, right_node: Any, op = "<", runtime = None) -> bool:
+    def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
         left_value = YuiType.to_native(left_node)
         right_value = YuiType.to_native(right_node)
         if isinstance(right_value, float):
             return round(float(left_value), 6) < round(right_value, 6)
         if isinstance(right_value, int):
             return left_value < right_value
-        super().less_than(left_node, right_node, op=op, runtime=runtime)
+        super().less_than(left_node, right_node, op=op)
     
 
 class YuiFloatType(YuiType):
@@ -409,14 +338,14 @@ class YuiFloatType(YuiType):
         super().__init__("float", TY_FLOAT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return isinstance(value, float) or (isinstance(value, YuiValue) and isinstance(value.type, YuiFloatType))
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
-        YuiType.IntType.match_or_raise(node_or_value, runtime)
+    def check_element(self, node_or_value: Any) -> None:
+        YuiType.IntType.match_or_raise(node_or_value)
         value = self.matched_native(node_or_value)
         if value < -1 or value > 9:
-            raise YuiError(("error", "value", f"✅-1,0-9", f"❌{value}"), node_or_value, runtime)
+            raise YuiError(("error", "value", f"✅-1,0-9", f"❌{value}"), node_or_value)
 
     def to_arrayview(self, x: float) -> List[int]:
         """浮動小数点数を符号付き一桁整数配列に変換
@@ -430,7 +359,7 @@ class YuiFloatType(YuiType):
         digits = [sign] + [int(ch) for ch in s]
         return digits
 
-    def to_native(self, digits: List[int], node=None, runtime=None) -> float:
+    def to_native(self, digits: List[int], node=None) -> float:
         """符号付き一桁整数配列を浮動小数点数に変換
         Example:
             >>> array_to_float([1, 3, 1, 4, 0, 0, 0, 0])
@@ -440,11 +369,11 @@ class YuiFloatType(YuiType):
         """
         sign = digits[0]
         if not(isinstance(sign, int) and sign in (1, -1)):
-            raise YuiError(f"conversion", "tofloat", f"❌[0]{digits[0]}", f"✅1/-1", f"🔍{digits}", node, runtime)
+            raise YuiError(f"conversion", "tofloat", f"❌[0]{digits[0]}", f"✅1/-1", f"🔍{digits}", node)
         num_digits = digits[1:]
         for i, d in enumerate(num_digits, start=1):
             if not (isinstance(d, int) and 0 <= d <= 9):
-                raise YuiError(f"conversion", "tofloat", f"❌[{i}]{d}", f"✅0-9", f"🔍{digits}", node, runtime)
+                raise YuiError(f"conversion", "tofloat", f"❌[{i}]{d}", f"✅0-9", f"🔍{digits}", node)
         s = ''.join(str(d) for d in num_digits)
         if len(s) <= 6:
             # 小数部のみの場合（整数部なし）
@@ -464,12 +393,12 @@ class YuiFloatType(YuiType):
             return left_value == round(right_value, 6)
         return False   
 
-    def less_than(self, left_node: Any, right_node: Any, op = "<", runtime = None) -> bool:
+    def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
         left_value = YuiType.to_native(left_node)
         right_value = YuiType.to_native(right_node)
         if isinstance(right_value, (int, float)):
             return left_value < right_value
-        super().less_than(left_node, right_node, op=op, runtime=runtime)
+        super().less_than(left_node, right_node, op=op)
 
 class YuiNumberType(YuiType):
     def __init__(self):
@@ -478,7 +407,7 @@ class YuiNumberType(YuiType):
     def match(self, node_or_value: Any) -> bool:
         return YuiType.IntType.match(node_or_value) or YuiType.FloatType.match(node_or_value)
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
+    def check_element(self, node_or_value: Any) -> None:
         pass
 
     def to_arrayview(self, n: Union[int, float]) -> List[int]:
@@ -487,11 +416,11 @@ class YuiNumberType(YuiType):
         else:
             return YuiType.IntType.to_arrayview(n)
     
-    def to_native(self, bits: List[int], node=None, runtime=None) -> int:
+    def to_native(self, bits: List[int], node=None) -> int:
         if len(bits) == 32:
-            return YuiType.IntType.to_native(bits, node=node, runtime=runtime)
+            return YuiType.IntType.to_native(bits, node=node)
         else:
-            return YuiType.FloatType.to_native(bits, node=node, runtime=runtime)
+            return YuiType.FloatType.to_native(bits, node=node)
     
     def stringfy(self, native_value: int, indent_prefix: str = "", width=80) -> str:
         if isinstance(native_value, float):
@@ -504,17 +433,17 @@ class YuiStringType(YuiType):
         super().__init__("string", TY_STRING)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return isinstance(value, str) or (isinstance(value, YuiValue) and isinstance(value.type, YuiStringType))
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
-        YuiType.IntType.match_or_raise(node_or_value, runtime)
+    def check_element(self, node_or_value: Any) -> None:
+        YuiType.IntType.match_or_raise(node_or_value)
 
     def to_arrayview(self, x: str) -> List[int]:
         """文字コード"""
         return [ord(ch) for ch in x]
 
-    def to_native(self, elements: List[int], node=None, runtime=None) -> str:
+    def to_native(self, elements: List[int], node=None) -> str:
         return ''.join(chr(d) for d in elements)
 
     def stringfy(self, native_value: str, indent_prefix: str = "", width=80) -> str:
@@ -528,7 +457,7 @@ class YuiStringType(YuiType):
             return left_value == right_value
         return False   
 
-    def less_than(self, left_node: Any, right_node: Any, op = "<", runtime = None) -> bool:
+    def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
         left_value = YuiType.to_native(left_node)
         if YuiType.is_string(right_node):
             right_value = YuiType.matched_native(right_node)
@@ -540,17 +469,17 @@ class YuiArrayType(YuiType):
         super().__init__("array", TY_ARRAY)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return isinstance(value, list) or (isinstance(value, YuiValue) and isinstance(value.type, YuiArrayType))
     
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
+    def check_element(self, node_or_value: Any) -> None:
         pass
 
     def to_arrayview(self, array_value: list) -> List[int]:
         """配列の要素をエンコード"""
         return [YuiType.into_arrayview(value) for value in array_value]
 
-    def to_native(self, elements: List[int], node=None, runtime=None) -> str:
+    def to_native(self, elements: List[int], node=None) -> str:
         array = []
         for element in elements:
             if isinstance(element, YuiValue):
@@ -593,15 +522,15 @@ class YuiObjectType(YuiType):
         super().__init__("object", TY_OBJECT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = YuiType.evaluated(node_or_value)
+        value = _eval(node_or_value)
         return isinstance(value, dict) or (isinstance(value, YuiValue) and isinstance(value.type, YuiObjectType))
 
-    def check_element(self, node_or_value: Any, runtime = None) -> None:
+    def check_element(self, node_or_value: Any) -> None:
         global ArrayType, StringType
-        ArrayType.match_or_raise(node_or_value, runtime)
+        ArrayType.match_or_raise(node_or_value)
         array = self.matched_native(node_or_value)
         if len(array) != 2 or not StringType.match(array[0]):
-            raise YuiError(("error", "value", f"✅[key, value]", f"❌{array}"), node_or_value, runtime)
+            raise YuiError(("error", "value", f"✅[key, value]", f"❌{array}"), node_or_value)
 
     def to_arrayview(self, object_value: dict) -> List[int]:
         """オブジェクトのキーと値をエンコード"""
@@ -610,17 +539,17 @@ class YuiObjectType(YuiType):
             elements.append(YuiValue([str(key), YuiType.into_arrayview(value)]))
         return elements
 
-    def to_native(self, elements: List[int], node=None, runtime=None) -> str:
+    def to_native(self, elements: List[int], node=None) -> str:
         obj = {}
         for key_value in elements:
             if not isinstance(key_value, YuiValue):
-                raise YuiError(f"conversion", "toobject", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node, runtime)
+                raise YuiError(f"conversion", "toobject", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node)
             key_value = key_value.native
             if not isinstance(key_value, list) or len(key_value) != 2:
-                raise YuiError(f"conversion", "toobject", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node, runtime)
+                raise YuiError(f"conversion", "toobject", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node)
             key = key_value[0]
             if not isinstance(key, str):
-                raise YuiError(f"conversion", "toobject", f"❌{key}", f"✅<string>", f"🔍{key_value}", node, runtime)
+                raise YuiError(f"conversion", "toobject", f"❌{key}", f"✅<string>", f"🔍{key_value}", node)
             value = key_value[1]
             obj[key] = value
         return obj
@@ -697,21 +626,21 @@ class YuiValue(object):
             self.elements = self.type.to_arrayview(self.native_value)
         return self.elements
 
-    def get_item(self, node_or_index: int, runtime = None) -> Any:
+    def get_item(self, node_or_index: int) -> Any:
         if YuiType.is_string(node_or_index):
             key = YuiType.matched_native(node_or_index)
             if YuiType.is_object(self):
                 obj = YuiType.matched_native(self)
                 return YuiType.from_arrayview(obj.get(key, YuiValue.NullValue))
         
-        YuiType.IntType.match_or_raise(node_or_index, runtime=runtime)
+        YuiType.IntType.match_or_raise(node_or_index)
         index = YuiType.matched_native(node_or_index)
         elements = self.arrayview
         if index < 0 or index >= len(elements):
-            raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index, runtime)
+            raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index)
         return YuiType.from_arrayview(elements[index])
     
-    def set_item(self, node_or_index: int, node_or_value: Any, runtime=None) -> Any:
+    def set_item(self, node_or_index: int, node_or_value: Any) -> Any:
         value = YuiType.into_arrayview(node_or_value)
         if YuiType.is_string(node_or_index):
             key = YuiType.matched_native(node_or_index)
@@ -720,17 +649,17 @@ class YuiValue(object):
                 obj[key] = value
                 self.elements = None
                 return
-        YuiType.IntType.match_or_raise(node_or_index, runtime=runtime)
+        YuiType.IntType.match_or_raise(node_or_index)
         index = YuiType.matched_native(node_or_index)
         elements = self.arrayview
         if index < 0 or index >= len(elements):
-            raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index, runtime)
-        self.type.check_element(node_or_value, runtime)
+            raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index)
+        self.type.check_element(node_or_value)
         elements[index] = value
         self.native_value = None
 
-    def append(self, node_or_value: Any, runtime = None) -> Any:
-        self.type.check_element(node_or_value, runtime)
+    def append(self, node_or_value: Any) -> Any:
+        self.type.check_element(node_or_value)
         value = YuiType.into_arrayview(node_or_value)
         self.arrayview.append(value)
         self.native_value = None
@@ -748,8 +677,8 @@ class YuiValue(object):
     def equals(self, other_node: Any) -> bool:
         return self.type.equals(self, other_node)
 
-    def less_than(self, other_node: Any, op = "<", runtime = None) -> bool:
-        return self.type.less_than(self, other_node, op=op, runtime=runtime)
+    def less_than(self, other_node: Any, op = "<") -> bool:
+        return self.type.less_than(self, other_node, op=op)
 
     def __str__(self):
         """文字列表現を返す"""
@@ -776,7 +705,7 @@ class Operator(ABC):
         return self.symbol
 
     @abstractmethod
-    def evaluate(self, left: Any, right: Any, runtime = None) -> Any:
+    def evaluate(self, left_node: Any, right_node: Any) -> Any:
         pass
 
 @dataclass
@@ -784,8 +713,8 @@ class Equals(Operator):
     def __init__(self, symbol: str = "=="):
         super().__init__(symbol, comparative=False)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return left_value.type.equals(left_node, right_node)
 
 @dataclass
@@ -793,8 +722,8 @@ class NotEquals(Operator):
     def __init__(self, symbol: str = "!="):
         super().__init__(symbol, comparative=False)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return not left_value.type.equals(left_node, right_node)
 
 @dataclass
@@ -802,49 +731,49 @@ class LessThan(Operator):
     def __init__(self, symbol: str = "<"):
         super().__init__(symbol, comparative=True)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return not left_value.type.equals(left_node, right_node) and \
-            left_value.type.less_than(left_node, right_node, op=self.symbol, runtime=runtime)
+            left_value.type.less_than(left_node, right_node, op=self.symbol)
 
 @dataclass
 class GreaterThan(Operator):
     def __init__(self, symbol: str = ">"):
         super().__init__(symbol, comparative=True)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return not left_value.type.equals(left_node, right_node) and \
-            not left_value.type.less_than(left_node, right_node, op=self.symbol, runtime=runtime)
+            not left_value.type.less_than(left_node, right_node, op=self.symbol)
 
 @dataclass
 class LessThanEquals(Operator):
     def __init__(self, symbol: str = "<="):
         super().__init__(symbol, comparative=True)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return left_value.type.equals(left_node, right_node) or \
-            left_value.type.less_than(left_node, right_node, op=self.symbol, runtime=runtime)
+            left_value.type.less_than(left_node, right_node, op=self.symbol)
 
 @dataclass
 class GreaterThanEquals(Operator):
     def __init__(self, symbol: str = ">="):
         super().__init__(symbol, comparative=True)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
         return left_value.type.equals(left_node, right_node) or \
-            not left_value.type.less_than(left_node, right_node, op=self.symbol, runtime=runtime)
+            not left_value.type.less_than(left_node, right_node, op=self.symbol)
     
 @dataclass
 class In(Operator):
     def __init__(self, symbol: str = "in"):
         super().__init__(symbol, comparative=False)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
-        right_array = YuiType.evaluated(right_node).arrayview
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
+        right_array = _eval(right_node).arrayview
         for element in right_array:
             if left_value.type.equals(left_node, element):
                 return True
@@ -855,9 +784,9 @@ class NotIn(Operator):
     def __init__(self, symbol: str = "notin"):
         super().__init__(symbol, comparative=False)
 
-    def evaluate(self, left_node: Any, right_node: Any, runtime = None) -> bool:
-        left_value = YuiType.evaluated(left_node)
-        right_array = YuiType.evaluated(right_node).arrayview
+    def evaluate(self, left_node: Any, right_node: Any) -> bool:
+        left_value = _eval(left_node)
+        right_array = _eval(right_node).arrayview
         for element in right_array:
             if left_value.type.equals(left_node, element):
                 return False
@@ -873,6 +802,8 @@ OPERATORS = {
     'in': In(),
     'notin': NotIn(),
 }
+
+set_operators(OPERATORS)
 
 def standard_lib(modules: list):
     """
@@ -1113,66 +1044,66 @@ def standard_lib(modules: list):
         return int(result)
     modules.append(('🐜|最小値|min', yui_min))
 
-    def yui_isint(*args: Any) -> Any:
+    def yui_isint(*nodeargs: Any) -> Any:
         """整数か判定する"""
-        check_number_of_args(args, 1)
-        return 1 if isinstance(args[0], int) else 0
+        check_number_of_args(nodeargs, 1)
+        return 1 if isinstance(nodeargs[0], int) else 0
     modules.append((f'{TY_INT}❓|整数判定|isint', yui_isint))
 
     def yui_toint(*nodeargs: Any) -> Any:
         """整数化する"""
         check_number_of_args(nodeargs, 1)
-        value = args[0]
-        value = int(YuiType.matched_native(args[0]))
+        value = nodeargs[0]
+        value = int(YuiType.matched_native(nodeargs[0]))
         return value
     modules.append((f'{TY_INT}|整数化|toint', yui_toint))
 
-    def yui_isfloat(*args: Any) -> Any:
+    def yui_isfloat(*nodeargs: Any) -> Any:
         """小数か判定する"""
-        check_number_of_args(args, 1)
-        return 1 if YuiType.is_float(args[0]) else 0
+        check_number_of_args(nodeargs, 1)
+        return 1 if YuiType.is_float(nodeargs[0]) else 0
     modules.append((f'{TY_FLOAT}❓|少数判定|isfloat', yui_isfloat))
 
-    def yui_tofloat(*args: Any) -> Any:
+    def yui_tofloat(*nodeargs: Any) -> Any:
         """小数化する"""
-        check_number_of_args(args, 1)
-        value = args[0]
+        check_number_of_args(nodeargs, 1)
+        value = nodeargs[0]
         if YuiType.is_string(value):
             string_value = value.to_string()
             try:
                 return YuiValue(float(string_value))
             except ValueError:
                 raise YuiError((f"error", "conversion", f"❌{string_value}"))
-        value = float(YuiType.matched_native(args[0]))
+        value = float(YuiType.matched_native(nodeargs[0]))
         return YuiValue(value)
     modules.append((f'{TY_FLOAT}|少数化|tofloat', yui_tofloat))
 
-    def yui_isstring(*args: Any) -> Any:
+    def yui_isstring(*nodeargs: Any) -> Any:
         """文字列か判定する"""
-        check_number_of_args(args, 1)
-        return 1 if YuiType.is_string(args[0]) else 0
+        check_number_of_args(nodeargs, 1)
+        return 1 if YuiType.is_string(nodeargs[0]) else 0
     modules.append((f'{TY_STRING}❓|文字列判定|isstring', yui_isstring))
 
-    def yui_tostring(*args: Any) -> Any:
+    def yui_tostring(*nodeargs: Any) -> Any:
         """文字列に変換する"""
-        check_number_of_args(args, 1)
-        if YuiType.is_float(args[0]):
-            v = YuiType.StringType.matched_native(args[0])
+        check_number_of_args(nodeargs, 1)
+        if YuiType.is_float(nodeargs[0]):
+            v = YuiType.StringType.matched_native(nodeargs[0])
             return YuiValue(f"{v:.6f}")
-        return YuiValue(str(args[0]))
+        return YuiValue(str(nodeargs[0]))
     modules.append((f'{TY_STRING}|文字列化|tostring', yui_tostring))
 
-    def yui_isobject(*args: Any) -> Any:
+    def yui_isobject(*nodeargs: Any) -> Any:
         """オブジェクトか判定する"""
-        check_number_of_args(args, 1)
-        return 1 if YuiType.is_object(args[0]) else 0
+        check_number_of_args(nodeargs, 1)
+        return 1 if YuiType.is_object(nodeargs[0]) else 0
     modules.append((f'{TY_OBJECT}❓|オブジェクト判定|isobject', yui_isobject))
 
-    def yui_toobject(*args: Any) -> Any:
+    def yui_toobject(*nodeargs: Any) -> Any:
         """オブジェクトに変換する"""
-        check_number_of_args(args, 1)
-        if YuiType.is_string(args[0]):
-            s = yui.ensure_string(args[0])
+        check_number_of_args(nodeargs, 1)
+        if YuiType.is_string(nodeargs[0]):
+            s = yui.ensure_string(nodeargs[0])
             if s.startswith('{'):
                 try:
                     v = json.loads(s) # JSONとしてパースできるか確認
@@ -1180,22 +1111,22 @@ def standard_lib(modules: list):
                 except json.JSONDecodeError:
                     pass
             return YuiValue({})
-        return YuiValue(str(args[0]))
+        return YuiValue(str(nodeargs[0]))
     modules.append((f'{TY_OBJECT}|オブジェクト化|toobject', yui_toobject))
 
-    def yui_isarray(*args: Any) -> bool:
+    def yui_isarray(*nodeargs: Any) -> bool:
         """オブジェクトか判定する"""
-        check_number_of_args(args, 1)
-        return 1 if isinstance(args[0], YuiValue) else 0
+        check_number_of_args(nodeargs, 1)
+        return 1 if isinstance(nodeargs[0], YuiValue) else 0
     modules.append((f'{TY_ARRAY}❓|配列判定|isarray', yui_isarray))
 
-    def yui_toarray(*args: Any) -> Any:
+    def yui_toarray(*nodeargs: Any) -> Any:
         """配列に変換する"""
-        check_number_of_args(args, 1)
-        if isinstance(args[0], YuiValue):
-            args[0].view = "array"
-            args[0].native_value = None
-            return args[0]
-        return YuiValue(YuiType.matched_native(args[0]))
+        check_number_of_args(nodeargs, 1)
+        if isinstance(nodeargs[0], YuiValue):
+            nodeargs[0].view = "array"
+            nodeargs[0].native_value = None
+            return nodeargs[0]
+        return YuiValue(YuiType.matched_native(nodeargs[0]))
     modules.append((f'{TY_ARRAY}|配列化|toarray', yui_toarray))
 

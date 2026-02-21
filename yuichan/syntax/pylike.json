@@ -49,9 +49,9 @@
     "property-accessor": "\\.",
     "property-type": "__class__.__name__",
     "not-property-name": "append",
-    "funcapp-suffix": "\\(",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 
     "block-begin": "\\:",
     "block-end": "",

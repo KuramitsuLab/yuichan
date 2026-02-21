@@ -51,9 +51,9 @@
     "property-length": "大きさ|個数|文字数|要素数",
     "property-type": "型",
     
-    "funcapp-suffix": "\\(",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 
     "import-standard": "標準ライブラリを使う",
     "import-operator": "四則演算子を使う",

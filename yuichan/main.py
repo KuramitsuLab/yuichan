@@ -16,8 +16,12 @@ except ImportError:
     READLINE_AVAILABLE = False
 
 from yuichan import __version__
-from .yuiparser import YuiParser, CodingVisitor, load_syntax
-from .yuiast import YuiRuntime, YuiError, IncrementNode, NameNode
+from .yuiparser import YuiParser
+from .yuicoding import CodingVisitor
+from .yuisyntax import load_syntax
+from .yuiruntime import YuiRuntime
+from .yuitypes import YuiError
+from .yuiast import IncrementNode, NameNode
 from . import yuiexample
 from . import message as _message
 

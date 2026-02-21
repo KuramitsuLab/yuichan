@@ -1,25 +1,21 @@
 # Source
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Union
-from types import FunctionType
-from abc import ABC, abstractmethod
-from typing import Union, Any, List
 import re
-import json
-import os
 
 from .yuiast import (
-    YuiError, ASTNode, set_from_outside,
-    NameNode,
-    StringNode, NumberNode, ArrayNode, ObjectNode,
+    ASTNode,
+    NameNode, StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode, 
+    AssertNode, ImportNode,
 )
 
+from .yuitypes import YuiValue, YuiType, YuiError
+from .yuisyntax import YuiSyntax, load_syntax
 
 def is_all_alnum(s: str) -> bool:
     for ch in s:
@@ -55,34 +51,25 @@ def extract_identifiers(text):
     # print(f"@Extracted identifiers: {identifiers}")  
     return list(set(identifiers))
 
-
 @dataclass
 class SourceNode(ASTNode):
     """null値（?）を表すノード"""
     def __init__(self):
         super().__init__()
 
-    def evaluate(self, runtime):
-        return 0
-
-class Source(object):
+class Source(YuiSyntax):
     """ソースコード"""
     def __init__(self, source: str, filename: str = "main.yui", pos: int = 0, syntax = 'yui'):
+        terminals = load_syntax(syntax) if isinstance(syntax, str) else syntax
+        super().__init__(terminals)
         self.filename = filename
         self.source = source
         self.pos = pos
         self.length = len(source)
-        if isinstance(syntax, dict):
-            self.terminals = syntax.copy()
-        else:
-            self.terminals = load_syntax(syntax)
         self.special_names = []
         self.add_special_names(extract_identifiers(source))      
         self.memos = {}
         # self.backtrack = True
-
-    def update_syntax(self, **kwargs):
-        self.terminals.update(kwargs)
     
     def get_memo(self, nonterminal: str, pos: int):
         """Pakrat parsingのメモを取得する"""
@@ -104,23 +91,6 @@ class Source(object):
             return True
         return False
     
-    # def is_defined(self, terminal: str) -> bool:
-    #     return self.terminals.get(terminal, "") != ""
-
-    # def get_pattern(self, terminal: str, if_undefined = "") -> re.Pattern:
-    #     pattern = self.terminals.get(terminal, if_undefined)
-    #     if isinstance(pattern, str):
-    #         try:
-    #             pattern = re.compile(pattern)
-    #         except re.error:
-    #             raise ValueError(f"Invalid regex '{terminal}': {pattern}")
-    #         self.terminals[terminal] = pattern
-    #     return pattern
-
-    # def for_example(self, terminal: str) -> str:
-    #     pattern = self.get_pattern(terminal)
-    #     return get_example_from_pattern(pattern.pattern)
-
     def matched_string(self, terminal: str) -> Optional[str]:
         pattern = self.get_pattern(terminal)
         match_result = pattern.match(self.source, self.pos)
@@ -361,13 +331,13 @@ NONTERMINALS["@Boolean"] = BooleanParser()
 class NumberParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("number-first-char", if_undefined=r"[0-9]", unconsumed=True)
+        return source.is_match("number-first-char", unconsumed=True)
     
     def match(self, source: Source, pc: dict):
         saved_pos = source.pos
-        if source.is_match("number-first-char", if_undefined=r"[0-9]"):
-            source.try_match("number-chars", if_undefined=r"[0-9]*", lskip_ws=False)
-            if source.is_match("number-dot-char", if_undefined=r"[\.]", lskip_ws=False):
+        if source.is_match("number-first-char"):
+            source.try_match("number-chars", lskip_ws=False)
+            if source.is_match("number-dot-char", lskip_ws=False):
                 source.try_match("number-first-char", lskip_ws=False)
                 source.try_match("number-chars", lskip_ws=False)
                 number = source.source[saved_pos:source.pos]
@@ -425,13 +395,13 @@ NONTERMINALS["@String"] = StringParser()
 class ArrayParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("array-begin", if_undefined=r"\[", unconsumed=True)
+        return source.is_match("array-begin", unconsumed=True)
     
     def match(self, source: Source, pc: dict):
         opening_pos = source.pos
         if source.is_match("array-begin"):
             arguments = []
-            while not source.is_match("array-end", if_undefined=r"\]", lskip_lf=True, unconsumed=True):
+            while not source.is_match("array-end", lskip_lf=True, unconsumed=True):
                 arguments.append(parse("@Expression", source, pc, lskip_lf=True))
                 if source.is_match("array-separator", lskip_lf=True):
                     continue
@@ -451,7 +421,7 @@ class ObjectParser(ParserCombinator):
             arguments = []
             while not source.is_match("object-end", lskip_lf=True, unconsumed=True):
                 arguments.append(parse("@String", source, pc, lskip_lf=True))
-                source.try_match("object-key-value-separator", if_undefined=r"\:", lskip_lf=True)
+                source.try_match("key-value-separator", lskip_lf=True)
                 arguments.append(parse("@Expression", source, pc, lskip_lf=True))
                 if source.is_match("object-separator", lskip_lf=True):
                     continue
@@ -475,8 +445,8 @@ class NameParser(ParserCombinator):
             source.try_match("extra-name-end", opening_pos=start_pos-1)
             return node
         start_pos = source.pos
-        if source.is_match("name-first-char", if_undefined=r"[A-Za-z_]"):
-            source.try_match("name-chars", if_undefined=r"[A-Za-z0-9_]*", lskip_ws=False)
+        if source.is_match("name-first-char"):
+            source.try_match("name-chars", lskip_ws=False)
             source.try_match("name-end", lskip_ws=False)
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
@@ -948,5 +918,3 @@ class YuiParser:
         source = Source(source_code, syntax=self.terminals)
         return parse("@TopLevel", source, {})
 
-
-set_from_outside(YuiParser, None)

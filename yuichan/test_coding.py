@@ -1,20 +1,21 @@
 import pytest
 
-from .yuicoding import (
-    NumberNode,StringNode,
+from .yuiast import (
+    NumberNode, StringNode,
     ArrayNode, ObjectNode,
     NameNode,
-    MinusNode,ArrayLenNode,GetIndexNode,
+    MinusNode, ArrayLenNode, GetIndexNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode,
     FuncDefNode, FuncAppNode, ReturnNode,
-    PrintExpressionNode, AssertNode, 
-    CodingVisitor, load_syntax
+    PrintExpressionNode, AssertNode,
 )
+from .yuicoding import CodingVisitor
+from .yuisyntax import load_syntax
 
 yui_syntax = load_syntax('yui')
 
-class TestYuiEmit:
+class TestCodeGeneration:
     """Yuiコード生成に関するテストクラス"""
 
     def init_coder(self):
@@ -33,7 +34,7 @@ class TestYuiEmit:
     def test_ArrayNode(self):
         node = ArrayNode([NumberNode(1), NumberNode(2), NumberNode(3)])
         emitter = self.init_coder()
-        assert emitter.emit(node) == '[1, 2, 3]'
+        assert emitter.emit(node) == '[1,2,3]'
 
     def test_ObjectNode(self):
         node = ObjectNode([
@@ -41,7 +42,7 @@ class TestYuiEmit:
             StringNode("b"), StringNode("two"),
         ])
         emitter = self.init_coder()
-        assert emitter.emit(node) == '{"a": 1, "b": "two"}'
+        assert emitter.emit(node) == '{"a":1,"b":"two"}'
 
     def test_MinusNode(self):
         node = MinusNode(NumberNode(5))

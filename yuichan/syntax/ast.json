@@ -8,7 +8,7 @@
     "line-comment-begin": "\\#",
     "comment-begin": "",
     "comment-end": "",
-    "statement-separater": ",",
+    "statement-separator": ",",
 
     "number-begin": "NumberNode\\(",
     "number-first-char": "[0-9]",
@@ -48,9 +48,9 @@
     "array-indexer-end": "\\)",
 
     "funcapp-begin": "FuncApp\\(",
-    "funcapp-suffix": "",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 
     "block-begin": "BlockNode\\(\\[",
     "block-end": "\\]\\)",

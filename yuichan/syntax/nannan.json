@@ -50,9 +50,9 @@
     "property-accessor": "の",
     "property-length": "大きさ",
     
-    "funcapp-suffix": "\\(",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 
     "import-standard": "標準のやつ使う",
     "import-operator": "四則演算子[、]?使う",

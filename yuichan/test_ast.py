@@ -1,16 +1,19 @@
 import pytest
 
+from .yuitypes import YuiError, YuiValue, YuiType
+from .yuiruntime import YuiRuntime
 from .yuiast import (
-    YuiError, YuiRuntime, YuiValue, YuiType,
-    NumberNode,StringNode,
+    NumberNode, StringNode,
     ArrayNode, ObjectNode,
     NameNode,
-    MinusNode,ArrayLenNode,GetIndexNode,
+    MinusNode, ArrayLenNode, GetIndexNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode,
     FuncDefNode, FuncAppNode, ReturnNode,
-    PrintExpressionNode, AssertNode
+    PrintExpressionNode, AssertNode,
 )
+from .yuiexample import get_all_examples
+_all_examples = get_all_examples()
 
 class TestLiteral:
     """式の評価に関するテストクラス"""
@@ -581,11 +584,8 @@ class TestExample:
         program = self.get_example_ast("hello")
         program.evaluate(runtime)
 
-    def test_all_examples(self):
-        from .yuiexample import get_all_examples
-        examples = get_all_examples()
-        for example in examples:
-            runtime = YuiRuntime()
-            program = example.ast_node
-            program.evaluate(runtime)
+    @pytest.mark.parametrize("example", _all_examples, ids=lambda e: e.name)
+    def test_all_examples(self, example):
+        runtime = YuiRuntime()
+        example.ast_node.evaluate(runtime)
 

@@ -1,5 +1,5 @@
 import pytest
-from .yuiparser import (
+from .yuisyntax import (
     get_example_from_pattern
 )
 

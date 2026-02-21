@@ -52,14 +52,14 @@
     "property-accessor": "",
     "property-type": "",
     "not-property-name": "",
-    "funcapp-suffix": "\\(",
-    "funcapp-end": "\\)",
-    "funcapp-separator": ",",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
 
     "block-begin": "👉",
     "block-end": "🔚",
 
-    "assignment-begin": "📦",
+    "assignment-begin": "",
     "assignment-infix": "⬅️",
     "assignment-end": "",
 
