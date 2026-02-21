@@ -644,8 +644,13 @@ class YuiObjectType(YuiType):
         return ''.join(buffer)
 
     def equals(self, left_node: Any, right_node: Any) -> bool:
-        print(f"TODO: object equality check for {left_node} and {right_node}")
-        return False
+        left_native = YuiType.to_native(left_node)
+        right_native = YuiType.to_native(right_node)
+        if not isinstance(right_native, dict):
+            return False
+        if set(left_native.keys()) != set(right_native.keys()):
+            return False
+        return all(_array_equal(left_native[k], right_native[k]) for k in left_native)
 
 
 

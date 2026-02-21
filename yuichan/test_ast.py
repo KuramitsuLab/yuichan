@@ -3,7 +3,7 @@ import pytest
 from .yuitypes import YuiError, YuiValue, YuiType
 from .yuiruntime import YuiRuntime
 from .yuiast import (
-    NumberNode, StringNode,
+    ConstNode, NumberNode, StringNode,
     ArrayNode, ObjectNode,
     NameNode,
     MinusNode, ArrayLenNode, GetIndexNode,
@@ -496,6 +496,127 @@ class TestStatement:
             expression.evaluate(runtime)
             assert len(runtime.test_passed) == 0
         assert "failed" in str(excinfo.value.args[0])
+
+class TestAssert:
+    """AssertNode の型別テスト"""
+
+    def rt(self):
+        return YuiRuntime()
+
+    # ── boolean ──────────────────────────────────────────────
+    def test_bool_true(self):
+        rt = self.rt()
+        AssertNode(ConstNode(True), ConstNode(True)).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_bool_false(self):
+        rt = self.rt()
+        AssertNode(ConstNode(False), ConstNode(False)).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_bool_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(ConstNode(True), ConstNode(False)).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    # ── int ──────────────────────────────────────────────────
+    def test_int_equal(self):
+        rt = self.rt()
+        AssertNode(NumberNode(42), NumberNode(42)).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_int_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(NumberNode(1), NumberNode(2)).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    def test_int_vs_bool(self):
+        """int と bool は等値にならない"""
+        rt = self.rt()
+        with pytest.raises(YuiError):
+            AssertNode(NumberNode(1), ConstNode(True)).evaluate(rt)
+
+    # ── float ─────────────────────────────────────────────────
+    def test_float_equal(self):
+        rt = self.rt()
+        AssertNode(NumberNode(3.14), NumberNode(3.14)).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_float_rounding(self):
+        """小数は小数点6桁で丸めて比較"""
+        rt = self.rt()
+        AssertNode(NumberNode(1.0000001), NumberNode(1.0000002)).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_float_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(NumberNode(3.14), NumberNode(3.15)).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    # ── string ────────────────────────────────────────────────
+    def test_string_equal(self):
+        rt = self.rt()
+        AssertNode(StringNode("hello"), StringNode("hello")).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_string_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(StringNode("hello"), StringNode("world")).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    # ── array ─────────────────────────────────────────────────
+    def test_array_equal(self):
+        rt = self.rt()
+        AssertNode(ArrayNode([1, 2, 3]), ArrayNode([1, 2, 3])).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_array_nested(self):
+        rt = self.rt()
+        AssertNode(
+            ArrayNode([ArrayNode([1, 2]), ArrayNode([3, 4])]),
+            ArrayNode([ArrayNode([1, 2]), ArrayNode([3, 4])]),
+        ).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_array_charcode_vs_string(self):
+        """文字コード配列と文字列は等値になる"""
+        rt = self.rt()
+        # [72, 105] == "Hi"
+        AssertNode(ArrayNode([72, 105]), StringNode("Hi")).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_array_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(ArrayNode([1, 2, 3]), ArrayNode([1, 2, 4])).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    def test_array_length_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(ArrayNode([1, 2]), ArrayNode([1, 2, 3])).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
+    # ── object ────────────────────────────────────────────────
+    def test_object_equal(self):
+        rt = self.rt()
+        obj = lambda: ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2)])
+        AssertNode(obj(), obj()).evaluate(rt)
+        assert len(rt.test_passed) == 1
+
+    def test_object_mismatch(self):
+        rt = self.rt()
+        with pytest.raises(YuiError) as exc:
+            AssertNode(
+                ObjectNode([StringNode("x"), NumberNode(1)]),
+                ObjectNode([StringNode("x"), NumberNode(2)]),
+            ).evaluate(rt)
+        assert "failed" in str(exc.value.args[0])
+
 
 class TestFunction:
 
