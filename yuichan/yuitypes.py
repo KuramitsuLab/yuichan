@@ -4,9 +4,6 @@ from abc import ABC, abstractmethod
 
 from .yuiast import ASTNode, set_operators
 
-def _eval(v):
-    """値をそのまま返す（evaluated_value は廃止）"""
-    return v
 
 class YuiError(RuntimeError):
     """Yui言語のエラーを表現するクラス"""
@@ -95,7 +92,7 @@ class YuiType(ABC):
         pass
 
     def match_or_raise(self, node_or_value = None):
-        value = _eval(node_or_value)
+        value = node_or_value
         if not self.match(value):
             raise YuiError(("error", "type", f"✅<{self.emoji}{self.name}>", f"❌{value}"), node_or_value)
 
@@ -117,8 +114,8 @@ class YuiType(ABC):
         return left_value == right_value    
 
     def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
-        left_value = _eval(left_node)
-        right_value = _eval(right_node)
+        left_value = left_node
+        right_value = right_node
         raise YuiError(("unsupported", "comparison", f"❌{left_value} {op} {right_value}"), left_node)
 
 
@@ -166,7 +163,7 @@ class YuiType(ABC):
 
     @staticmethod
     def matched_native(node_or_value) -> None:
-        value = _eval(node_or_value)
+        value = node_or_value
         if isinstance(value, YuiValue):
             return value.native
         return value # 型チェック済みを想定
@@ -179,7 +176,7 @@ class YuiType(ABC):
 
     @staticmethod
     def into_arrayview(node_or_value) -> Any:
-        value = _eval(node_or_value)
+        value = node_or_value
         if isinstance(value, YuiValue) and value.is_primitive():
             return value.native
         if isinstance(value, (int, float, str)) or value is None:
@@ -200,7 +197,7 @@ class YuiType(ABC):
     
     @staticmethod
     def to_native(node_or_value) -> Any:
-        value = _eval(node_or_value)
+        value = node_or_value
         if isinstance(value, YuiValue):
             return value.native
         if isinstance(value, list):
@@ -246,8 +243,8 @@ class YuiType(ABC):
             left_value = YuiType.matched_native(left_node_or_value)
             right_value = YuiType.matched_native(right_node_or_value)
             return _compare(left_value, right_value)
-        left_value = _eval(left_node_or_value)
-        right_value = _eval(right_node_or_value)        
+        left_value = left_node_or_value
+        right_value = right_node_or_value        
         if not isinstance(right_value, YuiValue):
             right_value = YuiValue(right_value.native)
         return _compare(left_value.arrayview, right_value.arrayview)
@@ -265,7 +262,7 @@ class YuiNullType(YuiType):
         super().__init__("null", TY_NULL)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return value is None or (isinstance(value, YuiValue) and isinstance(value.type, YuiNullType))
 
     def check_element(self, node_or_value: Any) -> None:
@@ -285,7 +282,7 @@ class YuiBooleanType(YuiType):
         super().__init__("boolean", TY_BOOLEAN)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         # Python の bool は int のサブクラスなので先に isinstance(value, bool) でチェックする
         return isinstance(value, bool) or (isinstance(value, YuiValue) and isinstance(value.type, YuiBooleanType))
 
@@ -321,7 +318,7 @@ class YuiIntType(YuiType):
         super().__init__("int", TY_INT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return isinstance(value, int) or (isinstance(value, YuiValue) and isinstance(value.type, YuiIntType))
 
     def check_element(self, node_or_value: Any) -> None:
@@ -385,7 +382,7 @@ class YuiFloatType(YuiType):
         super().__init__("float", TY_FLOAT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return isinstance(value, float) or (isinstance(value, YuiValue) and isinstance(value.type, YuiFloatType))
 
     def check_element(self, node_or_value: Any) -> None:
@@ -480,7 +477,7 @@ class YuiStringType(YuiType):
         super().__init__("string", TY_STRING)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return isinstance(value, str) or (isinstance(value, YuiValue) and isinstance(value.type, YuiStringType))
 
     def check_element(self, node_or_value: Any) -> None:
@@ -532,7 +529,7 @@ class YuiArrayType(YuiType):
         super().__init__("array", TY_ARRAY)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return isinstance(value, list) or (isinstance(value, YuiValue) and isinstance(value.type, YuiArrayType))
     
     def check_element(self, node_or_value: Any) -> None:
@@ -586,7 +583,7 @@ class YuiObjectType(YuiType):
         super().__init__("object", TY_OBJECT)
 
     def match(self, node_or_value: Any) -> bool:
-        value = _eval(node_or_value)
+        value = node_or_value
         return isinstance(value, dict) or (isinstance(value, YuiValue) and isinstance(value.type, YuiObjectType))
 
     def check_element(self, node_or_value: Any) -> None:
@@ -799,7 +796,7 @@ class Equals(Operator):
         super().__init__(symbol, comparative=False)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return left_value.type.equals(left_node, right_node)
 
 @dataclass
@@ -808,7 +805,7 @@ class NotEquals(Operator):
         super().__init__(symbol, comparative=False)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return not left_value.type.equals(left_node, right_node)
 
 @dataclass
@@ -817,7 +814,7 @@ class LessThan(Operator):
         super().__init__(symbol, comparative=True)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return not left_value.type.equals(left_node, right_node) and \
             left_value.type.less_than(left_node, right_node, op=self.symbol)
 
@@ -827,7 +824,7 @@ class GreaterThan(Operator):
         super().__init__(symbol, comparative=True)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return not left_value.type.equals(left_node, right_node) and \
             not left_value.type.less_than(left_node, right_node, op=self.symbol)
 
@@ -837,7 +834,7 @@ class LessThanEquals(Operator):
         super().__init__(symbol, comparative=True)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return left_value.type.equals(left_node, right_node) or \
             left_value.type.less_than(left_node, right_node, op=self.symbol)
 
@@ -847,7 +844,7 @@ class GreaterThanEquals(Operator):
         super().__init__(symbol, comparative=True)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
+        left_value = left_node
         return left_value.type.equals(left_node, right_node) or \
             not left_value.type.less_than(left_node, right_node, op=self.symbol)
     
@@ -857,8 +854,8 @@ class In(Operator):
         super().__init__(symbol, comparative=False)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
-        right_array = _eval(right_node).arrayview
+        left_value = left_node
+        right_array = right_node.arrayview
         for element in right_array:
             if left_value.type.equals(left_node, element):
                 return True
@@ -870,8 +867,8 @@ class NotIn(Operator):
         super().__init__(symbol, comparative=False)
 
     def evaluate(self, left_node: Any, right_node: Any) -> bool:
-        left_value = _eval(left_node)
-        right_array = _eval(right_node).arrayview
+        left_value = left_node
+        right_array = right_node.arrayview
         for element in right_array:
             if left_value.type.equals(left_node, element):
                 return False
