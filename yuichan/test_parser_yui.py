@@ -1,5 +1,6 @@
 import pytest
 from .yuiparser import Source, parse
+from .yuiast import ConstNode
 from .yuitypes import YuiError
 from .yuisyntax import load_syntax
 
@@ -152,3 +153,76 @@ class TestParseBlockNode_Yui:
         source = Source("10回くり返す{\n   countを増やす\n   もし countが 5ならば{\n      くり返しを抜ける\n   }\n}")
         repeat_node = parse("@Repeat", source, pc={})
         assert "くり返しを抜ける" in str(repeat_node)
+
+
+class TestParseConstNode_Yui:
+
+    def test_null(self):
+        source = Source("値なし")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+        assert str(node) == "値なし"
+
+    def test_null_english(self):
+        source = Source("null")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+        assert str(node) == "null"
+
+    def test_true(self):
+        source = Source("真")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+        assert str(node) == "真"
+
+    def test_true_english(self):
+        source = Source("true")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+        assert str(node) == "true"
+
+    def test_false(self):
+        source = Source("偽")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+        assert str(node) == "偽"
+
+    def test_false_english(self):
+        source = Source("false")
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+        assert str(node) == "false"
+
+    def test_null_as_term(self):
+        source = Source("値なし")
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+
+    def test_true_as_term(self):
+        source = Source("真")
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+
+    def test_false_as_term(self):
+        source = Source("偽")
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+
+    def test_null_in_assignment(self):
+        source = Source("x = 値なし")
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x = 値なし"
+
+    def test_true_in_assignment(self):
+        source = Source("x = 真")
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x = 真"

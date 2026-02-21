@@ -303,6 +303,10 @@ def generate_bnf(terminals: dict) -> str:
     osep = ex('object-separator') or ','
     r('Object', f'{ob} "key"{kvsep}{E} {{{osep} "key"{kvsep}{E}}} {oe}')
 
+    nl = ex('null')
+    if nl:
+        r('Null', nl)
+
     bt, bf = ex('boolean-true'), ex('boolean-false')
     if bt or bf:
         r('Boolean', bt or '?', '|', bf or '?')

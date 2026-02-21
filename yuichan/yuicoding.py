@@ -1,7 +1,7 @@
 from typing import Dict
 
 from .yuiast import (
-    ASTNode, NameNode,
+    ASTNode, ConstNode, NameNode,
     StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
@@ -109,6 +109,14 @@ class CodingVisitor(YuiSyntax):
 
     def visitASTNode(self, node: ASTNode):
         self.string(f'FIXME: {node.__class__.__name__}')
+
+    def visitConstNode(self, node: ConstNode):
+        if node.native_value is None:
+            self.terminal('null')
+        elif node.native_value is True:
+            self.terminal('boolean-true')
+        else:
+            self.terminal('boolean-false')
 
     def visitNumberNode(self, node: NumberNode):
         self.terminal("number-begin")

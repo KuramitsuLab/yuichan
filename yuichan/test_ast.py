@@ -302,6 +302,7 @@ class TestIfCondition:
         statement = self.make_if_statement(NameNode("x"), "==", NumberNode(0))
         statement.evaluate(runtime)
         assert YuiType.to_native(runtime.getenv("result")) == 0
+
     def test_if_ne(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(1))
@@ -386,6 +387,7 @@ class TestIfCondition:
         statement = self.make_if_statement(NameNode("s"), "==", StringNode("ABC"))
         statement.evaluate(runtime)
         assert YuiType.to_native(runtime.getenv("result")) == 0
+
     def test_if_eq_float(self):
         runtime = self.init_runtime()
         runtime.setenv("f", YuiValue(3.14))

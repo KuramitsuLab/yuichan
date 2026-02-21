@@ -1,5 +1,6 @@
 import pytest
 from .yuiparser import Source, parse
+from .yuiast import ConstNode
 from .yuitypes import YuiError
 from .yuisyntax import load_syntax
 
@@ -106,3 +107,55 @@ class TestParseBlockNode_Emoji:
         source = Source("🌀 10 👉\n  count ⬆️\n  ❓ count ⚖️ 5 👉\n    🚀\n  🔚\n🔚", syntax=emoji_syntax)
         repeat_node = parse("@Repeat", source, pc={})
         assert "🚀" in str(repeat_node)
+
+
+class TestParseConstNode_Emoji:
+
+    def test_null(self):
+        source = Source("🫥", syntax=emoji_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+        assert str(node) == "🫥"
+
+    def test_true(self):
+        source = Source("👍", syntax=emoji_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+        assert str(node) == "👍"
+
+    def test_false(self):
+        source = Source("👎", syntax=emoji_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+        assert str(node) == "👎"
+
+    def test_null_as_term(self):
+        source = Source("🫥", syntax=emoji_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+
+    def test_true_as_term(self):
+        source = Source("👍", syntax=emoji_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+
+    def test_false_as_term(self):
+        source = Source("👎", syntax=emoji_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+
+    def test_null_in_assignment(self):
+        source = Source("x ⬅️ 🫥", syntax=emoji_syntax)
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x ⬅️ 🫥"
+
+    def test_true_in_assignment(self):
+        source = Source("x ⬅️ 👍", syntax=emoji_syntax)
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x ⬅️ 👍"

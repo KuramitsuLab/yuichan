@@ -8,6 +8,11 @@
     "comment-begin": "",
     "comment-end": "",
 
+
+    "null": "値なし|null",
+    "boolean-true": "真|true",
+    "boolean-false": "偽|false",
+
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
     "number-dot-char": "[\\.]",

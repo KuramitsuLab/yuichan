@@ -9,6 +9,10 @@
     "comment-begin": "",
     "comment-end": "",
 
+    "null": "None",
+    "boolean-true": "True",
+    "boolean-false": "False",
+
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
     "number-dot-char": "[\\.]",
@@ -120,6 +124,7 @@
     "assert-end": "",
 
 
+    "import-standard": "import\\s+stdlib",
     "import-begin": "import\\s",
     "import-end": "",
 

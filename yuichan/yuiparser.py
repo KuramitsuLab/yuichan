@@ -5,7 +5,7 @@ import re
 
 from .yuiast import (
     ASTNode,
-    NameNode, StringNode, NumberNode, ArrayNode, ObjectNode,
+    ConstNode, NameNode, StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
@@ -313,20 +313,24 @@ def is_parsable(nonterminal: str, source: Source, pc: dict, lskip_ws=True, lskip
     except YuiError:
         return False
 
-class BooleanParser(ParserCombinator):
+class ConstParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
-        return source.is_match("boolean-true", if_undefined=False) or source.is_match("boolean-false", if_undefined=False)
-    
+        return source.is_match("null", if_undefined=False) or \
+            source.is_match("boolean-true", if_undefined=False) or \
+            source.is_match("boolean-false", if_undefined=False)
+
     def match(self, source: Source, pc: dict):
         saved_pos = source.pos
+        if source.is_match("null", if_undefined=False):
+            return source.p(ConstNode(None), start_pos=saved_pos)
         if source.is_match("boolean-true", if_undefined=False):
-            return source.p(NumberNode(1), start_pos=saved_pos)
+            return source.p(ConstNode(True), start_pos=saved_pos)
         if source.is_match("boolean-false", if_undefined=False):
-            return source.p(NumberNode(0), start_pos=saved_pos)
-        raise YuiError(("expected", "boolean"), source.p(length=1), BK=True)
+            return source.p(ConstNode(False), start_pos=saved_pos)
+        raise YuiError(("expected", "null or boolean"), source.p(length=1), BK=True)
 
-NONTERMINALS["@Boolean"] = BooleanParser()
+NONTERMINALS["@Boolean"] = ConstParser()
 
 class NumberParser(ParserCombinator):
 

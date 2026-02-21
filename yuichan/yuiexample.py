@@ -8,7 +8,7 @@ CodeVisitorで異なる構文（Yui、Python風など）に変換して出力し
 
 from typing import List, Dict
 from .yuiast import (
-    NumberNode, StringNode, NameNode, ArrayNode, ObjectNode, MinusNode, ArrayLenNode,
+    ConstNode, NumberNode, StringNode, NameNode, ArrayNode, ObjectNode, MinusNode, ArrayLenNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode, PassNode,
     FuncDefNode, FuncAppNode, ReturnNode,
@@ -306,6 +306,83 @@ def example_recursive_function():
     )
 
 
+def example_null_assignment():
+    """null の代入と比較"""
+    statements = [
+        PassNode(comment="Assign null to a variable"),
+        AssignmentNode(NameNode("x"), ConstNode(None)),
+        PassNode(comment="Test that x is null"),
+        AssertNode(NameNode("x"), ConstNode(None)),
+    ]
+    return YuiExample(
+        name="null_assignment",
+        description="Assign null to a variable and compare",
+        ast_node=BlockNode(statements, top_level=True)
+    )
+
+
+def example_boolean_assignment():
+    """true / false の代入とアサート"""
+    statements = [
+        PassNode(comment="Assign true and false to variables"),
+        AssignmentNode(NameNode("t"), ConstNode(True)),
+        AssignmentNode(NameNode("f"), ConstNode(False)),
+        PassNode(comment="Test that t is true and f is false"),
+        AssertNode(NameNode("t"), ConstNode(True)),
+        AssertNode(NameNode("f"), ConstNode(False)),
+    ]
+    return YuiExample(
+        name="boolean_assignment",
+        description="Assign true/false to variables and compare",
+        ast_node=BlockNode(statements, top_level=True)
+    )
+
+
+def example_boolean_branch():
+    """boolean で条件分岐"""
+    statements = [
+        PassNode(comment="Branch on a boolean value"),
+        AssignmentNode(NameNode("flag"), ConstNode(True)),
+        AssignmentNode(NameNode("result"), NumberNode(0)),
+        IfNode(NameNode("flag"), "==", ConstNode(True),
+            BlockNode(AssignmentNode(NameNode("result"), NumberNode(1))),
+            BlockNode(AssignmentNode(NameNode("result"), NumberNode(2))),
+        ),
+        PassNode(comment="Test that result is 1 because flag was true"),
+        AssertNode(NameNode("result"), NumberNode(1)),
+    ]
+    return YuiExample(
+        name="boolean_branch",
+        description="Conditional branch based on a boolean value",
+        ast_node=BlockNode(statements, top_level=True)
+    )
+
+
+def example_null_check():
+    """null チェック関数"""
+    statements = [
+        PassNode(comment="Define is_null function"),
+        FuncDefNode(
+            NameNode("is_null"), [NameNode("v")],
+            BlockNode([
+                IfNode(NameNode("v"), "==", ConstNode(None),
+                    BlockNode(ReturnNode(ConstNode(True))),
+                    BlockNode(ReturnNode(ConstNode(False))),
+                )
+            ])
+        ),
+        PassNode(comment="Test is_null with null and non-null values"),
+        AssertNode(FuncAppNode(NameNode("is_null"), [ConstNode(None)]),  ConstNode(True)),
+        AssertNode(FuncAppNode(NameNode("is_null"), [NumberNode(0)]),    ConstNode(False)),
+        AssertNode(FuncAppNode(NameNode("is_null"), [StringNode("")]),   ConstNode(False)),
+    ]
+    return YuiExample(
+        name="null_check",
+        description="Function that checks if a value is null",
+        ast_node=BlockNode(statements, top_level=True)
+    )
+
+
 # すべてのサンプルを取得
 def get_all_examples() -> List[YuiExample]:
     """すべてのサンプルを返す"""
@@ -321,6 +398,10 @@ def get_all_examples() -> List[YuiExample]:
         example_function_no_argument(),
         example_function_without_return(),
         example_recursive_function(),
+        example_null_assignment(),
+        example_boolean_assignment(),
+        example_boolean_branch(),
+        example_null_check(),
     ]
 
 

@@ -1,5 +1,6 @@
 import pytest
 from .yuiparser import Source, parse
+from .yuiast import ConstNode
 from .yuitypes import YuiError
 from .yuisyntax import load_syntax
 
@@ -111,3 +112,55 @@ class TestParseBlockNode_Pylike:
         source = Source("for _ in range(10):\n  count += 1\n  if count==5:\n    break\n\n", syntax=py_syntax)
         repeat_node = parse("@Repeat", source, pc={})
         assert "break" in str(repeat_node)
+
+
+class TestParseConstNode_Pylike:
+
+    def test_null(self):
+        source = Source("None", syntax=py_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+        assert str(node) == "None"
+
+    def test_true(self):
+        source = Source("True", syntax=py_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+        assert str(node) == "True"
+
+    def test_false(self):
+        source = Source("False", syntax=py_syntax)
+        node = parse("@Boolean", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+        assert str(node) == "False"
+
+    def test_null_as_term(self):
+        source = Source("None", syntax=py_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is None
+
+    def test_true_as_term(self):
+        source = Source("True", syntax=py_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is True
+
+    def test_false_as_term(self):
+        source = Source("False", syntax=py_syntax)
+        node = parse("@Term", source, pc={})
+        assert isinstance(node, ConstNode)
+        assert node.native_value is False
+
+    def test_null_in_assignment(self):
+        source = Source("x = None", syntax=py_syntax)
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x = None"
+
+    def test_true_in_assignment(self):
+        source = Source("x = True", syntax=py_syntax)
+        node = parse("@Assignment", source, pc={})
+        assert str(node) == "x = True"

@@ -12,6 +12,8 @@
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
     "number-dot-char": "[\\.]",
+
+    "null": "🫥",
     "boolean-true": "👍",
     "boolean-false": "👎",
 

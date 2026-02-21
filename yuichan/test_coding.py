@@ -1,7 +1,7 @@
 import pytest
 
 from .yuiast import (
-    NumberNode, StringNode,
+    ConstNode, NumberNode, StringNode,
     ArrayNode, ObjectNode,
     NameNode,
     MinusNode, ArrayLenNode, GetIndexNode,
@@ -20,6 +20,18 @@ class TestCodeGeneration:
 
     def init_coder(self):
         return CodingVisitor(syntax_json=yui_syntax)
+
+    def test_ConstNode_null(self):
+        emitter = self.init_coder()
+        assert emitter.emit(ConstNode(None)) == '値なし'
+
+    def test_ConstNode_true(self):
+        emitter = self.init_coder()
+        assert emitter.emit(ConstNode(True)) == '真'
+
+    def test_ConstNode_false(self):
+        emitter = self.init_coder()
+        assert emitter.emit(ConstNode(False)) == '偽'
 
     def test_NumberNode(self):
         node = NumberNode(123)
