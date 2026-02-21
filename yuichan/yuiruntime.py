@@ -185,7 +185,7 @@ class YuiRuntime(object):
             raise e
 
         # 結果を返す
-        return YuiValue.yui_to_native(value) if eval_mode else self.enviroments[-1]
+        return YuiType.yui_to_native(value) if eval_mode else self.enviroments[-1]
 
 
     ## visitor

@@ -153,7 +153,7 @@ class YuiRuntime(object):
         value = program.evaluate(self)
 
         # 結果を返す
-        return YuiValue.yui_to_native(value) if eval_mode else self.enviroments[-1]
+        return YuiType.yui_to_native(value) if eval_mode else self.enviroments[-1]
 
     def load(self, function: FunctionType):
         """Python関数をYui関数として読み込む"""
