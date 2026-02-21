@@ -63,12 +63,13 @@ class YuiError(RuntimeError):
             indent = " " * (col - 1)
             message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
         if self.runtime is None:
-            message = f"[構文エラー] {message}"
+            message = f"[構文エラー/SyntaxError] {message}"
         else:
-            message = f"[実行時エラー] {message}\n[環境] {self.runtime.stringfy_env(stack=-1)}\n"
+            message = f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.runtime.stringfy_env(stack=-1)}\n"
         return message
 
 TY_NULL = '⛔'
+TY_BOOLEAN = '🔘'
 TY_INT = '💯'
 TY_FLOAT = '📊'
 TY_NUMBER = '🔢'
@@ -123,6 +124,7 @@ class YuiType(ABC):
 
     # クラス変数として各型のインスタンスを定義
     NullType: 'YuiNullType' = None
+    BooleanType: 'YuiBooleanType' = None
     IntType: 'YuiIntType' = None
     FloatType: 'YuiFloatType' = None
     NumberType: 'YuiNumberType' = None
@@ -133,6 +135,10 @@ class YuiType(ABC):
     @staticmethod
     def evaluated(value: Any) -> Any:
         return value
+
+    @staticmethod
+    def is_bool(node_or_value: Any) -> bool:
+        return YuiType.BooleanType.match(node_or_value)
 
     @staticmethod
     def is_int(node_or_value: Any) -> bool:
@@ -208,6 +214,8 @@ class YuiType(ABC):
         """ネイティブ値をYui形式に変換して返す"""
         if native_value is None:
             return YuiValue.NullValue
+        if isinstance(native_value, bool):
+            return YuiValue.TrueValue if native_value else YuiValue.FalseValue
         if isinstance(native_value, (int, float, list, str, dict, tuple)):
             return YuiValue(native_value)
         assert isinstance(native_value, YuiValue)
@@ -271,7 +279,42 @@ class YuiNullType(YuiType):
     
     def stringfy(self, native_value: None, indent_prefix: str = "", width=80) -> str:
         return "null"
-    
+
+class YuiBooleanType(YuiType):
+    def __init__(self):
+        super().__init__("boolean", TY_BOOLEAN)
+
+    def match(self, node_or_value: Any) -> bool:
+        value = _eval(node_or_value)
+        # Python の bool は int のサブクラスなので先に isinstance(value, bool) でチェックする
+        return isinstance(value, bool) or (isinstance(value, YuiValue) and isinstance(value.type, YuiBooleanType))
+
+    def check_element(self, node_or_value: Any) -> None:
+        raise YuiError(("immutable", f"❌{self}"), node_or_value)
+
+    def to_arrayview(self, n: bool) -> List[int]:
+        return [1] if n else []
+
+    def to_native(self, elements: List[int], node=None) -> bool:
+        return len(elements) > 0
+
+    def stringfy(self, native_value: bool, indent_prefix: str = "", width=80) -> str:
+        return "true" if native_value else "false"
+
+    def equals(self, left_node: Any, right_node: Any) -> bool:
+        left_value = YuiType.to_native(left_node)
+        right_value = YuiType.to_native(right_node)
+        if isinstance(right_value, bool):
+            return left_value == right_value
+        return False
+
+    def less_than(self, left_node: Any, right_node: Any, op: str = "<") -> bool:
+        left_value = YuiType.to_native(left_node)
+        right_value = YuiType.to_native(right_node)
+        if isinstance(right_value, bool):
+            return left_value < right_value
+        return super().less_than(left_node, right_node, op=op)
+
 
 class YuiIntType(YuiType):
     def __init__(self):
@@ -321,9 +364,11 @@ class YuiIntType(YuiType):
     def equals(self, left_node: Any, right_node: Any) -> bool:
         left_value = YuiType.to_native(left_node)
         right_value = YuiType.to_native(right_node)
+        if isinstance(right_value, bool):
+            return False  # bool は IntType と等しくない
         if isinstance(right_value, float):
             return round(float(left_value), 6) == round(right_value, 6)
-        return left_value == right_value    
+        return left_value == right_value
 
     def less_than(self, left_node: Any, right_node: Any, op = "<") -> bool:
         left_value = YuiType.to_native(left_node)
@@ -588,6 +633,7 @@ class YuiObjectType(YuiType):
 
 
 YuiType.NullType = YuiNullType()
+YuiType.BooleanType = YuiBooleanType()
 YuiType.IntType = YuiIntType()
 YuiType.FloatType = YuiFloatType()
 YuiType.NumberType = YuiNumberType()
@@ -595,7 +641,8 @@ YuiType.StringType = YuiStringType()
 YuiType.ObjectType = YuiObjectType()
 YuiType.ArrayType = YuiArrayType()
 
-TYPES = [YuiType.NullType, YuiType.IntType, YuiType.FloatType, YuiType.NumberType, YuiType.StringType, YuiType.ArrayType, YuiType.ObjectType]
+# bool は Python で int のサブクラスなので BooleanType を IntType より先に置く
+TYPES = [YuiType.NullType, YuiType.BooleanType, YuiType.IntType, YuiType.FloatType, YuiType.NumberType, YuiType.StringType, YuiType.ArrayType, YuiType.ObjectType]
 
 def _typing(value: Any) -> YuiType:
     """値に対応するYuiTypeを返す"""
@@ -667,7 +714,7 @@ class YuiValue(object):
         self.native_value = None
 
     def is_primitive(self) -> bool:
-        return isinstance(self.type, (YuiNullType, YuiIntType, YuiFloatType, YuiStringType))
+        return isinstance(self.type, (YuiNullType, YuiBooleanType, YuiIntType, YuiFloatType, YuiStringType))
 
     def stringfy(self, indent_prefix: str = "", arrayview: bool = False, width=80) -> str:
         if arrayview:
@@ -691,6 +738,8 @@ class YuiValue(object):
         return str(self.native)
 
 YuiValue.NullValue = YuiValue(None, type=YuiType.NullType)
+YuiValue.TrueValue = YuiValue(True, type=YuiType.BooleanType)
+YuiValue.FalseValue = YuiValue(False, type=YuiType.BooleanType)
 
 ## オペレーター
 

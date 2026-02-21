@@ -250,16 +250,11 @@ def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[st
     with open(filename, 'r', encoding='utf-8') as f:
         code = f.read()
 
-    # Generate AST with parser
-    parser = YuiParser(syntax)
-    ast = parser.parse(code)
-
-    # Execute with runtime
     runtime = YuiRuntime()
     for key, value in env.items():
         runtime.setenv(key, value)
 
-    ast.evaluate(runtime)
+    runtime.exec(code, syntax, eval_mode=False)
 
     # Return environment (from last scope)
     result_env = {}
@@ -304,9 +299,7 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                     continue
 
                 # Parse and execute
-                parser = YuiParser(syntax)
-                ast = parser.parse(code)
-                ast.evaluate(runtime)
+                runtime.exec(code, syntax)
 
             except YuiError as e:
                 print(e.formatted_message("| "))
@@ -530,12 +523,8 @@ def test_examples(syntax: str = 'yui'):
             # Generate code
             code = example.generate(syntax)
 
-            # Parse and execute
-            parser = YuiParser(syntax)
-            ast = parser.parse(code)
-
             runtime = YuiRuntime()
-            ast.evaluate(runtime)
+            runtime.exec(code, syntax)
 
             print(f"✓ {example.name:<20} PASSED")
             passed += 1
@@ -592,12 +581,8 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
             else:
                 label = filename
 
-            # Parse and execute
-            parser = YuiParser(syntax)
-            ast = parser.parse(code)
-
             runtime = YuiRuntime()
-            ast.evaluate(runtime)
+            runtime.exec(code, syntax)
 
             # Success
             results.append(1)

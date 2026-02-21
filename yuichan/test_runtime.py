@@ -1,0 +1,253 @@
+"""
+YuiRuntime.exec() を通じた実行テスト
+
+すべてのコード実行は Runtime.exec() を通るため、ここでは exec() の
+インターフェースを使ったテストを書く。
+"""
+
+import pytest
+from .yuiruntime import YuiRuntime
+from .yuitypes import YuiValue, YuiType, YuiError
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ヘルパー
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 標準ライブラリを使う宣言 (yui 構文の import-standard キーワード)
+STDLIB = "標準ライブラリを使う\n"
+
+
+def run(source: str, syntax: str = 'yui') -> dict:
+    """source を exec() で実行し、最終環境 dict を返す"""
+    rt = YuiRuntime()
+    rt.exec(source, syntax, eval_mode=False)
+    return rt.enviroments[-1]
+
+
+def run_std(source: str, syntax: str = 'yui') -> dict:
+    """標準ライブラリ込みで source を exec() で実行し、最終環境 dict を返す"""
+    return run(STDLIB + source, syntax)
+
+
+def val(env: dict, name: str):
+    """環境から変数の Python native 値を取得する"""
+    return YuiType.to_native(env[name])
+
+
+def run_rt(source: str, syntax: str = 'yui') -> YuiRuntime:
+    """標準ライブラリ込みで source を exec() で実行し、Runtime ごと返す"""
+    rt = YuiRuntime()
+    rt.exec(STDLIB + source, syntax, eval_mode=False)
+    return rt
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NativeFunction の戻り値ラップ (回帰テスト)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestNativeFunctionWrapping:
+    """
+    NativeFunction.call() が plain Python 値を YuiValue でラップすることの確認。
+
+    修正前: 和() / 積() などの整数パスが plain int を返すため、
+            変数に代入後に .type 参照で AttributeError が発生し、
+            アサートが ❌10 ✅10 のように偽陰性になっていた。
+    修正後: NativeFunction.call() で isinstance チェックして YuiValue に統一。
+    """
+
+    def test_sum_stores_yuivalue(self):
+        """和() の結果が環境に YuiValue として格納される"""
+        env = run_std("x = 和(3, 4)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 7
+
+    def test_product_stores_yuivalue(self):
+        """積() の結果が環境に YuiValue として格納される"""
+        env = run_std("x = 積(3, 4)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 12
+
+    def test_diff_stores_yuivalue(self):
+        env = run_std("x = 差(10, 3)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 7
+
+    def test_quotient_stores_yuivalue(self):
+        env = run_std("x = 商(10, 3)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 3
+
+    def test_remainder_stores_yuivalue(self):
+        env = run_std("x = 剰余(10, 3)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 1
+
+    def test_max_stores_yuivalue(self):
+        env = run_std("x = 最大値(3, 7, 2)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 7
+
+    def test_min_stores_yuivalue(self):
+        env = run_std("x = 最小値(3, 7, 2)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 2
+
+    def test_and_stores_yuivalue(self):
+        env = run_std("x = 論理積(12, 10)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == (12 & 10)
+
+    def test_or_stores_yuivalue(self):
+        env = run_std("x = 論理和(12, 10)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == (12 | 10)
+
+    def test_isint_stores_yuivalue(self):
+        env = run_std("x = 整数判定(42)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 1
+
+    def test_toint_stores_yuivalue(self):
+        env = run_std("x = 整数化(3.9)")
+        assert isinstance(env['x'], YuiValue)
+        assert val(env, 'x') == 3
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# アサート (>>>) が NativeFunction の戻り値で正しく動作すること (回帰テスト)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestAssertWithNativeFunctions:
+    """
+    NativeFunction の結果をアサートできること。
+
+    修正前: tested が plain int のため tested.type で AttributeError →
+            except Exception で握りつぶし → ❌10 ✅10 という偽陰性エラー。
+    """
+
+    def test_sum_assert_passes(self):
+        """和() の結果を直接アサートできること"""
+        rt = run_rt(">>> 和(3, 4)\n7")
+        assert rt.test_passed  # 失敗なら exec() が YuiError を送出する
+
+    def test_product_assert_passes(self):
+        rt = run_rt(">>> 積(3, 4)\n12")
+        assert rt.test_passed
+
+    def test_sum_via_variable_assert_passes(self):
+        """Native 関数の結果を変数に代入してからアサートできること (バグの主な再現ケース)"""
+        code = "x = 和(3, 4)\n>>> x\n7"
+        rt = run_rt(code)
+        assert rt.test_passed
+
+    def test_chained_native_assert_passes(self):
+        """Native 関数をネストした呼び出し結果をアサートできること"""
+        # 積(result, 10) のような内部でネイティブ関数を使うケース
+        code = "x = 和(積(2, 5), 3)\n>>> x\n13"
+        rt = run_rt(code)
+        assert rt.test_passed
+
+    def test_user_function_using_native_assert(self):
+        """
+        Native 関数を内部で使うユーザ定義関数のアサート。
+        closest_integer の失敗パターンの再現。
+        """
+        code = (
+            "ten_times = 入力 n に対して {\n"
+            "  積(n, 10) が答え\n"
+            "}\n"
+            ">>> ten_times(5)\n"
+            "50\n"
+        )
+        rt = run_rt(code)
+        assert rt.test_passed
+
+    def test_user_function_chained_native_assert(self):
+        """ループ内でネイティブ関数を重ねて使うユーザ定義関数のアサート"""
+        code = (
+            "accumulate = 入力 n に対して {\n"
+            "  result = 0\n"
+            "  n回くり返す {\n"
+            "    result = 和(result, 1)\n"
+            "  }\n"
+            "  result が答え\n"
+            "}\n"
+            ">>> accumulate(5)\n"
+            "5\n"
+        )
+        rt = run_rt(code)
+        assert rt.test_passed
+
+    def test_assert_failure_raises_yuierror(self):
+        """アサート失敗時に YuiError が送出されること"""
+        with pytest.raises(YuiError):
+            run_rt(">>> 和(3, 4)\n99")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 基本実行
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBasicExec:
+    def test_assignment(self):
+        assert val(run("x = 42"), 'x') == 42
+
+    def test_string_assignment(self):
+        assert val(run('s = "hello"'), 's') == "hello"
+
+    def test_increment(self):
+        assert val(run("x = 0\nxを増やす"), 'x') == 1
+
+    def test_decrement(self):
+        assert val(run("x = 5\nxを減らす"), 'x') == 4
+
+    def test_arithmetic_add(self):
+        # BinaryNode (+) は未実装のため、標準ライブラリの 和() を使う
+        assert val(run_std("x = 和(3, 4)"), 'x') == 7
+
+    def test_arithmetic_mul(self):
+        # BinaryNode (*) は未実装のため、標準ライブラリの 積() を使う
+        assert val(run_std("x = 積(3, 4)"), 'x') == 12
+
+    def test_repeat(self):
+        assert val(run("x = 0\n3回くり返す {\n  xを増やす\n}"), 'x') == 3
+
+    def test_if_true(self):
+        env = run("x = 10\nもし x が 10 ならば {\n  x = 99\n}")
+        assert val(env, 'x') == 99
+
+    def test_if_false(self):
+        env = run("x = 5\nもし x が 10 ならば {\n  x = 99\n}")
+        assert val(env, 'x') == 5
+
+    def test_user_function(self):
+        # BinaryNode (+) は未実装のため、標準ライブラリの 和() を使う
+        code = (
+            STDLIB +
+            "add = 入力 a, b に対して {\n"
+            "  和(a, b) が答え\n"
+            "}\n"
+            "result = add(3, 4)"
+        )
+        assert val(run(code), 'result') == 7
+
+    def test_array_literal(self):
+        env = run("a = [1, 2, 3]")
+        assert val(env, 'a') == [1, 2, 3]
+
+    def test_array_append(self):
+        env = run("a = [1, 2]\naに3を追加する")
+        assert val(env, 'a') == [1, 2, 3]
+
+    def test_multiple_exec_shares_env(self):
+        """同じ runtime で exec() を2回呼んでも環境が引き継がれること"""
+        rt = YuiRuntime()
+        rt.exec("x = 10", 'yui', eval_mode=False)
+        # BinaryNode (+) は未実装のため、インクリメントで +5 を表現
+        rt.exec("y = x\nyを増やす\nyを増やす\nyを増やす\nyを増やす\nyを増やす", 'yui', eval_mode=False)
+        assert YuiType.to_native(rt.enviroments[-1]['y']) == 15
+
+    def test_syntax_error_raises_yuierror(self):
+        with pytest.raises(YuiError):
+            run("もし もし もし")

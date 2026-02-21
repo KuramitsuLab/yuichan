@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from .yuiast import (
     ASTNode,
-    NullNode, NumberNode, StringNode, ArrayNode, ObjectNode,
+    ConstNode, NumberNode, StringNode, ArrayNode, ObjectNode,
     NameNode, GetIndexNode, ArrayLenNode, MinusNode, BinaryNode, FuncAppNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PassNode, PrintExpressionNode,
@@ -198,7 +198,11 @@ class YuiRuntime(object):
     # リテラル・値ノード
     # ──────────────────────────────────────────────────────────
 
-    def visitNullNode(self, node: NullNode):
+    def visitConstNode(self, node: ConstNode):
+        if node.native_value is True:
+            return YuiValue.TrueValue
+        if node.native_value is False:
+            return YuiValue.FalseValue
         return YuiValue.NullValue
 
     def visitNumberNode(self, node: NumberNode):
@@ -471,7 +475,8 @@ class NativeFunction(YuiFunction):
 
     def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
         try:
-            return self.function(*arg_values)
+            result = self.function(*arg_values)
+            return result if isinstance(result, YuiValue) else YuiValue(result)
         except YuiError as e:
             if e.error_node is None:
                 e.error_node = node

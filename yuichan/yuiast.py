@@ -95,13 +95,16 @@ def _node(node: Any) -> ASTNode:
     return node
 
 @dataclass
-class NullNode(ExpressionNode):
-    """null値を表すノード"""
-    def __init__(self):
+class ConstNode(ExpressionNode):
+    """null/boolean値を表すノード (native_value: None, True, or False)"""
+    native_value: Any  # None, True, or False
+
+    def __init__(self, value=None):
         super().__init__()
+        self.native_value = value
 
     def visit(self, visitor):
-        return visitor.visitNullNode(self)
+        return visitor.visitConstNode(self)
 
 
 @dataclass
