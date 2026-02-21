@@ -16,8 +16,7 @@ class ASTNode(ABC):
     pos: int
     end_pos: int
     comment: Optional[str]
-    evaluated_value: Optional[Any]
-    
+
     def __init__(self):
         """ASTNodeを初期化する"""
         self.filename = "main.yui"
@@ -25,7 +24,6 @@ class ASTNode(ABC):
         self.pos = 0
         self.end_pos = -1
         self.comment = None
-        self.evaluated_value = None
 
     def setpos(self, source: str, pos: int, end_pos: int = -1, filename: str = "main.yui"):
         self.source = source
@@ -78,10 +76,6 @@ class ASTNode(ABC):
             end_pos = len(self.source)
         return linenum, col, self.source[start:end_pos]
 
-def _eval(node_or_value):
-    if isinstance(node_or_value, ASTNode):
-        return node_or_value.evaluated_value
-    return node_or_value
 
 @dataclass
 class ExpressionNode(ASTNode):
@@ -194,9 +188,9 @@ class NameNode(ExpressionNode):
     def visit(self, visitor):
         return visitor.visitNameNode(self)
     
-    def update(self, value_node: ASTNode, visitor: 'YuiRuntime'):
+    def update(self, value, visitor):
         """変数の値を更新する"""
-        visitor.setenv(self.name, _eval(value_node))
+        visitor.setenv(self.name, value)
 
 @dataclass
 class GetIndexNode(ASTNode):
@@ -212,11 +206,11 @@ class GetIndexNode(ASTNode):
     def visit(self, visitor):
         return visitor.visitGetIndexNode(self)
     
-    def update(self, value_node: ASTNode, visitor): 
+    def update(self, value, visitor):
         """変数の値を更新する"""
-        collection = _eval(self.collection.visit(visitor))
-        self.index_node.visit(visitor)
-        collection.set_item(self.index_node, value_node) 
+        collection = self.collection.visit(visitor)
+        index = self.index_node.visit(visitor)
+        collection.set_item(index, value)
 
 @dataclass
 class BinaryNode(ASTNode):

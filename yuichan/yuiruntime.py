@@ -12,7 +12,8 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, ImportNode,
 )
-from .yuitypes import YuiValue, YuiType, YuiError, standard_lib
+from .yuitypes import YuiValue, YuiType, YuiError
+from .yuistdlib import standard_lib
 from .yuiparser import YuiParser
 
 
@@ -174,7 +175,7 @@ class YuiRuntime(object):
         self.source = source
 
         # パースして実行
-        parser = YuiParser()
+        parser = YuiParser(syntax)
         program = parser.parse(source)
         try:
             self.start(timeout)
@@ -198,17 +199,14 @@ class YuiRuntime(object):
     # ──────────────────────────────────────────────────────────
 
     def visitNullNode(self, node: NullNode):
-        node.evaluated_value = YuiValue.NullValue
-        return node.evaluated_value
+        return YuiValue.NullValue
 
     def visitNumberNode(self, node: NumberNode):
-        node.evaluated_value = YuiValue(node.native_value)
-        return node.evaluated_value
+        return YuiValue(node.native_value)
 
     def visitStringNode(self, node: StringNode):
         if isinstance(node.contents, str):
-            node.evaluated_value = YuiValue(node.contents)
-            return node.evaluated_value
+            return YuiValue(node.contents)
         parts = []
         for content in node.contents:
             if isinstance(content, str):
@@ -216,25 +214,22 @@ class YuiRuntime(object):
             else:
                 value = content.visit(self)
                 parts.append(f'{YuiType.yui_to_native(value)}')
-        node.evaluated_value = YuiValue(''.join(parts))
-        return node.evaluated_value
+        return YuiValue(''.join(parts))
 
     def visitArrayNode(self, node: ArrayNode):
         array_value = YuiValue([])
         for element in node.elements:
-            element.visit(self)
-            array_value.append(element)
-        node.evaluated_value = array_value
-        return node.evaluated_value
+            v = element.visit(self)
+            array_value.append(v)
+        return array_value
 
     def visitObjectNode(self, node: ObjectNode):
         object_value = YuiValue({})
         for i in range(0, len(node.elements), 2):
-            node.elements[i].visit(self)
-            node.elements[i + 1].visit(self)
-            object_value.set_item(node.elements[i], node.elements[i + 1])
-        node.evaluated_value = object_value
-        return node.evaluated_value
+            key = node.elements[i].visit(self)
+            val = node.elements[i + 1].visit(self)
+            object_value.set_item(key, val)
+        return object_value
 
     # ──────────────────────────────────────────────────────────
     # 変数参照・演算ノード
@@ -243,30 +238,26 @@ class YuiRuntime(object):
     def visitNameNode(self, node: NameNode):
         if not self.hasenv(node.name):
             raise YuiError(("undefined", "variable", f"❌{node.name}"), node)
-        node.evaluated_value = self.getenv(node.name)
-        return node.evaluated_value
+        return self.getenv(node.name)
 
     def visitGetIndexNode(self, node: GetIndexNode):
-        collection_value = node.collection.visit(self)
-        node.index_node.visit(self)
-        node.evaluated_value = collection_value.get_item(node.index_node)
-        return node.evaluated_value
+        collection = node.collection.visit(self)
+        index = node.index_node.visit(self)
+        return collection.get_item(index)
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         value = node.element.visit(self)
-        node.evaluated_value = YuiValue(len(value.arrayview))
-        return node.evaluated_value
+        return YuiValue(len(value.arrayview))
 
     def visitMinusNode(self, node: MinusNode):
-        node.element.visit(self)
-        YuiType.NumberType.match_or_raise(node.element)
-        node.evaluated_value = YuiValue(-YuiType.matched_native(node.element))
-        return node.evaluated_value
+        value = node.element.visit(self)
+        YuiType.NumberType.match_or_raise(value)
+        return YuiValue(-YuiType.matched_native(value))
 
     def visitBinaryNode(self, node: BinaryNode):
         raise YuiError(
             ("error", "internal", f"🔍{node.operator} operator is not implemented"),
-            node, self,
+            node,
         )
 
     def visitFuncAppNode(self, node: FuncAppNode):
@@ -277,17 +268,14 @@ class YuiRuntime(object):
         if not isinstance(function, YuiFunction):
             raise YuiError(("error", "type", "✅<function>", f"❌{function}"), node.name_node)
 
-        arguments = []
-        for arg_node in node.arguments:
-            arg_node.visit(self)
-            arguments.append(arg_node)
+        # 引数を訪問した直後に値を確定させる（再帰で同一ノードが上書きされる問題を防ぐ）
+        arg_values = [arg_node.visit(self) for arg_node in node.arguments]
 
         if node.snippet == '':
-            args = ', '.join(f'{YuiType.evaluated(a)}' for a in arguments)
+            args = ', '.join(str(v) for v in arg_values)
             node.snippet = f'{node.name_node}({args})'
 
-        node.evaluated_value = function.call(arguments, node, self)
-        return node.evaluated_value
+        return function.call(arg_values, node, self)
 
     # ──────────────────────────────────────────────────────────
     # 代入・変更ノード
@@ -296,27 +284,25 @@ class YuiRuntime(object):
     def visitAssignmentNode(self, node: AssignmentNode):
         if not hasattr(node.variable, 'update'):
             raise YuiError(("expected", "variable", f"❌{node.variable}"), node.variable)
-        node.expression.visit(self)
-        node.variable.update(node.expression, self)
+        value = node.expression.visit(self)
+        node.variable.update(value, self)
 
     def visitIncrementNode(self, node: IncrementNode):
-        node.variable.visit(self)
-        YuiType.IntType.match_or_raise(node.variable)
-        node.variable.evaluated_value = YuiValue(YuiType.matched_native(node.variable) + 1)
-        node.variable.update(node.variable, self)
+        value = node.variable.visit(self)
+        YuiType.IntType.match_or_raise(value)
+        node.variable.update(YuiValue(YuiType.matched_native(value) + 1), self)
         self.count_inc()
 
     def visitDecrementNode(self, node: DecrementNode):
-        node.variable.visit(self)
-        YuiType.IntType.match_or_raise(node.variable)
-        node.variable.evaluated_value = YuiValue(YuiType.matched_native(node.variable) - 1)
-        node.variable.update(node.variable, self)
+        value = node.variable.visit(self)
+        YuiType.IntType.match_or_raise(value)
+        node.variable.update(YuiValue(YuiType.matched_native(value) - 1), self)
         self.count_dec()
 
     def visitAppendNode(self, node: AppendNode):
         array = node.variable.visit(self)
-        node.expression.visit(self)
-        array.append(node.expression)
+        value = node.expression.visit(self)
+        array.append(value)
 
     # ──────────────────────────────────────────────────────────
     # 制御構造ノード
@@ -327,9 +313,9 @@ class YuiRuntime(object):
             statement.visit(self)
 
     def visitIfNode(self, node: IfNode):
-        node.left.visit(self)
-        node.right.visit(self)
-        result = node.operator.evaluate(node.left, node.right)
+        left = node.left.visit(self)
+        right = node.right.visit(self)
+        result = node.operator.evaluate(left, right)
         self.count_compare()
         if result:
             node.then_block.visit(self)
@@ -343,9 +329,9 @@ class YuiRuntime(object):
         pass
 
     def visitRepeatNode(self, node: RepeatNode):
-        node.count_node.visit(self)
-        YuiType.IntType.match_or_raise(node.count_node)
-        count = YuiType.matched_native(node.count_node)
+        count_value = node.count_node.visit(self)
+        YuiType.IntType.match_or_raise(count_value)
+        count = YuiType.matched_native(count_value)
         try:
             for _ in range(abs(count)):
                 self.check_execution(node)
@@ -370,8 +356,7 @@ class YuiRuntime(object):
 
     def visitPrintExpressionNode(self, node: PrintExpressionNode):
         if isinstance(node.expression, MinusNode):
-            value = node.expression.element.visit(self)
-            return value
+            return node.expression.element.visit(self)
         if isinstance(node.expression, FuncAppNode):
             node.expression.snippet = ''
         value = node.expression.visit(self)
@@ -379,25 +364,23 @@ class YuiRuntime(object):
         return value
 
     def visitAssertNode(self, node: AssertNode):
-        tested = None
-        reference_value = None
+        tested = reference_value = None
         try:
             tested = node.test.visit(self)
             reference_value = node.reference.visit(self)
-            if tested.type.equals(node.test, node.reference):
+            if tested.type.equals(tested, reference_value):
                 self.test_passed.append(str(node.test))
                 return
-        except YuiError as e:
-            raise e
+        except YuiError:
+            raise
         except Exception:
             pass
         raise YuiError(
             ("failed", "test", f"🔍{node.test}", f"❌{tested}", f"✅{reference_value}"),
-            node, self,
+            node,
         )
 
     def visitImportNode(self, node: ImportNode):
-        # standard_lib は yuiast 内にあるため既存の evaluate にフォールバック
         """ライブラリを環境に追加する"""
         modules = []
         if node.module_name is None:
@@ -431,28 +414,22 @@ class LocalFunction(YuiFunction):
         self.parameters = parameters
         self.body = body
 
-    def call(self, arguments: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
-        # 新しい環境を作成
+    def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
         runtime.pushenv()
-        if len(self.parameters) != len(arguments):
+        if len(self.parameters) != len(arg_values):
             raise YuiError(
-                ("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arguments)}"), node)
-
-        for parameter_name, parameter_value in zip(self.parameters, arguments):
-            runtime.setenv(parameter_name, parameter_value.evaluated_value)
-
+                ("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arg_values)}"), node)
+        for param_name, value in zip(self.parameters, arg_values):
+            runtime.setenv(param_name, value)
         try:
-            # 関数本体を評価
-            runtime.push_call_frame(self.name, arguments, node)
+            runtime.push_call_frame(self.name, arg_values, node)
             runtime.check_recursion_depth()
             self.body.evaluate(runtime)
         except YuiReturnException as e:
-            # return 文で値が返された
             if e.value is not None:
                 runtime.pop_call_frame()
                 runtime.popenv()
                 return e.value
-        # return 文がない場合は変更された変数のみ返す
         runtime.pop_call_frame()
         return YuiValue(runtime.popenv())
 
@@ -460,17 +437,15 @@ class LocalFunction(YuiFunction):
 class LocalFunctionV(LocalFunction):
     """visitor パターン版 LocalFunction。body.visit(runtime) で実行する。"""
 
-    def call(self, arguments: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
+    def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
         runtime.pushenv()
-        if len(self.parameters) != len(arguments):
+        if len(self.parameters) != len(arg_values):
             raise YuiError(
-                ("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arguments)}"), node)
-
-        for parameter_name, parameter_value in zip(self.parameters, arguments):
-            runtime.setenv(parameter_name, parameter_value.evaluated_value)
-
+                ("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arg_values)}"), node)
+        for param_name, value in zip(self.parameters, arg_values):
+            runtime.setenv(param_name, value)
         try:
-            runtime.push_call_frame(self.name, arguments, node)
+            runtime.push_call_frame(self.name, arg_values, node)
             runtime.check_recursion_depth()
             self.body.visit(runtime)
         except YuiReturnException as e:
@@ -478,7 +453,6 @@ class LocalFunctionV(LocalFunction):
                 runtime.pop_call_frame()
                 runtime.popenv()
                 return e.value
-
         runtime.pop_call_frame()
         return YuiValue(runtime.popenv())
 
@@ -494,16 +468,15 @@ class NativeFunction(YuiFunction):
         self.function = function
         self.is_ffi = is_ffi
 
-    def call(self, arguments: List[ASTNode], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
+    def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
         try:
-            return self.function(*arguments)
+            return self.function(*arg_values)
         except YuiError as e:
             if e.error_node is None:
                 e.error_node = node
-            e.runtime = runtime
             raise e
         except Exception as e:
-            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node, runtime)
+            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node)
 
 class YuiBreakException(RuntimeError):
     """ループを抜けるための例外"""

@@ -1,0 +1,124 @@
+{
+    "syntax": "javascript-like",
+
+    "whitespace": "[ \\t\\r　]",
+    "whitespaces": "[ \\t\\r　]+",
+    "linefeed": "[\\n]",
+    "word-segmenter": " ",
+    "line-comment-begin": "//",
+    "comment-begin": "/\\*",
+    "comment-end": "\\*/",
+
+    "number-first-char": "[0-9]",
+    "number-chars": "[0-9]*",
+    "number-dot-char": "[\\.]",
+    "name-first-char": "[A-Za-z_]",
+    "name-chars": "[A-Za-z0-9_]*",
+    "extra-name-begin": "",
+    "extra-name-end": "",
+    
+    "string-begin": "\"",
+    "string-end": "\"",
+    "string-escape": "\\\\",
+    "string-interpolation-begin": "\\{",
+    "string-interpolation-end": "\\}",
+    "string-content-end": "\\\\|\\{|\\\"",
+
+    "array-begin": "\\[",
+    "array-end": "\\]",
+    "array-separator": ",",
+    "object-begin": "\\{",
+    "object-end": "\\}",
+    "object-separator": ",",
+    "key-value-separator": ":",
+
+    "grouping-begin!": "\\(",
+    "grouping-end!": "\\)",
+
+    "binary+": "\\+",
+    "binary-": "-",
+    "binary*": "\\*",
+    "binary/": "/",
+    "binary%": "%",
+    "unary-minus": "-",
+
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
+    "property-accessor": "\\.",
+    "property-length": "length",
+    "not-property-name": "push",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
+
+    "block-begin": "\\:",
+    "block-end": "",
+    "block-line": "",
+
+    "assignment-begin": "",
+    "assignment-infix": "\\=",
+    "assignment-end": "",
+
+    "increment-begin": "",
+    "increment-infix": "\\+\\+|\\+\\=\\s*1",
+    "increment-end": "1",
+
+    "decrement-begin": "",
+    "decrement-infix": "\\-\\-|\\-\\=\\s*1",
+    "decrement-end": "1",
+ 
+    "append-begin": "",
+    "append-infix": ".append\\s*\\(",
+    "append-suffix": "\\)",
+    "append-end": "",
+
+
+    "import-begin": "import\\s",
+    "import-end": "",
+
+    "print-begin": "",
+    "print-end": "",
+
+    "break": "break\\s?",
+    "continue": "continue\\s?",
+    "pass": "pass\\s?",
+
+    "return-begin": "return\\s",
+    "return-end": "",
+
+    "repeat-begin": "for\\s+_\\s+in\\s+range\\s*\\(\\s*",
+    "repeat-times": "\\)\\s*",
+    "repeat-block": "",
+    "repeat-end": "",
+
+    "if-begin": "if\\s",
+    "if-condition-begin": "\\(?",
+    "if-condition-end": "\\)?",
+    "if-prefix": "",
+    "if-infix==": "==",
+    "if-infix!=": "!=",
+    "if-infix<": "<",
+    "if-infix<=": "<=",
+    "if-infix>": ">",
+    "if-infix>=": ">=",
+    "if-infixin": "in\\s",
+    "if-infixnotin": "not\\s+in\\s",
+    "if-then": "",
+    "if-else": "else\\s*",
+    "if-end": "",
+
+    "funcdef-begin": "def\\s",
+    "funcdef-name-begin": "",
+    "funcdef-name-end": "",
+    "funcdef-args-begin": "\\(",
+    "funcdef-noarg": "",
+    "funcdef-arg-separator": ",",
+    "funcdef-args-end": "\\)",
+    "funcdef-block": "",
+    "funcdef-end": "",
+
+    "assert-begin": "assert\\s",
+    "assert-infix": "==",
+    "assert-end": ""
+
+}
