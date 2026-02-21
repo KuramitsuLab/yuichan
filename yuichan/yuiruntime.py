@@ -26,7 +26,7 @@ class YuiRuntime(object):
     - 再帰呼び出しの追跡
     """
 
-    enviroments: List[dict]
+    environments: List[dict]
     filesystems: Dict[str, str]  # 仮想ファイルシステム
     call_frames: List[tuple]  # (func_name, args, pos, end_pos)
     increment_count: int
@@ -38,7 +38,7 @@ class YuiRuntime(object):
 
     def __init__(self):
         """YuiRuntimeを初期化する"""
-        self.enviroments = [{}]
+        self.environments = [{}]
         self.call_frames = []
         self.filesystems = {}
         
@@ -58,29 +58,29 @@ class YuiRuntime(object):
 
     def hasenv(self, name) -> bool:
         """現在の環境に変数が存在するか確認する"""
-        for env in reversed(self.enviroments):
+        for env in reversed(self.environments):
             if name in env:
                 return True
         return False
 
     def getenv(self, name) -> Any:
         """現在の環境から変数を取得する"""
-        for env in reversed(self.enviroments):
+        for env in reversed(self.environments):
             if name in env:
                 return env[name]
         return None
 
     def setenv(self, name, value) -> Any:
         """現在の環境に変数を設定する"""
-        self.enviroments[-1][name] = value  
+        self.environments[-1][name] = value  
 
     def pushenv(self):
         """現在の環境に変数を設定する"""
-        self.enviroments.append({})
+        self.environments.append({})
 
     def popenv(self):
         """現在の環境に変数を設定する"""
-        return self.enviroments.pop()
+        return self.environments.pop()
     
     def stringfy_env(self, stack=-1, indent_prefix: str = "") -> str:
         """環境をJSON形式の文字列として出力する"""
@@ -92,11 +92,11 @@ class YuiRuntime(object):
             inner_indent_prefix = indent_prefix + "  "
             LF = "\n"
         lines = [f"{indent_prefix}<{self.stringfy_call_frames(stack=stack)}>{LF}{{"]
-        for i, (key, value) in enumerate(self.enviroments[stack].items()):
+        for i, (key, value) in enumerate(self.environments[stack].items()):
             if key.startswith("@"): continue 
             lines.append(f"{LF}{indent_prefix}  \"{key}\": ")
             lines.append(f"{YuiValue.stringfy_value(value, inner_indent_prefix)}")
-            if i < len(self.enviroments[stack]) - 1:
+            if i < len(self.environments[stack]) - 1:
                 lines.append(", ")
         lines.append(f"{LF}{indent_prefix}}}")
         return ''.join(lines)
@@ -185,7 +185,7 @@ class YuiRuntime(object):
             raise e
 
         # 結果を返す
-        return YuiType.yui_to_native(value) if eval_mode else self.enviroments[-1]
+        return YuiType.yui_to_native(value) if eval_mode else self.environments[-1]
 
 
     ## visitor

@@ -258,8 +258,8 @@ def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[st
 
     # Return environment (from last scope)
     result_env = {}
-    if runtime.enviroments:
-        result_env = runtime.enviroments[-1].copy()
+    if runtime.environments:
+        result_env = runtime.environments[-1].copy()
 
     return result_env
 
@@ -294,8 +294,8 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                 code = code.strip()
                 if code == "":
                     # Display environment
-                    if runtime.enviroments and len(runtime.enviroments[-1]) > 0:
-                        print(json.dumps(runtime.enviroments[-1], indent=2, ensure_ascii=False))
+                    if runtime.environments and len(runtime.environments[-1]) > 0:
+                        print(json.dumps(runtime.environments[-1], indent=2, ensure_ascii=False))
                     continue
 
                 # Parse and execute

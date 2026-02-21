@@ -22,7 +22,7 @@ def run(source: str, syntax: str = 'yui') -> dict:
     """source を exec() で実行し、最終環境 dict を返す"""
     rt = YuiRuntime()
     rt.exec(source, syntax, eval_mode=False)
-    return rt.enviroments[-1]
+    return rt.environments[-1]
 
 
 def run_std(source: str, syntax: str = 'yui') -> dict:
@@ -246,7 +246,7 @@ class TestBasicExec:
         rt.exec("x = 10", 'yui', eval_mode=False)
         # BinaryNode (+) は未実装のため、インクリメントで +5 を表現
         rt.exec("y = x\nyを増やす\nyを増やす\nyを増やす\nyを増やす\nyを増やす", 'yui', eval_mode=False)
-        assert YuiType.to_native(rt.enviroments[-1]['y']) == 15
+        assert YuiType.to_native(rt.environments[-1]['y']) == 15
 
     def test_syntax_error_raises_yuierror(self):
         with pytest.raises(YuiError):
