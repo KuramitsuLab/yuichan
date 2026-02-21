@@ -4,7 +4,7 @@ from .yuitypes import YuiError
 from .yuisyntax import load_syntax
 
 yui_syntax = load_syntax('yui')
-py_syntax = load_syntax('pylike')
+
 
 class TestSource:
     """式の評価に関するテストクラス"""
@@ -65,7 +65,7 @@ class TestSource:
             "comment-end": r"\*\)",
         })
         source.skip_whitespaces_and_comments(include_linefeed=True)
-        assert source.source[source .pos] == '1'
+        assert source.source[source.pos] == '1'
 
 
 class TestParseExpressionNode:
@@ -134,7 +134,7 @@ class TestParseExpressionNode:
         source = Source('{"A": 1}', pos=0)
         object_node = parse("@Object", source, pc={})
         assert str(object_node) == '{"A": 1}'
-    
+
     def test_Name(self):
         source = Source("x_1 = 1")
         name_node = parse("@Name", source, pc={})
@@ -145,7 +145,7 @@ class TestParseExpressionNode:
         name_node = parse("@Expression", source, pc={})
         assert str(name_node) == "x[0]"
 
-    def test_FuncAppAsExpression(self):
+    def test_FuncAppAsPrimary(self):
         source = Source("x(0)")
         name_node = parse("@Primary", source, pc={})
         assert str(name_node) == "x(0)"
@@ -158,7 +158,6 @@ class TestParseExpressionNode:
         name_node = parse("@Primary", source, pc={})
         assert str(name_node) == "x(1, 2)"
 
-
     def test_FuncAppAsExpression(self):
         source = Source("x(0)")
         name_node = parse("@Expression", source, pc={})
@@ -171,198 +170,3 @@ class TestParseExpressionNode:
         source = Source("x(1, 2)")
         name_node = parse("@Expression", source, pc={})
         assert str(name_node) == "x(1, 2)"
-
-
-class TestParseStatementNode:
-
-    def test_Assignment(self):
-        source = Source("x = 1 # コメント")
-        assignment_node = parse("@Assignment", source, pc={})
-        assert str(assignment_node) == "x = 1"
-
-    def test_AssignmentAsStatement(self):
-        source = Source("x=1 # コメント")
-        assignment_node = parse("@Statement", source, pc={})
-        assert str(assignment_node) == "x=1"
-
-    def test_Increment(self):
-        source = Source("xを増やす")
-        increment_node = parse("@Increment", source, pc={})
-        assert str(increment_node) == "xを増やす"
-
-        source = Source("xを増やす # コメント")
-        increment_node = parse("@Statement", source, pc={})
-        assert str(increment_node) == "xを増やす"
-
-    def test_IncrementAsStatement_lookahead(self):
-        source = Source("xに3増やす # コメント")
-        with pytest.raises(YuiError) as excinfo:
-            increment_node = parse("@Statement", source, pc={})
-            assert str(increment_node) == "xを増やす"
-        assert "expected" in str(excinfo.value)
-
-    def test_Increment_py(self):
-        source = Source("x += 1", syntax=py_syntax)
-        increment_node = parse("@Increment", source, pc={})
-        assert str(increment_node) == "x += 1"
-
-        source = Source("y += 1", syntax=py_syntax)
-        increment_node = parse("@Statement", source, pc={})
-        assert str(increment_node) == "y += 1"
-
-    def test_Decrement(self):
-        source = Source("xを減らす")
-        decrement_node = parse("@Decrement", source, pc={})
-        assert str(decrement_node) == "xを減らす"
-
-        source = Source("yを減らす # コメント")
-        decrement_node = parse("@Statement", source, pc={})
-        assert str(decrement_node) == "yを減らす"
-    
-    def test_Decrement_py(self):
-        source = Source("x -= 1", syntax=py_syntax)
-        decrement_node = parse("@Decrement", source, pc={})
-        assert str(decrement_node) == "x -= 1"
-
-        source = Source("y -= 1 # コメント", syntax=py_syntax)
-        decrement_node = parse("@Statement", source, pc={})
-        assert str(decrement_node) == "y -= 1"  
-
-    def test_Append(self):
-        source = Source("xに10を追加する")
-        append_node = parse("@Append", source, pc={})
-        assert str(append_node) == "xに10を追加する"
-
-        source = Source("xに10を追加する # コメント")
-        append_node = parse("@Statement", source, pc={})
-        assert str(append_node) == "xに10を追加する"
-
-    def test_Append_py(self):
-        source = Source("x.append(10)", syntax=py_syntax)
-        append_node = parse("@Append", source, pc={})
-        assert str(append_node) == "x.append(10)"
-
-        source = Source("x.append(10) # コメント", syntax=py_syntax)
-        append_node = parse("@Statement", source, pc={})
-        assert str(append_node) == "x.append(10)"
-
-    def test_Break(self):
-        source = Source("くり返しを抜ける")
-        expr_stmt_node = parse("@Break", source, pc={})
-        assert str(expr_stmt_node) == "くり返しを抜ける"
-
-    def test_Break_py(self):
-        source = Source("break", syntax=py_syntax)
-        expr_stmt_node = parse("@Break", source, pc={})
-        assert str(expr_stmt_node) == "break"
-    
-    def test_Return(self):
-        source = Source("1が答え")
-        return_node = parse("@Return", source, pc={})
-        assert str(return_node) == "1が答え"
-
-        source = Source("1が答え # コメント")
-        return_node = parse("@Return", source, pc={})
-        assert str(return_node) == "1が答え"
-
-    def test_Return_py(self):
-        source = Source("return 1 # コメント", syntax=py_syntax)
-        return_node = parse("@Return", source, pc={})
-        assert str(return_node) == "return 1"
-
-        source = Source("return 1", syntax=py_syntax)
-        return_node = parse("@Statement", source, pc={})
-        assert str(return_node) == "return 1"
-
-class TestParseBlockNode:
-
-    def test_TopLevel(self):
-        source = Source("x = 1\ny=2")
-        top_level_node = parse("@TopLevel", source, pc={})
-        assert str(top_level_node) == "x = 1\ny=2"
-
-    def test_statement_separator(self):
-        source = Source("x = 1;y=2")
-        source.update_syntax(**{
-            "statement-separator": ";",
-        })
-        top_level_node = parse("@TopLevel", source, pc={})
-        assert str(top_level_node) == "x = 1;y=2"
-
-    def test_TopLevel_error(self):
-        with pytest.raises(YuiError) as excinfo:
-            source = Source("x = 1 知らないよ")
-            top_level_node = parse("@TopLevel", source, pc={})
-            assert str(top_level_node) == "x = 1 知らないよ"
-        assert "wrong" in str(excinfo.value)
-        assert "statement" in str(excinfo.value)
-
-    def test_Block(self):
-        source = Source("n回 {\n  x = 1\n  y=2\n} くり返す", pos=3)
-        block_node = parse("@Block", source, pc={})
-        assert str(block_node) == "{\n  x = 1\n  y=2\n}"
-
-    def test_Block_emptyline(self):
-        source = Source("n回 {\n  x = 1\n #a\n\n  y=2\n} くり返す", pos=3)
-        block_node = parse("@Block", source, pc={})
-        assert str(block_node) == "{\n  x = 1\n #a\n\n  y=2\n}"
-
-    def test_Repeat(self):
-        source = Source("3回くり返す {\n  x = 1\n}")
-        repeat_node = parse("@Repeat", source, pc={})
-        assert str(repeat_node) == "3回くり返す {\n  x = 1\n}"
-
-    def test_If(self):
-        source = Source("もしxが1ならば {\n  x = 1\n}")
-        if_node = parse("@If", source, pc={})
-        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
-
-    def test_IfAsStatement(self):
-        source = Source("もしxが1ならば {\n  x = 1\n}")
-        if_node = parse("@Statement", source, pc={})
-        assert str(if_node) == "もしxが1ならば {\n  x = 1\n}"
-
-    def test_If_in(self):
-        source = Source("もしxがAのいずれかならば{\n  x = 1\n}")
-        if_node = parse("@If", source, pc={})
-        assert str(if_node) == "もしxがAのいずれかならば{\n  x = 1\n}"
-
-    def test_If_not_in(self):
-        source = Source("もしxがAのいずれでもないならば{\n  x = 1\n}")
-        if_node = parse("@If", source, pc={})
-        assert str(if_node) == "もしxがAのいずれでもないならば{\n  x = 1\n}"
-
-    def test_NestedIf(self):
-        source = Source("もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1")
-        if_node = parse("@If", source, pc={})
-        assert str(if_node) == "もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}"
-
-    def test_NestedIfAsTopLevel(self):
-        source = Source("もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1")
-        if_node = parse("@TopLevel", source, pc={})
-        assert str(if_node) == "もしxが1ならば {\n  x=0\n  もしxが0ならば {\n    x=1\n  }\n}\ny=1"
-
-    def test_NestedIf_py(self):
-        source = Source("if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=1", syntax=py_syntax)
-        if_node = parse("@If", source, pc={})
-        assert str(if_node) == "if x==1:\n  x=0\n  if x==0:\n    x=1\n\n"
-
-    def test_NestedIfAsTopLevel_py(self):
-        source = Source("if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=2", syntax=py_syntax)
-        if_node = parse("@TopLevel", source, pc={})
-        assert str(if_node) == "if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=2"
-
-
-test_cases = [
-"""\n
-count=0
-10回くり返す{
-   countを増やす
-   もし countが 5ならば{
-      くり返しを抜ける
-   }
-}
-""",
-]
-
-

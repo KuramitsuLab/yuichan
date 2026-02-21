@@ -385,8 +385,9 @@ class YuiRuntime(object):
         modules = []
         if node.module_name is None:
             standard_lib(modules)
-        for name, func in modules:
-            self.setenv(f'@{name}', NativeFunction(func))
+        for names, func in modules:
+            for name in names.split('|'): # 多言語関数名
+                self.setenv(f'@{name}', NativeFunction(func))
 
     # # ──────────────────────────────────────────────────────────
     # # フォールバック

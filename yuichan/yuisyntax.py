@@ -207,6 +207,257 @@ def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
     #     terminals['keywords'] = keywords        
     return terminals
 
+_DEFAULT_SYNTAX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
+
+
+def list_syntax_names(syntax_dir: Optional[str] = None) -> List[str]:
+    """syntax ディレクトリにある syntax 名の一覧を返す（.json 拡張子なし、ソート済み）。"""
+    d = syntax_dir or _DEFAULT_SYNTAX_DIR
+    return sorted(f[:-5] for f in os.listdir(d) if f.endswith('.json'))
+
+
+def find_matching_syntaxes(sources: Dict[str, str], syntax_dir: Optional[str] = None) -> List[tuple]:
+    """
+    利用可能な全 syntax に対して sources のソースコードを解析し、成否を返す。
+
+    Args:
+        sources:    {filename: source_code} の辞書
+        syntax_dir: syntax JSON ファイルを探すディレクトリ（None なら組み込みディレクトリ）
+
+    Returns:
+        [(syntax_name, matched: bool, status_message: str), ...] のリスト
+    """
+    from .yuiparser import YuiParser  # 循環インポートを避けるため遅延インポート
+
+    d = syntax_dir or _DEFAULT_SYNTAX_DIR
+    results = []
+    for name in list_syntax_names(syntax_dir):
+        filepath = os.path.join(d, f"{name}.json")
+        error_info = None
+        for filename, code in sources.items():
+            try:
+                YuiParser(filepath).parse(code)
+            except Exception as e:
+                error_info = (filename, e)
+                break
+        if error_info is None:
+            results.append((name, True, 'OK'))
+        else:
+            fname, err = error_info
+            results.append((name, False, f"FAIL ({os.path.basename(fname)}: {err})"))
+    return results
+
+
+def generate_bnf(terminals: dict) -> str:
+    """
+    syntax dict から BNF 風の文法表記を生成する。
+    各トークン名には for_example() で得た代表文字列を当てはめる。
+    """
+    s = YuiSyntax(terminals)
+    syntax_name = terminals.get('syntax', '?')
+
+    def ex(name: str) -> str:
+        """トークンの代表文字列。未定義なら ''。"""
+        if not s.is_defined(name):
+            return ''
+        val = s.for_example(name)
+        # assert-infix が改行の場合は記号に置換
+        if val == '\n':
+            return '↵'
+        return val
+
+    E, N, B = '<expr>', '<name>', '<block>'
+
+    out: list[str] = []
+
+    def section(title: str):
+        out.append('')
+        out.append(f'{title}:')
+
+    def r(lhs: str, *parts):
+        """BNF規則を追加。空文字列の部品は無視する。"""
+        tokens = [str(p) for p in parts if p is not None and str(p) != '']
+        if tokens:
+            out.append(f'  {lhs:<18} ::= {" ".join(tokens)}')
+
+    # ── ヘッダ ────────────────────────────────────────────────
+    out.append(f'Grammar for {syntax_name!r}')
+    out.append('─' * 40)
+
+    # ── Literals ─────────────────────────────────────────────
+    section('Literals')
+
+    r('Number', '0  |  3.14')
+
+    sb, se = ex('string-begin'), ex('string-end')
+    ib, ie = ex('string-interpolation-begin'), ex('string-interpolation-end')
+    interp = f'  (interp: {ib}{E}{ie})' if ib else ''
+    r('String', f'{sb}...{se}{interp}')
+
+    ab, ae = ex('array-begin') or '[', ex('array-end') or ']'
+    asep = ex('array-separator') or ','
+    r('Array', f'{ab} {E} {{{asep} {E}}} {ae}')
+
+    ob, oe = ex('object-begin') or '{', ex('object-end') or '}'
+    kvsep = ex('key-value-separator') or ':'
+    osep = ex('object-separator') or ','
+    r('Object', f'{ob} "key"{kvsep}{E} {{{osep} "key"{kvsep}{E}}} {oe}')
+
+    bt, bf = ex('boolean-true'), ex('boolean-false')
+    if bt or bf:
+        r('Boolean', bt or '?', '|', bf or '?')
+
+    nb, ne = ex('extra-name-begin'), ex('extra-name-end')
+    if nb:
+        r('Name', f'{nb}...{ne}  |  letter...')
+    else:
+        r('Name', 'letter...')
+
+    # ── Expressions ──────────────────────────────────────────
+    section('Expressions')
+
+    gb, ge = ex('grouping-begin'), ex('grouping-end')
+    if gb:
+        r('Grouping', f'{gb} {E} {ge}')
+
+    if ex('length-begin'):
+        r('Length', ex('length-begin') + E + ex('length-end'))
+    elif ex('unary-length'):
+        r('Length', ex('unary-length') + ' ' + E)
+    elif ex('property-accessor') and ex('property-length'):
+        r('Length', f'{E}{ex("property-accessor")}{ex("property-length")}')
+
+    if ex('unary-minus'):
+        r('Minus', ex('unary-minus') + E)
+
+    fa_b, fa_e = ex('funcapp-args-suffix'), ex('funcapp-args-end')
+    fa_sep = ex('funcapp-args-separator') or ','
+    if fa_b:
+        r('FuncApp', f'{E}{fa_b}{E} {{{fa_sep} {E}}}{fa_e}')
+
+    ai_b = ex('array-indexer-suffix') or '['
+    ai_e = ex('array-indexer-end') or ']'
+    r('Index', f'{E}{ai_b}{E}{ai_e}')
+
+    pa = ex('property-accessor')
+    if pa:
+        props = [ex(k) for k in ('property-length', 'property-type') if ex(k)]
+        if props:
+            r('Property', f'{E}{pa}({" | ".join(props)})')
+
+    arith = [(op, ex(f'binary{op}')) for op in ['+', '-', '*', '/', '%'] if ex(f'binary{op}')]
+    if arith:
+        r('Arithmetic', ' | '.join(f'{E} {t} {E}' for _, t in arith))
+
+    comp_ops = [
+        (op, ex(f'binary{op}'))
+        for op in ['==', '!=', '<', '<=', '>', '>=', 'in', 'notin']
+        if ex(f'binary{op}')
+    ]
+    if comp_ops:
+        r('Comparison', ' | '.join(f'{E} {t} {E}' for _, t in comp_ops))
+
+    # ── Statements ───────────────────────────────────────────
+    section('Statements')
+
+    r('Assignment',
+      ex('assignment-begin'), E, ex('assignment-infix'), E, ex('assignment-end'))
+    r('Increment',
+      ex('increment-begin'), E, ex('increment-infix'), ex('increment-end'))
+    r('Decrement',
+      ex('decrement-begin'), E, ex('decrement-infix'), ex('decrement-end'))
+    r('Append',
+      ex('append-begin'), E, ex('append-infix'), E, ex('append-suffix'), ex('append-end'))
+
+    if ex('break'):    r('Break',    ex('break'))
+    if ex('continue'): r('Continue', ex('continue'))
+    if ex('pass'):     r('Pass',     ex('pass'))
+
+    r('Return', ex('return-begin'), E, ex('return-end'))
+    if ex('return-none'):
+        r('Return (void)', ex('return-none'))
+
+    r('Print', ex('print-begin'), E, ex('print-end'))
+
+    r('Repeat',
+      ex('repeat-begin'), E, ex('repeat-times'), ex('repeat-block'), B, ex('repeat-end'))
+
+    # If ─ infix-op形式（pylike/emoji）か suffix形式（yui）かで分岐
+    if_b  = ex('if-begin')
+    if_cb = ex('if-condition-begin')
+    if_ce = ex('if-condition-end')
+    if_then = ex('if-then')
+    if_else = ex('if-else')
+    if_end  = ex('if-end')
+
+    if_infix_ops = [
+        (op, ex(f'if-infix{op}'))
+        for op in ['==', '!=', '<', '<=', '>', '>=', 'in', 'notin']
+        if ex(f'if-infix{op}')
+    ]
+    if_suffix_ops = [
+        ex(f'if-suffix{op}')
+        for op in ['!=', '<', '<=', '>', '>=', 'in', 'notin', '==']
+        if ex(f'if-suffix{op}')
+    ]
+
+    if if_infix_ops:
+        op_alts = ' | '.join(f'{E} {t} {E}' for _, t in if_infix_ops)
+        r('If', if_b, if_cb, f'({op_alts})', if_ce, if_then, B,
+          f'[ {if_else} {B} ]' if if_else else '', if_end)
+    else:
+        infix_word = ex('if-infix')
+        suffix_str = f'[ {" | ".join(if_suffix_ops[:3])}... ]' if if_suffix_ops else ''
+        r('If', if_b, if_cb, E, infix_word, E, suffix_str, if_ce, if_then, B,
+          f'[ {if_else} {B} ]' if if_else else '', if_end)
+
+    # FuncDef
+    fd_b    = ex('funcdef-begin')
+    fd_nb   = ex('funcdef-name-begin')
+    fd_ne   = ex('funcdef-name-end')
+    fd_noarg = ex('funcdef-noarg')
+    fd_ab   = ex('funcdef-args-begin')
+    fd_ae   = ex('funcdef-args-end')
+    fd_asep = ex('funcdef-arg-separator')
+    fd_blk  = ex('funcdef-block')
+    fd_end  = ex('funcdef-end')
+
+    if fd_noarg:
+        args_part = f'( {fd_noarg}  |  {fd_ab} {N} {{{fd_asep} {N}}} {fd_ae} )'
+    else:
+        args_part = f'{fd_ab} {N} {{{fd_asep} {N}}} {fd_ae}'
+
+    r('FuncDef', fd_b, fd_nb, N, fd_ne, args_part, fd_blk, B, fd_end)
+
+    # Assert
+    if s.is_defined('assert-begin'):
+        r('Assert', ex('assert-begin'), E, ex('assert-infix'), E, ex('assert-end'))
+
+    if s.is_defined('import-standard'):
+        r('Import', ex('import-standard'))
+
+    # ── Blocks ───────────────────────────────────────────────
+    section('Blocks')
+
+    blk_b, blk_e = ex('block-begin'), ex('block-end')
+    if blk_b and blk_e:
+        r('Block', blk_b, '<stmt>...', blk_e)
+    elif blk_b:
+        r('Block', blk_b, '<stmt>...', '(indent-delimited)')
+    else:
+        r('Block', '<stmt>...', '(indent-delimited)')
+    r('TopLevel', '<stmt>...')
+
+    # ── Comments ─────────────────────────────────────────────
+    section('Comments')
+    if s.is_defined('line-comment-begin'):
+        r('LineComment', ex('line-comment-begin') + ' ...')
+    if s.is_defined('comment-begin') and s.is_defined('comment-end'):
+        r('BlockComment', ex('comment-begin') + ' ... ' + ex('comment-end'))
+
+    return '\n'.join(out)
+
+
 class YuiSyntax(object):
     terminals: Dict[str, str]
 

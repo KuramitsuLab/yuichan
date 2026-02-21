@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=70.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yuichan"
+version = "0.5.0"
+description = "Yui Programming Language"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Kimio Kuramitsu's Laboratory" },
+]
+keywords = ["yui", "programming language"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/KuramitsuLab/yuichan"
+Repository = "https://github.com/KuramitsuLab/yuichan"
+Issues = "https://github.com/KuramitsuLab/yuichan/issues"
+
+[project.scripts]
+yui = "yuichan.main:main"
+
+[tool.setuptools.packages.find]
+include = ["yuichan*"]
+
+[tool.setuptools.package-data]
+yuichan = ["syntax/*.json"]

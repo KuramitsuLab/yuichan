@@ -235,12 +235,12 @@ class CodingVisitor(YuiSyntax):
     def visitFuncAppNode(self, node: FuncAppNode):
         self.terminal('funcapp-begin')
         self.expression(node.name_node)
-        self.terminal('funcapp-suffix')
+        self.terminal('funcapp-args-suffix')
         for i, arg in enumerate(node.arguments):
             if i > 0:
-                self.terminal('funcapp-separator')
+                self.terminal('funcapp-args-separator')
             self.expression(arg)
-        self.terminal('funcapp-end')
+        self.terminal('funcapp-args-end')
 
     def visitAssignmentNode(self, node: AssignmentNode):
         self.terminal('assignment-begin')
@@ -381,4 +381,5 @@ class CodingVisitor(YuiSyntax):
 
         if not node.top_level:
             self.indent -= 1
+            self.just_linefeeded = False  # indent 変化後に正しいインデントで linefeed させる
             self.terminal('block-end', linefeed_before=True)

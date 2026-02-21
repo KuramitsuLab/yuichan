@@ -1,0 +1,4 @@
+include LICENSE
+include README.md
+recursive-include yuichan *.py
+recursive-include yuichan *.json

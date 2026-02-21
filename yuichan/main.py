@@ -18,7 +18,7 @@ except ImportError:
 from yuichan import __version__
 from .yuiparser import YuiParser
 from .yuicoding import CodingVisitor
-from .yuisyntax import load_syntax
+from .yuisyntax import load_syntax, generate_bnf, list_syntax_names, find_matching_syntaxes
 from .yuiruntime import YuiRuntime
 from .yuitypes import YuiError
 from .yuiast import IncrementNode, NameNode
@@ -44,6 +44,7 @@ Examples:
   yui --syntax yui --convert-to pylike file.yui      # Convert a file (saved to pylike/)
   yui --syntax yui --convert-to pylike *.yui         # Convert multiple files
   yui --syntax yui --convert-to pylike file.md       # Convert Markdown code blocks
+  yui --syntax yui --bnf                             # Show BNF grammar for a syntax
   yui --syntax yui --pass@1 test/*.yui               # Run tests and show pass rate
   yui --syntax yui --test-examples                   # Test built-in examples
   yui --syntax yui --make-examples                   # Generate example .yui files
@@ -89,6 +90,10 @@ Error message languages (--lang):
                         help='List available syntax files with examples')
     parser.add_argument('--find-syntax', action='store_true',
                         help='Find syntax files that can parse all given files')
+    parser.add_argument('--syntax-dir', type=str, metavar='DIR',
+                        help='Directory to search for syntax JSON files')
+    parser.add_argument('--bnf', action='store_true',
+                        help='Display BNF grammar for the specified syntax (requires --syntax)')
     parser.add_argument('--lang', type=str, metavar='LANG', default='ja',
                         help='Error message language (default: ja)')
     parser.add_argument('file', nargs='*', help='Yui file(s) to execute')
@@ -105,7 +110,7 @@ Error message languages (--lang):
 
         # List syntax
         if args.list_syntax:
-            list_syntax()
+            list_syntax(args.syntax_dir)
             return
 
         # Find syntax
@@ -113,7 +118,7 @@ Error message languages (--lang):
             if not args.file:
                 print("Error: --find-syntax requires at least one file", file=sys.stderr)
                 sys.exit(1)
-            find_syntax(args.file)
+            find_syntax(args.file, args.syntax_dir)
             return
 
         # Pass@1 mode
@@ -173,6 +178,19 @@ Error message languages (--lang):
             sys.exit(1)
 
         syntax = args.syntax
+
+        # --syntax-dir が指定されていれば、syntax 名をそのディレクトリ内で解決する
+        if args.syntax_dir and not os.path.isfile(syntax):
+            candidate = syntax if syntax.endswith('.json') else f"{syntax}.json"
+            full_path = os.path.join(args.syntax_dir, candidate)
+            if os.path.isfile(full_path):
+                syntax = full_path
+
+        # BNF display
+        if args.bnf:
+            terminals = load_syntax(syntax)
+            print(generate_bnf(terminals))
+            return
 
         # Initialize environment
         env = {}
@@ -396,40 +414,33 @@ def list_examples():
         print(f"{ex.name:<20} {ex.description}")
 
 
-def list_syntax():
+def list_syntax(syntax_dir: str = None):
     """List available syntax files with an increment example for each"""
-    syntax_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
-    json_files = sorted(f for f in os.listdir(syntax_dir) if f.endswith('.json'))
-
-    # Build example AST: x を増やす (IncrementNode)
     example_node = IncrementNode(NameNode("x"))
 
     print("\nAvailable syntax files:")
     print(f"{'Name':<12}  {'File':<20}  {'x += 1 equivalent'}")
     print("-" * 60)
 
-    for filename in json_files:
-        name = filename[:-len('.json')]
-        filepath = os.path.join(syntax_dir, filename)
+    from .yuisyntax import _DEFAULT_SYNTAX_DIR
+    d = syntax_dir or _DEFAULT_SYNTAX_DIR
+    for name in list_syntax_names(syntax_dir):
+        filename = f"{name}.json"
         try:
-            terminals = load_syntax(name)
-            syntax_label = terminals.get('syntax', name)
+            terminals = load_syntax(os.path.join(d, filename))
+            if not terminals.get('if-begin', ''):
+                continue
             visitor = CodingVisitor(terminals)
             code = visitor.emit(example_node).strip()
             if not code:
                 code = "(no increment syntax defined)"
         except Exception as e:
-            syntax_label = name
             code = f"(error: {e})"
         print(f"{name:<12}  {filename:<20}  {code}")
 
 
-def find_syntax(files: list):
+def find_syntax(files: list, syntax_dir: str = None):
     """Find syntax files that can successfully parse all given files"""
-    syntax_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
-    json_files = sorted(f for f in os.listdir(syntax_dir) if f.endswith('.json'))
-
-    # Read all source files upfront
     sources = {}
     for filename in files:
         try:
@@ -439,30 +450,12 @@ def find_syntax(files: list):
             print(f"Error: File not found - {filename}", file=sys.stderr)
             sys.exit(1)
 
-    print(f"\nTrying {len(json_files)} syntax file(s) against {len(files)} file(s)...\n")
+    results = find_matching_syntaxes(sources, syntax_dir)
+    print(f"\nTrying {len(results)} syntax file(s) against {len(files)} file(s)...\n")
 
-    matched = []
-
-    for json_file in json_files:
-        name = json_file[:-len('.json')]
-        errors = []
-
-        for filename, code in sources.items():
-            try:
-                parser = YuiParser(name)
-                parser.parse(code)
-            except Exception as e:
-                errors.append((filename, e))
-                break  # no need to try remaining files
-
-        if not errors:
-            matched.append(name)
-            status = "OK"
-        else:
-            fname, err = errors[0]
-            status = f"FAIL ({os.path.basename(fname)}: {err})"
-
-        print(f"  {'✓' if not errors else '✗'}  {name:<12}  {status}")
+    matched = [name for name, ok, _ in results if ok]
+    for name, ok, status in results:
+        print(f"  {'✓' if ok else '✗'}  {name:<12}  {status}")
 
     print()
     if matched:
