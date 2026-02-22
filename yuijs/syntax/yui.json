@@ -1,0 +1,136 @@
+{
+    "syntax": "Yui-Classic",
+
+    "whitespace": "[ \\t\\r　]",
+    "whitespaces": "[ \\t\\r　]+",
+    "linefeed": "[\\n]",
+    "line-comment-begin": "[#＃]",
+    "comment-begin": "",
+    "comment-end": "",
+
+
+    "null": "値なし|null",
+    "boolean-true": "真|true",
+    "boolean-false": "偽|false",
+
+    "number-first-char": "[0-9]",
+    "number-chars": "[0-9]*",
+    "number-dot-char": "[\\.]",
+
+    "name-first-char": "[A-Za-z_]",
+    "name-chars": "[A-Za-z0-9_]*",
+    "extra-name-begin": "「",
+    "extra-name-end": "」",
+    
+    "string-begin": "\"",
+    "string-end": "\"",
+    "string-escape": "\\\\",
+    "string-interpolation-begin": "\\{",
+    "string-interpolation-end": "\\}",
+    "string-content-end": "\\\\|\\{|\\\"",
+    "!string-begin": "'|f\"",
+
+    "array-begin": "\\[",
+    "array-end": "\\]",
+    "array-separator": ",",
+    "object-begin": "\\{",
+    "object-end": "\\}",
+    "object-separator": ",",
+    "key-value-separator": ":",
+
+    "grouping-begin!": "\\(",
+    "grouping-end!": "\\)",
+    "length-begin": "\\|",
+    "length-end": "\\|",
+
+    "binary+": "\\+",
+    "binary-": "-",
+    "binary*": "\\*",
+    "binary/": "/",
+    "binary%": "%",
+    "unary-minus": "-",
+
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
+    "property-accessor": "の",
+    "property-length": "大きさ|個数|文字数|要素数",
+    "property-type": "型",
+    
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
+
+    "import-standard": "標準ライブラリを使う",
+    "import-operator": "四則演算子を使う",
+    "import-begin": "",
+    "import-end": "を使う",
+
+    "block-begin": "\\{",
+    "block-end": "\\}",
+    "block-line": "",
+
+    "assignment-begin": "",
+    "assignment-infix": "=",
+    "assignment-end": "",
+
+    "increment-begin": "",
+    "increment-infix": "を",
+    "increment-end": "増やす",
+    "increment-lookahead": "増やす",
+    
+    "decrement-begin": "",
+    "decrement-infix": "を",
+    "decrement-end": "減らす",
+
+    "append-begin": "",
+    "append-infix": "(の末尾)?に",
+    "append-suffix": "を",
+    "append-end": "追加する",
+
+    "print-begin": "",
+    "print-end": "",
+
+    "break": "くり返しを抜ける",
+    "continue": "もう一度[、]?くり返す",
+    "pass": "何もしない",
+
+    "return-begin": "",
+    "return-end": "が[、 ]?答え",
+    "return-none": "関数から抜ける",
+
+    "repeat-begin": "",
+    "repeat-times": "回[、]?",
+    "repeat-block": "くり返す",
+    "repeat-end": "",
+
+    "if-begin": "もし",
+    "if-condition-begin": "",
+    "if-condition-end": "",
+    "if-prefix": "",
+    "if-infix": "が",
+    "if-suffix!=": "以外",
+    "if-suffix<": "より小さい",
+    "if-suffix<=": "以下",
+    "if-suffix>": "より大きい",
+    "if-suffix>=": "以上",
+    "if-suffixin": "のいずれか",
+    "if-suffixnotin": "のいずれでもない",
+    "if-then": "ならば[、]?",
+    "if-else": "そうでなければ[、]?",
+    "if-end": "",
+
+    "funcdef-begin": "",
+    "funcdef-name-begin": "",
+    "funcdef-name-end": "=",
+    "funcdef-args-begin": "入力",
+    "funcdef-arg-separator": "[,、]",
+    "funcdef-args-end": "",
+    "funcdef-noarg": "入力なし",
+    "funcdef-block": "に対し[て]?[、]?",
+    "funcdef-end": "",
+
+
+    "assert-begin": ">>>\\s+",
+    "assert-infix": "[\\n]",
+    "assert-end": ""
+}

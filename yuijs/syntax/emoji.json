@@ -1,0 +1,130 @@
+{
+    "syntax": "🪢",
+
+    "whitespace": "[ \\t\\r　]",
+    "whitespaces": "[ \\t\\r　]+",
+    "word-segmenter": " ",
+    "linefeed": "[\\n]",
+    "line-comment-begin": "💭|🗨️|📌|⚠️",
+    "comment-begin": "",
+    "comment-end": "",
+
+    "number-first-char": "[0-9]",
+    "number-chars": "[0-9]*",
+    "number-dot-char": "[\\.]",
+
+    "null": "🫥",
+    "boolean-true": "👍",
+    "boolean-false": "👎",
+
+    "name-first-char": "[A-Za-z_]",
+    "name-chars": "[A-Za-z0-9_]*",
+    "extra-name-begin": "",
+    "extra-name-end": "",
+
+    "string-begin": "\"",
+    "string-end": "\"",
+    "string-escape": "\\\\",
+    "string-interpolation-begin": "\\{",
+    "string-interpolation-end": "\\}",
+    "string-content-end": "\\\\|\\{|\\\"",
+
+    "array-begin": "\\[",
+    "array-end": "\\]",
+    "array-separator": ",",
+    "object-begin": "\\{",
+    "object-end": "\\}",
+    "object-separator": ",",
+    "key-value-separator": ":",
+
+    "grouping-begin": "\\(",
+    "grouping-end": "\\)",
+
+    "unary-minus": "-",
+    "unary-length": "📐",
+    "unary-inspect": "👀",
+    "binary+": "➕",
+    "binary-": "➖",
+    "binary*": "✖️",
+    "binary/": "➗",
+    "binary%": "🍕",
+
+    "array-indexer-suffix": "\\[",
+    "array-indexer-end": "\\]",
+    "property-accessor": "",
+    "property-type": "",
+    "not-property-name": "",
+    "funcapp-args-suffix": "\\(",
+    "funcapp-args-end": "\\)",
+    "funcapp-args-separator": ",",
+
+    "block-begin": "👉",
+    "block-end": "🔚",
+
+    "assignment-begin": "",
+    "assignment-infix": "⬅️",
+    "assignment-end": "",
+
+    "increment-begin": "",
+    "increment-infix": "⬆️",
+    "increment-end": "",
+
+    "decrement-begin": "",
+    "decrement-infix": "⬇️",
+    "decrement-end": "",
+
+    "append-begin": "",
+    "append-infix": "🧲",
+    "append-suffix": "",
+    "append-end": "",
+
+    "print-begin": "",
+    "print-end": "",
+
+    "break": "🚀",
+    "pass": "💤",
+
+    "return-begin": "✅|💡",
+    "return-end": "",
+
+    "repeat-begin": "🌀",
+    "repeat-times": "",
+    "repeat-block": "",
+    "repeat-end": "",
+
+    "if-begin": "❓|🤔",
+    "if-condition-begin": "",
+    "if-condition-end": "",
+    "if-prefix": "",
+    "if-infix==": "⚖️",
+    "if-infix!=": "🚫⚖️",
+    "if-infix<": "📈",
+    "if-infix<=": "📈⚖️",
+    "if-infix>": "📉",
+    "if-infix>=": "📉⚖️",
+    "if-infixin": "📥",
+    "if-infixnotin": "🚫📥",
+    "if-then": "",
+    "else-if": "❗❓",
+    "if-else": "❗|🙅",
+    "if-end": "",
+
+    "funcdef-begin": "🧩",
+    "funcdef-name-begin": "",
+    "funcdef-name-end": "",
+    "funcdef-args-begin": "\\(",
+    "funcdef-arg-separator": "\\,",
+    "funcdef-args-end": "\\)",
+    "funcdef-noarg": "",
+    "funcdef-block": "",
+    "funcdef-end": "",
+
+    "assert-begin": "🧪",
+    "assert-infix": "✅",
+    "assert-end": "",
+
+    "import-standard": "🗝️\\s+📚",
+    "import-operator": "🗝️\\s+➕➖✖️➗",
+    "import-begin": "🗝️",
+    "import-end": ""
+}
