@@ -1,0 +1,85 @@
+標準ライブラリを使う
+
+skjkasdkd = 入力 lst に対し {
+    length = |lst|
+    max_prime = 0
+
+    # Find largest prime
+    i = 0
+    length回、くり返す {
+        num = lst[i]
+
+        もし num が max_prime より大きいならば、{
+            # Check if prime
+            is_prime = 1
+
+            もし num が 2 より小さいならば、{
+                is_prime = 0
+            }
+
+            もし num が 2 ならば、{
+                is_prime = 1
+            }
+
+            もし num が 2 より大きいならば、{
+                j = 2
+                1000回、くり返す {
+                    もし j が num より小さいならば、{
+                        square = 積(j, j)
+                        もし square が num 以下 ならば、{
+                            remainder = 剰余(num, j)
+                            もし remainder が 0 ならば、{
+                                is_prime = 0
+                            }
+                        }
+                        jを増やす
+                    }
+                }
+            }
+
+            もし is_prime が 1 ならば、{
+                max_prime = num
+            }
+        }
+
+        iを増やす
+    }
+
+    # Sum digits
+    digit_sum = 0
+    temp = max_prime
+    100回、くり返す {
+        もし temp が 0 より大きいならば、{
+            digit = 剰余(temp, 10)
+            temp = 商(temp, 10)
+            digit_sum = 和(digit_sum, digit)
+        }
+    }
+
+    digit_sumが答え
+}
+
+>>> skjkasdkd([0, 3, 2, 1, 3, 5, 7, 4, 5, 5, 5, 2, 181, 32, 4, 32, 3, 2, 32, 324, 4, 3])
+10
+
+>>> skjkasdkd([1, 0, 1, 8, 2, 4597, 2, 1, 3, 40, 1, 2, 1, 2, 4, 2, 5, 1])
+25
+# テストケース
+>>> skjkasdkd([0,3,2,1,3,5,7,4,5,5,5,2,181,32,4,32,3,2,32,324,4,3])
+10
+>>> skjkasdkd([1,0,1,8,2,4597,2,1,3,40,1,2,1,2,4,2,5,1])
+25
+>>> skjkasdkd([1,3,1,32,5107,34,83278,109,163,23,2323,32,30,1,9,3])
+13
+>>> skjkasdkd([0,724,32,71,99,32,6,0,5,91,83,0,5,6])
+11
+>>> skjkasdkd([0,81,12,3,1,21])
+3
+>>> skjkasdkd([0,8,1,2,1,7])
+7
+>>> skjkasdkd([8191])
+19
+>>> skjkasdkd([8191, 123456, 127, 7])
+19
+>>> skjkasdkd([127, 97, 8192])
+10

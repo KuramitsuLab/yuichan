@@ -1,0 +1,60 @@
+標準ライブラリを使う
+
+move_one_ball = 入力 arr に対し {
+    length = |arr|
+    result = 1
+
+    もし length が 0 ならば、{
+        resultが答え
+    }
+
+    # Find minimum
+    min_val = arr[0]
+    min_idx = 0
+    i = 0
+    length回、くり返す {
+        もし arr[i] が min_val より小さいならば、{
+            min_val = arr[i]
+            min_idx = i
+        }
+        iを増やす
+    }
+
+    # Build rotated array
+    rotated = []
+    i = min_idx
+    length回、くり返す {
+        idx = 剰余(i, length)
+        rotatedの末尾に arr[idx] を 追加する
+        iを増やす
+    }
+
+    # Check if sorted
+    i = 1
+    差(length, 1)回、くり返す {
+        prev = 差(i, 1)
+        もし rotated[prev] が rotated[i] より大きいならば、{
+            result = 0
+        }
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> move_one_ball([3, 4, 5, 1, 2])
+1
+
+>>> move_one_ball([3, 5, 4, 1, 2])
+0
+# テストケース
+>>> move_one_ball([3, 4, 5, 1, 2])
+1
+>>> move_one_ball([3, 5, 10, 1, 2])
+1
+>>> move_one_ball([4, 3, 1, 2])
+0
+>>> move_one_ball([3, 5, 4, 1, 2])
+0
+>>> move_one_ball([])
+1

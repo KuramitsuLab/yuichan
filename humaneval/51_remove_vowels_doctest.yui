@@ -1,0 +1,15 @@
+# テストケース
+>>> remove_vowels("")
+""
+>>> remove_vowels("abcdef\nghijklm")
+"bcdf\nghjklm"
+>>> remove_vowels("fedcba")
+"fdcb"
+>>> remove_vowels("eeeee")
+""
+>>> remove_vowels("acBAA")
+"cB"
+>>> remove_vowels("EcBOO")
+"cB"
+>>> remove_vowels("ybcd")
+"ybcd"

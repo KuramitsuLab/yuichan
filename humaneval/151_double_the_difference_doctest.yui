@@ -1,0 +1,13 @@
+# テストケース
+>>> double_the_difference([])
+0
+>>> double_the_difference([5, 4])
+25
+>>> double_the_difference([0.1, 0.2, 0.3])
+0
+>>> double_the_difference([-10, -20, -30])
+0
+>>> double_the_difference([-1, -2, 8])
+0
+>>> double_the_difference([0.2, 3, 5])
+34

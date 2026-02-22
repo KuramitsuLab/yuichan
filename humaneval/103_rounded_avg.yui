@@ -1,0 +1,93 @@
+標準ライブラリを使う
+
+rounded_avg = 入力 n, m に対し {
+    result = []
+
+    もし m が n より小さいならば、{
+        result = -1
+        resultが答え
+    }
+
+    # Calculate sum
+    sum = 0
+    i = n
+    1000回、くり返す {
+        もし i が m 以下 ならば、{
+            sum = 和(sum, i)
+            iを増やす
+        }
+    }
+
+    # Calculate average (rounded using banker's rounding)
+    count = 差(和(m, 1), n)
+    quotient = 商(sum, count)
+    remainder = 剰余(sum, count)
+
+    # Check if we need to round up
+    # remainder * 2 compared with count
+    remainder_doubled = 積(remainder, 2)
+
+    avg = quotient
+    もし remainder_doubled が count より大きいならば、{
+        # Round up
+        avgを増やす
+    }
+    もし remainder_doubled が count ならば、{
+        # Exactly 0.5 - use banker's rounding (round to even)
+        is_odd = 剰余(quotient, 2)
+        もし is_odd が 1 ならば、{
+            avgを増やす
+        }
+    }
+
+    # Convert to binary
+    result = [48, 98]  # "0b"
+    temp = avg
+    digits = []
+    100回、くり返す {
+        もし temp が 0 より大きいならば、{
+            remainder = 剰余(temp, 2)
+            digitsの末尾に remainder を 追加する
+            temp = 商(temp, 2)
+        }
+    }
+
+    d_len = |digits|
+    i = 0
+    d_len回、くり返す {
+        idx = 差(差(d_len, i), 1)
+        digit_char = 和(48, digits[idx])
+        resultの末尾に digit_char を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> rounded_avg(1, 5)
+[48, 98, 49, 49]
+# テストケース
+>>> rounded_avg(1, 5)
+"0b11"
+>>> rounded_avg(7, 13)
+"0b1010"
+>>> rounded_avg(964,977)
+"0b1111001010"
+>>> rounded_avg(996,997)
+"0b1111100100"
+>>> rounded_avg(560,851)
+"0b1011000010"
+>>> rounded_avg(185,546)
+"0b101101110"
+>>> rounded_avg(362,496)
+"0b110101101"
+>>> rounded_avg(350,902)
+"0b1001110010"
+>>> rounded_avg(197,233)
+"0b11010111"
+>>> rounded_avg(7, 5)
+-1
+>>> rounded_avg(5, 1)
+-1
+>>> rounded_avg(5, 5)
+"0b101"

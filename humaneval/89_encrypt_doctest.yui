@@ -1,0 +1,17 @@
+# テストケース
+>>> encrypt("hi")
+"lm"
+>>> encrypt("asdfghjkl")
+"ewhjklnop"
+>>> encrypt("gf")
+"kj"
+>>> encrypt("et")
+"ix"
+>>> encrypt("faewfawefaewg")
+"jeiajeaijeiak"
+>>> encrypt("hellomyfriend")
+"lippsqcjvmirh"
+>>> encrypt("dxzdlmnilfuhmilufhlihufnmlimnufhlimnufhfucufh")
+"hbdhpqrmpjylqmpyjlpmlyjrqpmqryjlpmqryjljygyjl"
+>>> encrypt("a")
+"e"

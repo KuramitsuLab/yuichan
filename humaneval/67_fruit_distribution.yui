@@ -1,0 +1,82 @@
+標準ライブラリを使う
+
+fruit_distribution = 入力 s, n に対し {
+    length = |s|
+    numbers = []
+    current_num = []
+
+    # Extract numbers from string
+    i = 0
+    length回、くり返す {
+        char = s[i]
+        # Check if digit (48-57)
+        is_digit = 0
+        もし char が 47 より大きいならば、{
+            もし char が 58 より小さいならば、{
+                is_digit = 1
+            }
+        }
+
+        もし is_digit が 1 ならば、{
+            current_numの末尾に char を 追加する
+        }
+        そうでなければ {
+            もし |current_num| が 0 より大きいならば、{
+                # Convert to integer
+                num = 0
+                j = 0
+                cn_len = |current_num|
+                cn_len回、くり返す {
+                    digit = 差(current_num[j], 48)
+                    num = 和(積(num, 10), digit)
+                    jを増やす
+                }
+                numbersの末尾に num を 追加する
+                current_num = []
+            }
+        }
+        iを増やす
+    }
+
+    もし |current_num| が 0 より大きいならば、{
+        num = 0
+        j = 0
+        cn_len = |current_num|
+        cn_len回、くり返す {
+            digit = 差(current_num[j], 48)
+            num = 和(積(num, 10), digit)
+            jを増やす
+        }
+        numbersの末尾に num を 追加する
+    }
+
+    # Sum and subtract
+    total = 0
+    num_len = |numbers|
+    i = 0
+    num_len回、くり返す {
+        total = 和(total, numbers[i])
+        iを増やす
+    }
+
+    result = 差(n, total)
+    resultが答え
+}
+
+>>> fruit_distribution([53, 32, 97, 112, 112, 108, 101, 115, 32, 97, 110, 100, 32, 54, 32, 111, 114, 97, 110, 103, 101, 115], 19)
+8
+# テストケース
+>>> fruit_distribution("5 apples and 6 oranges",19)
+8
+>>> fruit_distribution("5 apples and 6 oranges",21)
+10
+>>> fruit_distribution("0 apples and 1 oranges",3)
+2
+>>> fruit_distribution("1 apples and 0 oranges",3)
+2
+>>> fruit_distribution("2 apples and 3 oranges",100)
+95
+>>> fruit_distribution("2 apples and 3 oranges",5)
+0
+>>> fruit_distribution("1 apples and 100 oranges",120)
+19

@@ -1,0 +1,22 @@
+# テストケース
+>>> check_if_last_char_is_a_letter("apple")
+0
+>>> check_if_last_char_is_a_letter("apple pi e")
+1
+>>> check_if_last_char_is_a_letter("eeeee")
+0
+>>> check_if_last_char_is_a_letter("A")
+1
+>>> check_if_last_char_is_a_letter("Pumpkin pie ")
+0
+>>> check_if_last_char_is_a_letter("Pumpkin pie 1")
+0
+>>> check_if_last_char_is_a_letter("")
+0
+>>> check_if_last_char_is_a_letter("eeeee e ")
+0
+>>> check_if_last_char_is_a_letter("apple pie")
+0
+>>> check_if_last_char_is_a_letter("apple pi e ")
+0
+1

@@ -1,0 +1,91 @@
+標準ライブラリを使う
+
+check_if_last_char_is_a_letter = 入力 txt に対し {
+    length = |txt|
+    result = 0
+
+    もし length が 0 ならば、{
+        resultが答え
+    }
+
+    # Find last word by splitting on spaces
+    words = []
+    current_word = []
+    i = 0
+    length回、くり返す {
+        char = txt[i]
+        もし char が 32 ならば、{  # space
+            wordsの末尾に current_word を 追加する
+            current_word = []
+        }
+        そうでなければ {
+            current_wordの末尾に char を 追加する
+        }
+        iを増やす
+    }
+    wordsの末尾に current_word を 追加する
+
+    # Get last word
+    num_words = |words|
+    last_idx = 差(num_words, 1)
+    last_word = words[last_idx]
+    last_word_len = |last_word|
+
+    # Check if last word is exactly 1 character and is a letter
+    もし last_word_len が 1 ならば、{
+        char = last_word[0]
+        is_letter = 0
+
+        # Check if uppercase letter (65-90)
+        もし char が 64 より大きいならば、{
+            もし char が 91 より小さいならば、{
+                is_letter = 1
+            }
+        }
+
+        # Check if lowercase letter (97-122)
+        もし char が 96 より大きいならば、{
+            もし char が 123 より小さいならば、{
+                is_letter = 1
+            }
+        }
+
+        result = is_letter
+    }
+
+    resultが答え
+}
+
+>>> check_if_last_char_is_a_letter([97, 112, 112, 108, 101, 32, 112, 105, 101])
+0
+
+>>> check_if_last_char_is_a_letter([97, 112, 112, 108, 101, 32, 112, 105, 32, 101])
+1
+
+>>> check_if_last_char_is_a_letter([97, 112, 112, 108, 101, 32, 112, 105, 32, 101, 32])
+0
+
+>>> check_if_last_char_is_a_letter([])
+0
+# テストケース
+>>> check_if_last_char_is_a_letter("apple")
+0
+>>> check_if_last_char_is_a_letter("apple pi e")
+1
+>>> check_if_last_char_is_a_letter("eeeee")
+0
+>>> check_if_last_char_is_a_letter("A")
+1
+>>> check_if_last_char_is_a_letter("Pumpkin pie ")
+0
+>>> check_if_last_char_is_a_letter("Pumpkin pie 1")
+0
+>>> check_if_last_char_is_a_letter("")
+0
+>>> check_if_last_char_is_a_letter("eeeee e ")
+0
+>>> check_if_last_char_is_a_letter("apple pie")
+0
+>>> check_if_last_char_is_a_letter("apple pi e ")
+0
+1

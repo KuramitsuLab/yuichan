@@ -1,0 +1,27 @@
+# テストケース
+>>> is_prime(6)
+0
+>>> is_prime(101)
+1
+>>> is_prime(11)
+1
+>>> is_prime(13441)
+1
+>>> is_prime(61)
+1
+>>> is_prime(4)
+0
+>>> is_prime(1)
+0
+>>> is_prime(5)
+1
+>>> is_prime(11)
+1
+>>> is_prime(17)
+1
+>>> is_prime(85)
+0
+>>> is_prime(77)
+0
+>>> is_prime(255379)
+0

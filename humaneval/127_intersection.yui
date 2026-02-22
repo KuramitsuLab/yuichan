@@ -1,0 +1,71 @@
+標準ライブラリを使う
+
+intersection = 入力 interval1, interval2 に対し {
+    start1 = interval1[0]
+    end1 = interval1[1]
+    start2 = interval2[0]
+    end2 = interval2[1]
+
+    l = 最大値(start1, start2)
+    r = 最小値(end1, end2)
+    length = 差(r, l)
+
+    result = [78, 79]
+
+    もし length が 0 より大きいならば、{
+        is_prime = 1
+
+        もし length が 1 ならば、{
+            is_prime = 0
+        }
+
+        もし length が 2 ならば、{
+            is_prime = 1
+        }
+
+        もし length が 2 より大きいならば、{
+            i = 2
+            100回、くり返す {
+                もし i が length より小さいならば、{
+                    remainder = 剰余(length, i)
+                    もし remainder が 0 ならば、{
+                        is_prime = 0
+                    }
+                    iを増やす
+                }
+            }
+        }
+
+        もし is_prime が 1 ならば、{
+            result = [89, 69, 83]
+        }
+    }
+
+    resultが答え
+}
+
+>>> intersection([1, 2], [2, 3])
+[78, 79]
+
+>>> intersection([-1, 1], [0, 4])
+[78, 79]
+
+>>> intersection([-3, -1], [-5, 5])
+[89, 69, 83]
+# テストケース
+>>> intersection([1, 2], [2, 3])
+"NO"
+>>> intersection([-1, 1], [0, 4])
+"NO"
+>>> intersection([-3, -1], [-5, 5])
+"YES"
+>>> intersection([-2, 2], [-4, 0])
+"YES"
+>>> intersection([-11, 2], [-1, -1])
+"NO"
+>>> intersection([1, 2], [3, 5])
+"NO"
+>>> intersection([1, 2], [1, 2])
+"NO"
+>>> intersection([-2, -2], [-3, -2])
+"NO"

@@ -1,0 +1,17 @@
+# テストケース
+>>> factorize(2)
+[2]
+>>> factorize(4)
+[2, 2]
+>>> factorize(8)
+[2, 2, 2]
+>>> factorize(57)
+[3, 19]
+>>> factorize(3249)
+[3, 3, 19, 19]
+>>> factorize(185193)
+[3, 3, 3, 19, 19, 19]
+>>> factorize(20577)
+[3, 19, 19, 19]
+>>> factorize(18)
+[2, 3, 3]

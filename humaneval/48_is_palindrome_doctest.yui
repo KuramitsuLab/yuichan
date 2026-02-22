@@ -1,0 +1,15 @@
+# テストケース
+>>> is_palindrome("")
+1
+>>> is_palindrome("aba")
+1
+>>> is_palindrome("aaaaa")
+1
+>>> is_palindrome("zbcd")
+0
+>>> is_palindrome("xywyx")
+1
+>>> is_palindrome("xywyz")
+0
+>>> is_palindrome("xywzx")
+0

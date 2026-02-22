@@ -1,0 +1,77 @@
+標準ライブラリを使う
+
+parse_nested_parens = 入力 paren_string に対し {
+    length = |paren_string|
+    result = []
+    current_group = []
+
+    # Split by spaces
+    i = 0
+    length回、くり返す {
+        char = paren_string[i]
+
+        もし char が 32 ならば、{  # space
+            もし |current_group| が 0 より大きいならば、{
+                # Process current_group
+                depth = 0
+                max_depth = 0
+                j = 0
+                group_len = |current_group|
+                group_len回、くり返す {
+                    c = current_group[j]
+                    もし c が 40 ならば、{  # '('
+                        depthを増やす
+                        もし depth が max_depth より大きいならば、{
+                            max_depth = depth
+                        }
+                    }
+                    そうでなければ {
+                        depthを減らす
+                    }
+                    jを増やす
+                }
+                resultの末尾に max_depth を 追加する
+                current_group = []
+            }
+        }
+        そうでなければ {
+            current_groupの末尾に char を 追加する
+        }
+
+        iを増やす
+    }
+
+    # Process last group
+    もし |current_group| が 0 より大きいならば、{
+        depth = 0
+        max_depth = 0
+        j = 0
+        group_len = |current_group|
+        group_len回、くり返す {
+            c = current_group[j]
+            もし c が 40 ならば、{
+                depthを増やす
+                もし depth が max_depth より大きいならば、{
+                    max_depth = depth
+                }
+            }
+            そうでなければ {
+                depthを減らす
+            }
+            jを増やす
+        }
+        resultの末尾に max_depth を 追加する
+    }
+
+    resultが答え
+}
+
+>>> parse_nested_parens([40, 40, 41, 40, 41, 41, 32, 40, 40, 40, 41, 41, 41, 32, 40, 41, 32, 40, 40, 40, 41, 41, 40, 41, 40, 41, 41])
+[2, 3, 1, 3]
+# テストケース
+>>> parse_nested_parens("(()()) ((())) () ((())()())")
+[2, 3, 1, 3]
+>>> parse_nested_parens("() (()) ((())) (((())))")
+[1, 2, 3, 4]
+>>> parse_nested_parens("(()(())((())))")
+[4]

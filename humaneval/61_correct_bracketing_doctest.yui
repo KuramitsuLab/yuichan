@@ -1,0 +1,25 @@
+# テストケース
+>>> correct_bracketing("()")
+1
+>>> correct_bracketing("(()())")
+1
+>>> correct_bracketing("()()(()())()")
+1
+>>> correct_bracketing("()()((()()())())(()()(()))")
+1
+>>> correct_bracketing("((()())))")
+0
+>>> correct_bracketing(")(()")
+0
+>>> correct_bracketing("(")
+0
+>>> correct_bracketing("((((")
+0
+>>> correct_bracketing(")")
+0
+>>> correct_bracketing("(()")
+0
+>>> correct_bracketing("()()(()())())(()")
+0
+>>> correct_bracketing("()()(()())()))()")
+0

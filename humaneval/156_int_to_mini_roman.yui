@@ -1,0 +1,82 @@
+標準ライブラリを使う
+
+int_to_mini_roman = 入力 number に対し {
+    result = []
+
+    # Values: 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1
+    values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+
+    # Symbols: m, cm, d, cd, c, xc, l, xl, x, ix, v, iv, i
+    # As character codes
+    symbols = [
+        [109],                    # m
+        [99, 109],                # cm
+        [100],                    # d
+        [99, 100],                # cd
+        [99],                     # c
+        [120, 99],                # xc
+        [108],                    # l
+        [120, 108],               # xl
+        [120],                    # x
+        [105, 120],               # ix
+        [118],                    # v
+        [105, 118],               # iv
+        [105]                     # i
+    ]
+
+    idx = 0
+    13回、くり返す {
+        value = values[idx]
+        symbol = symbols[idx]
+        symbol_len = |symbol|
+
+        # How many times does this value fit?
+        100回、くり返す {
+            もし number が value 以上 ならば、{
+                # Add symbol to result
+                j = 0
+                symbol_len回、くり返す {
+                    resultの末尾に symbol[j] を 追加する
+                    jを増やす
+                }
+                number = 差(number, value)
+            }
+        }
+
+        idxを増やす
+    }
+
+    resultが答え
+}
+
+>>> int_to_mini_roman(19)
+[120, 105, 120]
+# テストケース
+>>> int_to_mini_roman(19)
+"xix"
+>>> int_to_mini_roman(152)
+"clii"
+>>> int_to_mini_roman(251)
+"ccli"
+>>> int_to_mini_roman(426)
+"cdxxvi"
+>>> int_to_mini_roman(500)
+"d"
+>>> int_to_mini_roman(1)
+"i"
+>>> int_to_mini_roman(4)
+"iv"
+>>> int_to_mini_roman(43)
+"xliii"
+>>> int_to_mini_roman(90)
+"xc"
+>>> int_to_mini_roman(94)
+"xciv"
+>>> int_to_mini_roman(532)
+"dxxxii"
+>>> int_to_mini_roman(900)
+"cm"
+>>> int_to_mini_roman(994)
+"cmxciv"
+>>> int_to_mini_roman(1000)
+"m"

@@ -1,0 +1,57 @@
+標準ライブラリを使う
+
+string_sequence = 入力 n に対し {
+    result = []
+
+    i = 0
+    和(n, 1)回、くり返す {
+        # Convert i to digits
+        もし i が 0 ならば、{
+            resultの末尾に 48 を 追加する
+        }
+        そうでなければ {
+            digits = []
+            temp = i
+            100回、くり返す {
+                もし temp が 0 より大きいならば、{
+                    digit = 剰余(temp, 10)
+                    digitsの末尾に digit を 追加する
+                    temp = 商(temp, 10)
+                }
+            }
+
+            # Reverse and convert to char codes
+            digit_len = |digits|
+            j = 0
+            digit_len回、くり返す {
+                idx = 差(差(digit_len, j), 1)
+                digit = digits[idx]
+                char_code = 和(48, digit)
+                resultの末尾に char_code を 追加する
+                jを増やす
+            }
+        }
+
+        # Add space if not last
+        もし i が n より小さいならば、{
+            resultの末尾に 32 を 追加する
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> string_sequence(0)
+[48]
+
+>>> string_sequence(5)
+[48, 32, 49, 32, 50, 32, 51, 32, 52, 32, 53]
+# テストケース
+>>> string_sequence(0)
+"0"
+>>> string_sequence(3)
+"0 1 2 3"
+>>> string_sequence(10)
+"0 1 2 3 4 5 6 7 8 9 10"

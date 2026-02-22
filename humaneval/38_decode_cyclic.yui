@@ -1,0 +1,30 @@
+標準ライブラリを使う
+
+decode_cyclic = 入力 s に対し {
+    result = []
+    length = |s|
+    groups = 商(length, 3)
+    i = 0
+    groups回、くり返す {
+        a = s[i]
+        iを増やす
+        b = s[i]
+        iを増やす
+        c = s[i]
+        iを増やす
+        # Rotate right: [a,b,c] → [c,a,b]
+        resultの末尾に c を 追加する
+        resultの末尾に a を 追加する
+        resultの末尾に b を 追加する
+    }
+    remain = 剰余(length, 3)
+    remain回、くり返す {
+        resultの末尾に s[i] を 追加する
+        iを増やす
+    }
+    resultが答え
+}
+
+>>> decode_cyclic([98, 99, 97])
+[97, 98, 99]
+# テストケース

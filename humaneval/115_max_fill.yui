@@ -1,0 +1,52 @@
+標準ライブラリを使う
+
+max_fill = 入力 grid, capacity に対し {
+    grid_len = |grid|
+    total = 0
+
+    i = 0
+    grid_len回、くり返す {
+        row = grid[i]
+        row_len = |row|
+
+        # Sum row
+        row_sum = 0
+        j = 0
+        row_len回、くり返す {
+            row_sum = 和(row_sum, row[j])
+            jを増やす
+        }
+
+        # Calculate trips (ceiling division)
+        trips = 商(row_sum, capacity)
+        remainder = 剰余(row_sum, capacity)
+        もし remainder が 0 より大きいならば、{
+            tripsを増やす
+        }
+
+        total = 和(total, trips)
+        iを増やす
+    }
+
+    totalが答え
+}
+
+>>> max_fill([[0, 0, 1, 0], [0, 1, 0, 0], [1, 1, 1, 1]], 1)
+6
+
+>>> max_fill([[0, 0, 1, 1], [0, 0, 0, 0], [1, 1, 1, 1], [0, 1, 1, 1]], 2)
+5
+
+>>> max_fill([[0, 0, 0], [0, 0, 0]], 5)
+0
+# テストケース
+>>> max_fill([[0,0,1,0], [0,1,0,0], [1,1,1,1]], 1)
+6
+>>> max_fill([[0,0,1,1], [0,0,0,0], [1,1,1,1], [0,1,1,1]], 2)
+5
+>>> max_fill([[0,0,0], [0,0,0]], 5)
+0
+>>> max_fill([[1,1,1,1], [1,1,1,1]], 2)
+4
+>>> max_fill([[1,1,1,1], [1,1,1,1]], 9)
+2

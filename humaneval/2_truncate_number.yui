@@ -1,0 +1,15 @@
+標準ライブラリを使う
+
+truncate_number = 入力 number に対し {
+    剰余(number, 1.0)が答え
+}
+
+>>> truncate_number(3.5)
+0.5
+# テストケース
+>>> truncate_number(3.5)
+0.5
+>>> truncate_number(1.33)
+0.33
+>>> truncate_number(123.456)
+0.456

@@ -1,0 +1,15 @@
+# テストケース
+>>> same_chars("eabcdzzzz", "dddzzzzzzzddeddabc")
+1
+>>> same_chars("abcd", "dddddddabc")
+1
+>>> same_chars("dddddddabc", "abcd")
+1
+>>> same_chars("eabcd", "dddddddabc")
+0
+>>> same_chars("abcd", "dddddddabcf")
+0
+>>> same_chars("eabcdzzzz", "dddzzzzzzzddddabc")
+0
+>>> same_chars("aabb", "aaccc")
+0

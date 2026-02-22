@@ -1,0 +1,31 @@
+concatenate = 入力 strings に対し {
+    結果 = []
+    i = 0
+    長さ = |strings|
+
+    長さ回、くり返す {
+        文字列 = strings[i]
+        j = 0
+        文字列長 = |文字列|
+        文字列長回、くり返す {
+            結果の末尾に 文字列[j] を 追加する
+            jを増やす
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> concatenate([])
+[]
+
+>>> concatenate(["a", "b", "c"])
+"abc"
+# テストケース
+>>> concatenate([])
+""
+>>> concatenate(["x", "y", "z"])
+"xyz"
+>>> concatenate(["x", "y", "z", "w", "k"])
+"xyzwk"

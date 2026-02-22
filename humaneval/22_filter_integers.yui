@@ -1,0 +1,31 @@
+標準ライブラリを使う
+
+filter_integers = 入力 values に対し {
+    結果 = []
+    i = 0
+    長さ = |values|
+
+    長さ回、くり返す {
+        値 = values[i]
+        is_int = 整数判定(値)
+        もし is_int が true ならば、{
+            結果の末尾に 値 を 追加する
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> filter_integers([5])
+[5]
+
+>>> filter_integers([1, 2, 3])
+[1, 2, 3]
+# テストケース
+>>> filter_integers([])
+[]
+>>> filter_integers([4, [], 23.2, 9, "adasd"])
+[4, 9]
+>>> filter_integers([3, "c", 3, 3, "a", "b"])
+[3, 3, 3]

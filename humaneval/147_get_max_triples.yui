@@ -1,0 +1,53 @@
+標準ライブラリを使う
+
+get_max_triples = 入力 n に対し {
+    # Create array a where a[i] = i*i - i + 1
+    a = []
+    i = 1
+    n回、くり返す {
+        square = 積(i, i)
+        value = 和(差(square, i), 1)
+        aの末尾に value を 追加する
+        iを増やす
+    }
+
+    # Count triples
+    count = 0
+    i = 0
+    n回、くり返す {
+        j = 和(i, 1)
+        limit_j = 差(n, i)
+        limit_j回、くり返す {
+            もし j が n より小さいならば、{
+                k = 和(j, 1)
+                limit_k = 差(n, j)
+                limit_k回、くり返す {
+                    もし k が n より小さいならば、{
+                        sum = 和(和(a[i], a[j]), a[k])
+                        remainder = 剰余(sum, 3)
+                        もし remainder が 0 ならば、{
+                            countを増やす
+                        }
+                    }
+                    kを増やす
+                }
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> get_max_triples(5)
+1
+# テストケース
+>>> get_max_triples(5)
+1
+>>> get_max_triples(6)
+4
+>>> get_max_triples(10)
+36
+>>> get_max_triples(100)
+53361

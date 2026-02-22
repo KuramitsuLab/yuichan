@@ -96,6 +96,7 @@ def standard_lib(modules: list):
     def yui_sum(*nodeargs: Any) -> Any:
         """要素の合計を返す"""
         check_number_of_args(nodeargs, -1)
+        nodeargs = array_to_varargs(nodeargs)
         if has_float_or_raise(nodeargs):
             total = float(YuiType.matched_native(nodeargs[0]))
             for nodearg in nodeargs[1:]:
@@ -127,6 +128,7 @@ def standard_lib(modules: list):
     def yui_product(*nodeargs: Any) -> Any:
         """要素の積を返す"""
         check_number_of_args(nodeargs, -1)
+        nodeargs = array_to_varargs(nodeargs)
         if has_float_or_raise(nodeargs):
             total = float(YuiType.matched_native(nodeargs[0]))
             for nodearg in nodeargs[1:]:
@@ -142,6 +144,7 @@ def standard_lib(modules: list):
     def yui_div(*nodeargs: Any) -> Any:
         """要素の商を返す"""
         check_number_of_args(nodeargs, -1)
+        nodeargs = array_to_varargs(nodeargs)
         if has_float_or_raise(nodeargs):
             total = float(YuiType.matched_native(nodeargs[0]))
             for nodearg in nodeargs[1:]:
@@ -163,6 +166,7 @@ def standard_lib(modules: list):
     def yui_mod(*nodeargs: Any) -> Any:
         """剰余を返す"""
         check_number_of_args(nodeargs, -1)
+        nodeargs = array_to_varargs(nodeargs)
         if has_float_or_raise(nodeargs):
             total = float(YuiType.matched_native(nodeargs[0]))
             for nodearg in nodeargs[1:]:

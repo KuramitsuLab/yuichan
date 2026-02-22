@@ -1,0 +1,53 @@
+標準ライブラリを使う
+
+decimal_to_binary = 入力 decimal に対し {
+    result = [100, 98]  # "db"
+
+    # Convert to binary
+    digits = []
+    temp = decimal
+
+    もし temp が 0 ならば、{
+        resultの末尾に 48 を 追加する  # '0'
+    }
+    そうでなければ {
+        100回、くり返す {
+            もし temp が 0 より大きいならば、{
+                remainder = 剰余(temp, 2)
+                digitsの末尾に remainder を 追加する
+                temp = 商(temp, 2)
+            }
+        }
+
+        # Reverse digits
+        length = |digits|
+        i = 0
+        length回、くり返す {
+            idx = 差(差(length, i), 1)
+            digit = digits[idx]
+            char_code = 和(48, digit)
+            resultの末尾に char_code を 追加する
+            iを増やす
+        }
+    }
+
+    resultの末尾に 100 を 追加する  # 'd'
+    resultの末尾に 98 を 追加する   # 'b'
+
+    resultが答え
+}
+
+>>> decimal_to_binary(15)
+[100, 98, 49, 49, 49, 49, 100, 98]
+
+>>> decimal_to_binary(32)
+[100, 98, 49, 48, 48, 48, 48, 48, 100, 98]
+# テストケース
+>>> decimal_to_binary(0)
+"db0db"
+>>> decimal_to_binary(32)
+"db100000db"
+>>> decimal_to_binary(103)
+"db1100111db"
+>>> decimal_to_binary(15)
+"db1111db"

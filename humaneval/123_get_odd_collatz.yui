@@ -1,0 +1,66 @@
+標準ライブラリを使う
+
+get_odd_collatz = 入力 n に対し {
+    result = []
+    current = n
+
+    # Add n if odd
+    remainder = 剰余(n, 2)
+    もし remainder が 1 ならば、{
+        resultの末尾に n を 追加する
+    }
+
+    # Generate Collatz sequence
+    1000回、くり返す {
+        もし current が 1 より大きいならば、{
+            remainder = 剰余(current, 2)
+
+            もし remainder が 0 ならば、{
+                # Even: divide by 2
+                current = 商(current, 2)
+            }
+            そうでなければ {
+                # Odd: multiply by 3 and add 1
+                current = 和(積(current, 3), 1)
+            }
+
+            # Add to result if odd
+            new_remainder = 剰余(current, 2)
+            もし new_remainder が 1 ならば、{
+                resultの末尾に current を 追加する
+            }
+        }
+    }
+
+    # Bubble sort
+    result_len = |result|
+    i = 0
+    result_len回、くり返す {
+        j = 0
+        limit = 差(差(result_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            もし result[j] が result[next_j] より大きいならば、{
+                temp = result[j]
+                result[j] = result[next_j]
+                result[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> get_odd_collatz(5)
+[1, 5]
+# テストケース
+>>> get_odd_collatz(14)
+[1, 5, 7, 11, 13, 17]
+>>> get_odd_collatz(5)
+[1, 5]
+>>> get_odd_collatz(12)
+[1, 3, 5]
+>>> get_odd_collatz(1)
+[1]

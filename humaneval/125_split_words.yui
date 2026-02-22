@@ -1,0 +1,105 @@
+標準ライブラリを使う
+
+split_words = 入力 txt に対し {
+    length = |txt|
+    result = []
+    current_word = []
+    has_space = 0
+    has_comma = 0
+
+    # Check for space or comma
+    i = 0
+    length回、くり返す {
+        char = txt[i]
+        もし char が 32 ならば、{ 
+            has_space = 1 
+        }
+        もし char が 44 ならば、{ 
+            has_comma = 1 
+        }
+        iを増やす
+    }
+
+    もし has_space が 1 ならば、{
+        # Split by space
+        i = 0
+        length回、くり返す {
+            char = txt[i]
+            もし char が 32 ならば、{
+                もし |current_word| が 0 より大きいならば、{
+                    resultの末尾に current_word を 追加する
+                    current_word = []
+                }
+            }
+            そうでなければ {
+                current_wordの末尾に char を 追加する
+            }
+            iを増やす
+        }
+        もし |current_word| が 0 より大きいならば、{
+            resultの末尾に current_word を 追加する
+        }
+    }
+    そうでなければ {
+        もし has_comma が 1 ならば、{
+            # Split by comma
+            i = 0
+            length回、くり返す {
+                char = txt[i]
+                もし char が 44 ならば、{
+                    もし |current_word| が 0 より大きいならば、{
+                        resultの末尾に current_word を 追加する
+                        current_word = []
+                    }
+                }
+                そうでなければ {
+                    current_wordの末尾に char を 追加する
+                }
+                iを増やす
+            }
+            もし |current_word| が 0 より大きいならば、{
+                resultの末尾に current_word を 追加する
+            }
+        }
+        そうでなければ {
+            # Count lower-case odd letters
+            count = 0
+            i = 0
+            length回、くり返す {
+                char = txt[i]
+                もし char が 96 より大きいならば、{
+                    もし char が 123 より小さいならば、{
+                        remainder = 剰余(char, 2)
+                        もし remainder が 0 ならば、{
+                            countを増やす
+                        }
+                    }
+                }
+                iを増やす
+            }
+            result = count
+        }
+    }
+
+    resultが答え
+}
+
+>>> split_words([72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33])
+[[72, 101, 108, 108, 111], [119, 111, 114, 108, 100, 33]]
+# テストケース
+>>> split_words("Hello world!")
+["Hello","world!"]
+>>> split_words("Hello,world!")
+["Hello","world!"]
+>>> split_words("Hello world,!")
+["Hello","world,!"]
+>>> split_words("Hello,Hello,world !")
+["Hello,Hello,world","!"]
+>>> split_words("abcdef")
+3
+>>> split_words("aaabb")
+2
+>>> split_words("aaaBb")
+1
+>>> split_words("")
+0

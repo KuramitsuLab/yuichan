@@ -1,0 +1,11 @@
+# テストケース
+>>> sort_numbers("")
+""
+>>> sort_numbers("three")
+"three"
+>>> sort_numbers("three five nine")
+"three five nine"
+>>> sort_numbers("five zero four seven nine eight")
+"zero four five seven eight nine"
+>>> sort_numbers("six five four three two one zero")
+"zero one two three four five six"

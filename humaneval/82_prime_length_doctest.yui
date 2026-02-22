@@ -1,0 +1,33 @@
+# テストケース
+>>> prime_length("Hello")
+1
+>>> prime_length("abcdcba")
+1
+>>> prime_length("kittens")
+1
+>>> prime_length("orange")
+0
+>>> prime_length("wow")
+1
+>>> prime_length("world")
+1
+>>> prime_length("MadaM")
+1
+>>> prime_length("Wow")
+1
+>>> prime_length("")
+0
+>>> prime_length("HI")
+1
+>>> prime_length("go")
+1
+>>> prime_length("gogo")
+0
+>>> prime_length("aaaaaaaaaaaaaaa")
+0
+>>> prime_length("Madam")
+1
+>>> prime_length("M")
+0
+>>> prime_length("0")
+0

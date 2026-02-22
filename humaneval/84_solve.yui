@@ -1,0 +1,60 @@
+標準ライブラリを使う
+
+solve = 入力 N に対し {
+    str_N = 文字列化(N)
+    length = |str_N|
+
+    total = 0
+    i = 0
+
+    length回、くり返す {
+        char = str_N[i]
+        digit = 差(char, 48)
+        total = 和(total, digit)
+        iを増やす
+    }
+
+    result = []
+    もし total が 0 ならば {
+        resultの末尾に 48 を 追加する
+        resultが答え
+    }
+
+    temp = total
+    digits = []
+
+    100回、くり返す {
+        もし temp が 0 より大きい ならば {
+            rem = 剰余(temp, 2)
+            digitsの末尾に rem を 追加する
+            temp = 商(temp, 2)
+        }
+    }
+
+    len = |digits|
+    j = 0
+    len回、くり返す {
+        idx = 差(差(len, j), 1)
+        bit = digits[idx]
+        もし bit が 0 ならば {
+            resultの末尾に 48 を 追加する
+        }
+        そうでなければ {
+            resultの末尾に 49 を 追加する
+        }
+        jを増やす
+    }
+
+    resultが答え
+}
+
+>>> solve(1000)
+"1"
+>>> solve(150)
+"110"
+>>> solve(147)
+"1100"
+>>> solve(333)
+"1001"
+>>> solve(963)
+"10010"

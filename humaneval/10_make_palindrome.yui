@@ -1,0 +1,82 @@
+標準ライブラリを使う
+
+make_palindrome = 入力 string に対し {
+    長さ = |string|
+    結果 = []
+
+    もし 長さ が 0 ならば、{
+        結果が答え
+    }
+
+    # 最長の回文サフィックスの開始位置を見つける
+    開始位置 = 長さ
+    i = 0
+
+    長さ回、くり返す {
+        # string[i:] が回文かチェック
+        残り長さ = 差(長さ, i)
+        回文フラグ = 1
+        j = 0
+
+        残り長さ回、くり返す {
+            もし j が 残り長さ より小さいならば、{
+                左 = 和(i, j)
+                右 = 差(差(長さ, 1), j)
+
+                もし 左 が 右 より小さいならば、{
+                    もし string[左] が string[右] 以外 ならば、{
+                        回文フラグ = 0
+                    }
+                }
+            }
+            jを増やす
+        }
+
+        # 最初に回文が見つかったらその位置を記録
+        もし 回文フラグ が 1 ならば、{
+            もし 開始位置 が 長さ ならば、{
+                開始位置 = i
+            }
+        }
+
+        iを増やす
+    }
+
+    # 結果を構築: string + reverse(string[0:開始位置])
+    # まず元の文字列をコピー
+    i = 0
+    長さ回、くり返す {
+        結果の末尾に string[i] を 追加する
+        iを増やす
+    }
+
+    # 次にstring[0:開始位置]を逆順で追加
+    i = 0
+    開始位置回、くり返す {
+        インデックス = 差(開始位置, 和(i, 1))
+        結果の末尾に string[インデックス] を 追加する
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> make_palindrome("")
+""
+
+>>> make_palindrome("cat")
+"catac"
+
+>>> make_palindrome("cata")
+"catac"
+# テストケース
+>>> make_palindrome("")
+""
+>>> make_palindrome("x")
+"x"
+>>> make_palindrome("xyz")
+"xyzyx"
+>>> make_palindrome("xyx")
+"xyx"
+>>> make_palindrome("jerry")
+"jerryrrej"

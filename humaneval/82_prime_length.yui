@@ -1,0 +1,73 @@
+標準ライブラリを使う
+
+prime_length = 入力 string に対し {
+    length = |string|
+    result = 1
+
+    もし length が 0 ならば、{
+        result = 0
+    }
+    もし length が 1 ならば、{
+        result = 0
+    }
+
+    もし length が 2 以上 ならば、{
+        i = 2
+        1000回、くり返す {
+            もし i が length より小さいならば、{
+                remainder = 剰余(length, i)
+                もし remainder が 0 ならば、{
+                    result = 0
+                }
+                iを増やす
+            }
+        }
+    }
+
+    resultが答え
+}
+
+>>> prime_length([72, 101, 108, 108, 111])
+1
+
+>>> prime_length([97, 98, 99, 100, 99, 98, 97])
+1
+
+>>> prime_length([107, 105, 116, 116, 101, 110, 115])
+1
+
+>>> prime_length([111, 114, 97, 110, 103, 101])
+0
+# テストケース
+>>> prime_length("Hello")
+1
+>>> prime_length("abcdcba")
+1
+>>> prime_length("kittens")
+1
+>>> prime_length("orange")
+0
+>>> prime_length("wow")
+1
+>>> prime_length("world")
+1
+>>> prime_length("MadaM")
+1
+>>> prime_length("Wow")
+1
+>>> prime_length("")
+0
+>>> prime_length("HI")
+1
+>>> prime_length("go")
+1
+>>> prime_length("gogo")
+0
+>>> prime_length("aaaaaaaaaaaaaaa")
+0
+>>> prime_length("Madam")
+1
+>>> prime_length("M")
+0
+>>> prime_length("0")
+0

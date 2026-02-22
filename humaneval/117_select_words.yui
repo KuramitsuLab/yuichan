@@ -1,0 +1,123 @@
+標準ライブラリを使う
+
+select_words = 入力 s, n に対し {
+    length = |s|
+    result = []
+    current_word = []
+
+    # Split by space
+    i = 0
+    length回、くり返す {
+        char = s[i]
+        もし char が 32 ならば、{  # space
+            もし |current_word| が 0 より大きいならば、{
+                # Count consonants
+                consonants = 0
+                j = 0
+                cw_len = |current_word|
+                cw_len回、くり返す {
+                    c = current_word[j]
+                    is_vowel = 0
+
+                    もし c が 97 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 101 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 105 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 111 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 117 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 65 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 69 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 73 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 79 ならば、{ 
+                        is_vowel = 1 
+                    }
+                    もし c が 85 ならば、{ 
+                        is_vowel = 1 
+                    }
+
+                    もし is_vowel が 0 ならば、{
+                        consonantsを増やす
+                    }
+                    jを増やす
+                }
+
+                もし consonants が n ならば、{
+                    resultの末尾に current_word を 追加する
+                }
+                current_word = []
+            }
+        }
+        そうでなければ {
+            current_wordの末尾に char を 追加する
+        }
+        iを増やす
+    }
+
+    # Process last word
+    もし |current_word| が 0 より大きいならば、{
+        consonants = 0
+        j = 0
+        cw_len = |current_word|
+        cw_len回、くり返す {
+            c = current_word[j]
+            is_vowel = 0
+            もし c が 97 ならば、{ 
+                is_vowel = 1 
+            }
+            もし c が 101 ならば、{ 
+                is_vowel = 1 
+            }
+            もし c が 105 ならば、{ 
+                is_vowel = 1 
+            }
+            もし c が 111 ならば、{ 
+                is_vowel = 1 
+            }
+            もし c が 117 ならば、{ 
+                is_vowel = 1 
+            }
+            もし is_vowel が 0 ならば、{
+                consonantsを増やす
+            }
+            jを増やす
+        }
+        もし consonants が n ならば、{
+            resultの末尾に current_word を 追加する
+        }
+    }
+
+    resultが答え
+}
+
+>>> select_words([77, 97, 114, 121, 32, 104, 97, 100, 32, 97, 32, 108, 105, 116, 116, 108, 101, 32, 108, 97, 109, 98], 4)
+[[108, 105, 116, 116, 108, 101]]
+# テストケース
+>>> select_words("Mary had a little lamb", 4)
+["little"]
+>>> select_words("Mary had a little lamb", 3)
+["Mary", "lamb"]
+>>> select_words("simple white space", 2)
+[]
+>>> select_words("Hello world", 4)
+["world"]
+>>> select_words("Uncle sam", 3)
+["Uncle"]
+>>> select_words("", 4)
+[]
+>>> select_words("a b c d e f", 1)
+["b", "c", "d", "f"]

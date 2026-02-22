@@ -1,0 +1,67 @@
+標準ライブラリを使う
+
+any_int = 入力 x, y, z に対し {
+    結果 = 0
+
+    # Check if all are integers
+    x_int = 整数判定(x)
+    y_int = 整数判定(y)
+    z_int = 整数判定(z)
+
+    もし x_int が true ならば、{
+        もし y_int が true ならば、{
+            もし z_int が true ならば、{
+                # All are integers, check sum conditions
+                # x + y == z のチェック
+                和xy = 和(x, y)
+                もし 和xy が z ならば、{
+                    結果 = 1
+                }
+
+                # x + z == y のチェック
+                和xz = 和(x, z)
+                もし 和xz が y ならば、{
+                    結果 = 1
+                }
+
+                # y + z == x のチェック
+                和yz = 和(y, z)
+                もし 和yz が x ならば、{
+                    結果 = 1
+                }
+            }
+        }
+    }
+
+    結果が答え
+}
+
+>>> any_int(5, 2, 7)
+1
+
+>>> any_int(3, 2, 2)
+0
+
+>>> any_int(3, -2, 1)
+1
+# テストケース
+>>> any_int(2, 3, 1)
+1
+>>> any_int(2.5, 2, 3)
+0
+>>> any_int(1.5, 5, 3.5)
+0
+>>> any_int(2, 6, 2)
+0
+>>> any_int(4, 2, 2)
+1
+>>> any_int(2.2, 2.2, 2.2)
+0
+>>> any_int(-4, 6, 2)
+1
+>>> any_int(2,1,1)
+1
+>>> any_int(3,4,7)
+1
+>>> any_int(3.0,4,7)
+0

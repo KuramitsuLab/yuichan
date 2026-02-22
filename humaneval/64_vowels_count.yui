@@ -1,0 +1,86 @@
+標準ライブラリを使う
+
+vowels_count = 入力 s に対し {
+    length = |s|
+    count = 0
+
+    # Vowels: a=97, e=101, i=105, o=111, u=117
+    # Uppercase: A=65, E=69, I=73, O=79, U=85
+    i = 0
+    length回、くり返す {
+        char = s[i]
+        is_vowel = 0
+
+        もし char が 97 ならば、{
+            is_vowel = 1
+        }
+        もし char が 101 ならば、{
+            is_vowel = 1
+        }
+        もし char が 105 ならば、{
+            is_vowel = 1
+        }
+        もし char が 111 ならば、{
+            is_vowel = 1
+        }
+        もし char が 117 ならば、{
+            is_vowel = 1
+        }
+        もし char が 65 ならば、{
+            is_vowel = 1
+        }
+        もし char が 69 ならば、{
+            is_vowel = 1
+        }
+        もし char が 73 ならば、{
+            is_vowel = 1
+        }
+        もし char が 79 ならば、{
+            is_vowel = 1
+        }
+        もし char が 85 ならば、{
+            is_vowel = 1
+        }
+
+        もし is_vowel が 1 ならば、{
+            countを増やす
+        }
+
+        iを増やす
+    }
+
+    # Check if last char is 'y' or 'Y'
+    もし length が 0 より大きいならば、{
+        last_idx = 差(length, 1)
+        last_char = s[last_idx]
+        もし last_char が 121 ならば、{
+            countを増やす
+        }
+        もし last_char が 89 ならば、{
+            countを増やす
+        }
+    }
+
+    countが答え
+}
+
+>>> vowels_count([97, 98, 99, 100, 101])
+2
+
+>>> vowels_count([65, 67, 69, 68, 89])
+3
+# テストケース
+>>> vowels_count("abcde")
+2
+>>> vowels_count("Alone")
+3
+>>> vowels_count("key")
+2
+>>> vowels_count("bye")
+1
+>>> vowels_count("keY")
+2
+>>> vowels_count("bYe")
+1
+>>> vowels_count("ACEDY")
+3

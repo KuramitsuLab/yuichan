@@ -1,0 +1,103 @@
+標準ライブラリを使う
+
+words_in_sentence = 入力 sentence に対し {
+    length = |sentence|
+    result = []
+    current_word = []
+    word_list = []
+
+    # Split into words
+    i = 0
+    length回、くり返す {
+        char = sentence[i]
+        もし char が 32 ならば、{
+            もし |current_word| が 0 より大きいならば、{
+                word_listの末尾に current_word を 追加する
+                current_word = []
+            }
+        }
+        そうでなければ {
+            current_wordの末尾に char を 追加する
+        }
+        iを増やす
+    }
+    もし |current_word| が 0 より大きいならば、{
+        word_listの末尾に current_word を 追加する
+    }
+
+    # Filter by prime length - collect prime words first
+    prime_words = []
+    wl_len = |word_list|
+    i = 0
+    wl_len回、くり返す {
+        word = word_list[i]
+        word_len = |word|
+
+        is_prime = 1
+        もし word_len が 2 より小さいならば、{
+            is_prime = 0
+        }
+        もし word_len が 2 ならば、{
+            is_prime = 1
+        }
+        もし word_len が 2 より大きいならば、{
+            j = 2
+            100回、くり返す {
+                もし j が word_len より小さいならば、{
+                    remainder = 剰余(word_len, j)
+                    もし remainder が 0 ならば、{
+                        is_prime = 0
+                    }
+                    jを増やす
+                }
+            }
+        }
+
+        もし is_prime が 1 ならば、{
+            prime_wordsの末尾に word を 追加する
+        }
+        iを増やす
+    }
+
+    # Join prime words with spaces
+    pw_len = |prime_words|
+    i = 0
+    pw_len回、くり返す {
+        word = prime_words[i]
+        word_len = |word|
+
+        j = 0
+        word_len回、くり返す {
+            resultの末尾に word[j] を 追加する
+            jを増やす
+        }
+
+        # Add space if not last word
+        next_idx = 和(i, 1)
+        もし next_idx が pw_len より小さいならば、{
+            resultの末尾に 32 を 追加する  # space
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> words_in_sentence([84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116])
+[105, 115]
+# テストケース
+>>> words_in_sentence("This is a test")
+"is"
+>>> words_in_sentence("lets go for swimming")
+"go for"
+>>> words_in_sentence("there is no place available here")
+"there is no place"
+>>> words_in_sentence("Hi I am Hussein")
+"Hi am Hussein"
+>>> words_in_sentence("go for it")
+"go for it"
+>>> words_in_sentence("here")
+""
+>>> words_in_sentence("here is")
+"is"

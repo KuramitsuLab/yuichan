@@ -1,0 +1,16 @@
+# テストケース
+# 本来は100回ランダムに値を決めてテスト
+>>> decode_shift("ifcnmmjciacwhxsgfhlm")
+"daxihhexdvxrcsnbacgh"
+>>> decode_shift("yfwlbzbwsmtxnefd")
+"targwuwrnhosizay"
+>>> decode_shift("kbspnjldpihriqqynegctwirh")
+"fwnkiegykdcmdlltizbxordmc"
+>>> decode_shift("ozyqxlbhgamdohmir")
+"jutlsgwcbvhyjchdm"
+>>> decode_shift("tzqkqqla")
+"oulfllgv"
+>>> decode_shift("bazhyzkw")
+"wvuctufr"
+>>> decode_shift("mktrnzbwmapddgmgeprnhlx")
+"hfomiuwrhvkyybhbzkmicgs"

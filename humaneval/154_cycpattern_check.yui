@@ -1,0 +1,93 @@
+標準ライブラリを使う
+
+cycpattern_check = 入力 a, b に対し {
+    len_a = |a|
+    len_b = |b|
+    result = 0
+
+    # Create pattern b + b
+    pattern = []
+    i = 0
+    len_b回、くり返す {
+        patternの末尾に b[i] を 追加する
+        iを増やす
+    }
+    i = 0
+    len_b回、くり返す {
+        patternの末尾に b[i] を 追加する
+        iを増やす
+    }
+
+    # Check all substrings of a with length len_b
+    limit = 和(差(len_a, len_b), 1)
+    i = 0
+    limit回、くり返す {
+        # Extract substring from a
+        substring = []
+        j = 0
+        len_b回、くり返す {
+            idx = 和(i, j)
+            substringの末尾に a[idx] を 追加する
+            jを増やす
+        }
+
+        # Check all rotations in pattern
+        pattern_limit = 和(len_b, 1)
+        j = 0
+        pattern_limit回、くり返す {
+            # Extract substring from pattern
+            pat_substring = []
+            k = 0
+            len_b回、くり返す {
+                pat_idx = 和(j, k)
+                pat_substringの末尾に pattern[pat_idx] を 追加する
+                kを増やす
+            }
+
+            # Compare substrings
+            match = 1
+            k = 0
+            len_b回、くり返す {
+                もし substring[k] が pat_substring[k] 以外 ならば、{
+                    match = 0
+                }
+                kを増やす
+            }
+
+            もし match が 1 ならば、{
+                result = 1
+            }
+
+            jを増やす
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> cycpattern_check([97, 98, 99, 100], [97, 98, 100])
+0
+
+>>> cycpattern_check([104, 101, 108, 108, 111], [101, 108, 108])
+1
+
+>>> cycpattern_check([119, 104, 97, 115, 115, 117, 112], [112, 115, 117, 115])
+0
+
+>>> cycpattern_check([97, 98, 97, 98], [98, 97, 97])
+1
+# テストケース
+>>> cycpattern_check("xyzw","xyw")
+0
+>>> cycpattern_check("yello","ell")
+1
+>>> cycpattern_check("whattup","ptut")
+0
+>>> cycpattern_check("efef","fee")
+1
+>>> cycpattern_check("abab","aabb")
+0
+>>> cycpattern_check("winemtt","tinem")
+1

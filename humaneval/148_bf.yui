@@ -1,0 +1,120 @@
+標準ライブラリを使う
+
+bf = 入力 planet1, planet2 に対し {
+    # Planet names as character code arrays
+    mercury = [77, 101, 114, 99, 117, 114, 121]
+    venus = [86, 101, 110, 117, 115]
+    earth = [69, 97, 114, 116, 104]
+    mars = [77, 97, 114, 115]
+    jupiter = [74, 117, 112, 105, 116, 101, 114]
+    saturn = [83, 97, 116, 117, 114, 110]
+    uranus = [85, 114, 97, 110, 117, 115]
+    neptune = [78, 101, 112, 116, 117, 110, 101]
+
+    planets = [mercury, venus, earth, mars, jupiter, saturn, uranus, neptune]
+
+    # Find indices
+    planet1_idx = -1
+    planet2_idx = -1
+    i = 0
+    8回、くり返す {
+        planet = planets[i]
+
+        # Check if planet matches planet1
+        len1 = |planet1|
+        len_p = |planet|
+        match1 = 0
+        もし len1 が len_p ならば、{
+            match1 = 1
+            j = 0
+            len1回、くり返す {
+                もし planet1[j] が planet[j] 以外 ならば、{
+                    match1 = 0
+                }
+                jを増やす
+            }
+        }
+        もし match1 が 1 ならば、{
+            planet1_idx = i
+        }
+
+        # Check if planet matches planet2
+        len2 = |planet2|
+        match2 = 0
+        もし len2 が len_p ならば、{
+            match2 = 1
+            j = 0
+            len2回、くり返す {
+                もし planet2[j] が planet[j] 以外 ならば、{
+                    match2 = 0
+                }
+                jを増やす
+            }
+        }
+        もし match2 が 1 ならば、{
+            planet2_idx = i
+        }
+
+        iを増やす
+    }
+
+    # Return empty if invalid
+    result = []
+    invalid = 0
+    もし planet1_idx が -1 ならば、{
+        invalid = 1
+    }
+    もし planet2_idx が -1 ならば、{
+        invalid = 1
+    }
+    もし planet1_idx が planet2_idx ならば、{
+        invalid = 1
+    }
+
+    もし invalid が 1 ならば、{
+        resultが答え
+    }
+
+    # Get range
+    start_idx = planet1_idx
+    end_idx = planet2_idx
+    もし planet1_idx が planet2_idx より大きいならば、{
+        start_idx = planet2_idx
+        end_idx = planet1_idx
+    }
+
+    # Collect planets between
+    start_idx を増やす
+    i = start_idx
+    count = 差(end_idx, start_idx)
+    count回、くり返す {
+        resultの末尾に planets[i] を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> bf([74, 117, 112, 105, 116, 101, 114], [78, 101, 112, 116, 117, 110, 101])
+[[83, 97, 116, 117, 114, 110], [85, 114, 97, 110, 117, 115]]
+
+>>> bf([69, 97, 114, 116, 104], [77, 101, 114, 99, 117, 114, 121])
+[[86, 101, 110, 117, 115]]
+
+>>> bf([77, 101, 114, 99, 117, 114, 121], [85, 114, 97, 110, 117, 115])
+[[86, 101, 110, 117, 115], [69, 97, 114, 116, 104], [77, 97, 114, 115], [74, 117, 112, 105, 116, 101, 114], [83, 97, 116, 117, 114, 110]]
+# テストケース
+>>> bf("Jupiter", "Neptune")
+["Saturn", "Uranus"]
+>>> bf("Earth", "Mercury")
+["Venus"]
+>>> bf("Mercury", "Uranus")
+["Venus", "Earth", "Mars", "Jupiter", "Saturn"]
+>>> bf("Neptune", "Venus")
+["Earth", "Mars", "Jupiter", "Saturn", "Uranus"]
+>>> bf("Earth", "Earth")
+[]
+>>> bf("Mars", "Earth")
+[]
+>>> bf("Jupiter", "Makemake")
+[]

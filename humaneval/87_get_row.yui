@@ -1,0 +1,106 @@
+標準ライブラリを使う
+
+get_row = 入力 lst, x に対し {
+    length = |lst|
+    coords = []
+
+    # Collect all coordinates where value equals x
+    i = 0
+    length回、くり返す {
+        row = lst[i]
+        row_len = |row|
+        j = 0
+        row_len回、くり返す {
+            もし row[j] が x ならば、{
+                coord = []
+                coordの末尾に i を 追加する
+                coordの末尾に j を 追加する
+                coordsの末尾に coord を 追加する
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # Sort by column (descending) first using bubble sort
+    coord_len = |coords|
+    i = 0
+    coord_len回、くり返す {
+        j = 0
+        limit = 差(差(coord_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            col_j = coords[j][1]
+            col_next = coords[next_j][1]
+
+            # Sort by column descending
+            もし col_j が col_next より小さいならば、{
+                temp = coords[j]
+                coords[j] = coords[next_j]
+                coords[next_j] = temp
+            }
+
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # Sort by row (ascending) using stable bubble sort
+    i = 0
+    coord_len回、くり返す {
+        j = 0
+        limit = 差(差(coord_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            row_j = coords[j][0]
+            row_next = coords[next_j][0]
+
+            # Sort by row ascending
+            もし row_j が row_next より大きいならば、{
+                temp = coords[j]
+                coords[j] = coords[next_j]
+                coords[next_j] = temp
+            }
+
+            jを増やす
+        }
+        iを増やす
+    }
+
+    coordsが答え
+}
+
+>>> get_row([[1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 1, 6], [1, 2, 3, 4, 5, 1]], 1)
+[[0, 0], [1, 4], [1, 0], [2, 5], [2, 0]]
+# テストケース
+>>> get_row([
+[1,2,3,4,5,6],
+[1,2,3,4,1,6],
+[1,2,3,4,5,1]
+], 1)
+[[0, 0], [1, 4], [1, 0], [2, 5], [2, 0]]
+>>> get_row([
+[1,2,3,4,5,6],
+[1,2,3,4,5,6],
+[1,2,3,4,5,6],
+[1,2,3,4,5,6],
+[1,2,3,4,5,6],
+[1,2,3,4,5,6]
+], 2)
+[[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]]
+>>> get_row([
+[1,2,3,4,5,6],
+[1,2,3,4,5,6],
+[1,1,3,4,5,6],
+[1,2,1,4,5,6],
+[1,2,3,1,5,6],
+[1,2,3,4,1,6],
+[1,2,3,4,5,1]
+], 1)
+[[0, 0], [1, 0], [2, 1], [2, 0], [3, 2], [3, 0], [4, 3], [4, 0], [5, 4], [5, 0], [6, 5], [6, 0]]
+>>> get_row([], 1)
+[]
+>>> get_row([[1]], 2)
+[]
+>>> get_row([[], [1], [1, 2, 3]], 3)
+[[2, 2]]

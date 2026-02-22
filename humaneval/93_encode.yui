@@ -1,0 +1,100 @@
+標準ライブラリを使う
+
+encode = 入力 message に対し {
+    length = |message|
+    result = []
+
+    i = 0
+    length回、くり返す {
+        char = message[i]
+        new_char = char
+
+        # Swap case first
+        is_upper = 0
+        is_lower = 0
+
+        もし char が 64 より大きいならば、{
+            もし char が 91 より小さいならば、{
+                is_upper = 1
+            }
+        }
+
+        もし char が 96 より大きいならば、{
+            もし char が 123 より小さいならば、{
+                is_lower = 1
+            }
+        }
+
+        もし is_upper が 1 ならば、{
+            new_char = 和(char, 32)  # to lowercase
+        }
+        もし is_lower が 1 ならば、{
+            new_char = 差(char, 32)  # to uppercase
+        }
+
+        # Check if vowel and replace
+        # Lowercase vowels: a=97, e=101, i=105, o=111, u=117
+        # Uppercase vowels: A=65, E=69, I=73, O=79, U=85
+        # After swapcase:
+        # a->A=65, e->E=69, i->I=73, o->O=79, u->U=85
+        # A->a=97, E->e=101, I->i=105, O->o=111, U->u=117
+
+        is_vowel = 0
+        もし new_char が 65 ならば、{ 
+            is_vowel = 1   # A -> C (67)
+        }
+        もし new_char が 69 ならば、{ 
+            is_vowel = 1    # E -> G (71)
+        }
+        もし new_char が 73 ならば、{ 
+            is_vowel = 1    # I -> K (75)
+        }
+        もし new_char が 79 ならば、{ 
+            is_vowel = 1    # O -> Q (81)
+        }
+        もし new_char が 85 ならば、{ 
+            is_vowel = 1    # U -> W (87)
+        }
+        もし new_char が 97 ならば、{ 
+            is_vowel = 1    # a -> c (99)
+        }
+        もし new_char が 101 ならば、{ 
+            is_vowel = 1    # e -> g (103)
+        }
+        もし new_char が 105 ならば、{ 
+            is_vowel = 1    # i -> k (107)
+        }
+        もし new_char が 111 ならば、{ 
+            is_vowel = 1    # o -> q (113)
+        }
+        もし new_char が 117 ならば、{ 
+            is_vowel = 1 # u -> w (119)
+        }  
+
+        もし is_vowel が 1 ならば、{
+            new_char = 和(new_char, 2)
+        }
+
+        resultの末尾に new_char を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> encode([116, 101, 115, 116])
+[84, 71, 83, 84]
+
+>>> encode([84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 109, 101, 115, 115, 97, 103, 101])
+[116, 72, 75, 83, 32, 75, 83, 32, 67, 32, 77, 71, 83, 83, 67, 71, 71]
+# テストケース
+>>> encode("TEST")
+"tgst"
+>>> encode("Mudasir")
+"mWDCSKR"
+>>> encode("YES")
+"ygs"
+>>> encode("This is a message")
+"tHKS KS C MGSSCGG"
+>>> encode("I DoNt KnOw WhAt tO WrItE")
+"k dQnT kNqW wHcT Tq wRkTg"

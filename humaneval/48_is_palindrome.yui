@@ -1,0 +1,53 @@
+is_palindrome = 入力 text に対し {
+    長さ = |text|
+    i = 0
+    結果 = 1
+
+    長さ回、くり返す {
+        もし i が 長さ より小さいならば、{
+            左 = text[i]
+            右インデックス = 長さ
+            右インデックスを減らす
+            j = 0
+            i回、くり返す {
+                右インデックスを減らす
+                jを増やす
+            }
+            右 = text[右インデックス]
+
+            もし 左 が 右 以外 ならば、{
+                結果 = 0
+            }
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> is_palindrome("")
+1
+
+>>> is_palindrome("aba")
+1
+
+>>> is_palindrome("aaaaa")
+1
+
+>>> is_palindrome("zbcd")
+0
+# テストケース
+>>> is_palindrome("")
+1
+>>> is_palindrome("aba")
+1
+>>> is_palindrome("aaaaa")
+1
+>>> is_palindrome("zbcd")
+0
+>>> is_palindrome("xywyx")
+1
+>>> is_palindrome("xywyz")
+0
+>>> is_palindrome("xywzx")
+0

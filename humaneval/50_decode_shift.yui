@@ -1,0 +1,35 @@
+標準ライブラリを使う
+
+decode_shift = 入力 s に対し {
+    length = |s|
+    result = []
+
+    i = 0
+    length回、くり返す {
+        char = s[i]
+
+        # Shift back by 5 (reverse of encode_shift)
+        # char was: ((original + 5 - 97) % 26) + 97
+        # so: original = ((char - 97 - 5) % 26) + 97
+        offset = 差(差(char, 97), 5)
+
+        # Handle negative modulo
+        decoded_offset = offset
+        もし offset が 0 より小さいならば、{
+            decoded_offset = 和(offset, 26)
+        }
+
+        # Modulo 26
+        remainder = 剰余(decoded_offset, 26)
+        decoded_char = 和(97, remainder)
+
+        resultの末尾に decoded_char を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> decode_shift([102, 115, 105, 105, 116])
+[97, 110, 100, 100, 111]
+# テストケース

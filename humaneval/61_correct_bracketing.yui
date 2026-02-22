@@ -1,0 +1,67 @@
+標準ライブラリを使う
+
+correct_bracketing = 入力 brackets に対し {
+    depth = 0
+    長さ = |brackets|
+    i = 0
+    結果 = 1
+
+    長さ回、くり返す {
+        文字 = brackets[i]
+        # "(" は文字コード 40, ")" は文字コード 41
+        もし 文字 が 40 ならば、{
+            depthを増やす
+        }
+        そうでなければ {
+            depthを減らす
+        }
+
+        もし depth が 0 より小さいならば、{
+            結果 = 0
+        }
+        iを増やす
+    }
+
+    もし depth が 0 以外 ならば、{
+        結果 = 0
+    }
+
+    結果が答え
+}
+
+>>> correct_bracketing("(")
+0
+
+>>> correct_bracketing("()")
+1
+
+>>> correct_bracketing("(()())")
+1
+
+>>> correct_bracketing(")(()")
+0
+# テストケース
+>>> correct_bracketing("()")
+1
+>>> correct_bracketing("(()())")
+1
+>>> correct_bracketing("()()(()())()")
+1
+>>> correct_bracketing("()()((()()())())(()()(()))")
+1
+>>> correct_bracketing("((()())))")
+0
+>>> correct_bracketing(")(()")
+0
+>>> correct_bracketing("(")
+0
+>>> correct_bracketing("((((")
+0
+>>> correct_bracketing(")")
+0
+>>> correct_bracketing("(()")
+0
+>>> correct_bracketing("()()(()())())(()")
+0
+>>> correct_bracketing("()()(()())()))()")
+0

@@ -1,0 +1,36 @@
+標準ライブラリを使う
+
+largest_divisor = 入力 n に対し {
+    i = 差(n, 1)
+    結果 = 1
+    見つかった = 0
+
+    n回、くり返す {
+        もし 見つかった が 0 ならば、{
+            もし i が 0 より大きいならば、{
+                余り = 剰余(n, i)
+                もし 余り が 0 ならば、{
+                    結果 = i
+                    見つかった = 1
+                }
+            }
+            iを減らす
+        }
+    }
+
+    結果が答え
+}
+
+>>> largest_divisor(15)
+5
+# テストケース
+>>> largest_divisor(3)
+1
+>>> largest_divisor(7)
+1
+>>> largest_divisor(10)
+5
+>>> largest_divisor(100)
+50
+>>> largest_divisor(49)
+7

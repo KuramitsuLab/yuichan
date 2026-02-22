@@ -1,0 +1,7 @@
+# テストケース
+>>> strlen("")
+0
+>>> strlen("x")
+1
+>>> strlen("asdasnakj")
+9

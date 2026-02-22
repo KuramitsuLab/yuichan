@@ -1,0 +1,107 @@
+標準ライブラリを使う
+
+same_chars = 入力 s0, s1 に対し {
+    len0 = |s0|
+    len1 = |s1|
+
+    # Collect unique chars from s0
+    unique0 = []
+    i = 0
+    len0回、くり返す {
+        char = s0[i]
+        is_new = 1
+        j = 0
+        u0_len = |unique0|
+        u0_len回、くり返す {
+            もし unique0[j] が char ならば、{
+                is_new = 0
+            }
+            jを増やす
+        }
+        もし is_new が 1 ならば、{
+            unique0の末尾に char を 追加する
+        }
+        iを増やす
+    }
+
+    # Collect unique chars from s1
+    unique1 = []
+    i = 0
+    len1回、くり返す {
+        char = s1[i]
+        is_new = 1
+        j = 0
+        u1_len = |unique1|
+        u1_len回、くり返す {
+            もし unique1[j] が char ならば、{
+                is_new = 0
+            }
+            jを増やす
+        }
+        もし is_new が 1 ならば、{
+            unique1の末尾に char を 追加する
+        }
+        iを増やす
+    }
+
+    # Compare sets
+    u0_len = |unique0|
+    u1_len = |unique1|
+    result = 1
+
+    もし u0_len が u1_len 以外 ならば、{
+        result = 0
+    }
+
+    # Check if all chars in unique0 are in unique1
+    もし result が 1 ならば、{
+        i = 0
+        u0_len回、くり返す {
+            char = unique0[i]
+            found = 0
+            j = 0
+            u1_len回、くり返す {
+                もし unique1[j] が char ならば、{
+                    found = 1
+                }
+                jを増やす
+            }
+            もし found が 0 ならば、{
+                result = 0
+            }
+            iを増やす
+        }
+    }
+
+    resultが答え
+}
+
+>>> same_chars([101, 97, 98, 99, 100, 122, 122, 122, 122], [100, 100, 100, 122, 122, 122, 122, 122, 122, 122, 100, 100, 101, 100, 100, 97, 98, 99])
+1
+
+>>> same_chars([97, 98, 99, 100], [100, 100, 100, 100, 100, 100, 100, 97, 98, 99])
+1
+
+>>> same_chars([100, 100, 100, 100, 100, 100, 100, 97, 98, 99], [97, 98, 99, 100])
+1
+
+>>> same_chars([101, 97, 98, 99, 100], [100, 100, 100, 100, 100, 100, 100, 97, 98, 99])
+0
+
+>>> same_chars([97, 98, 99, 100], [100, 100, 100, 100, 100, 100, 100, 97, 98, 99, 101])
+0
+# テストケース
+>>> same_chars("eabcdzzzz", "dddzzzzzzzddeddabc")
+1
+>>> same_chars("abcd", "dddddddabc")
+1
+>>> same_chars("dddddddabc", "abcd")
+1
+>>> same_chars("eabcd", "dddddddabc")
+0
+>>> same_chars("abcd", "dddddddabcf")
+0
+>>> same_chars("eabcdzzzz", "dddzzzzzzzddddabc")
+0
+>>> same_chars("aabb", "aaccc")
+0

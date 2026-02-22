@@ -1,0 +1,34 @@
+below_threshold = 入力 l, t に対し {
+    長さ = |l|
+    i = 0
+    結果 = 1
+
+    長さ回、くり返す {
+        値 = l[i]
+        もし 値 が t 以上 ならば、{
+            結果 = 0
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> below_threshold([1, 2, 4, 10], 100)
+1
+
+>>> below_threshold([1, 20, 4, 10], 5)
+0
+# テストケース
+>>> below_threshold([1, 2, 4, 10], 100)
+1
+>>> below_threshold([1, 20, 4, 10], 5)
+0
+>>> below_threshold([1, 20, 4, 10], 21)
+1
+>>> below_threshold([1, 20, 4, 10], 22)
+1
+>>> below_threshold([1, 8, 4, 10], 11)
+1
+>>> below_threshold([1, 8, 4, 10], 10)
+0

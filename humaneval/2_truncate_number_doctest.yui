@@ -1,0 +1,7 @@
+# テストケース
+>>> truncate_number(3.5)
+0.5
+>>> truncate_number(1.33)
+0.33
+>>> truncate_number(123.456)
+0.456

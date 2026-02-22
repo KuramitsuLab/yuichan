@@ -1,0 +1,72 @@
+標準ライブラリを使う
+
+is_happy = 入力 s に対し {
+    length = |s|
+    result = 1
+
+    もし length が 3 より小さいならば、{
+        result = 0
+        resultが答え
+    }
+
+    # Check every 3 consecutive letters
+    i = 0
+    limit = 差(length, 2)
+    limit回、くり返す {
+        idx1 = 和(i, 1)
+        idx2 = 和(i, 2)
+
+        char0 = s[i]
+        char1 = s[idx1]
+        char2 = s[idx2]
+
+        もし char0 が char1 ならば、{
+            result = 0
+        }
+        もし char1 が char2 ならば、{
+            result = 0
+        }
+        もし char0 が char2 ならば、{
+            result = 0
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> is_happy([97])
+0
+
+>>> is_happy([97, 97])
+0
+
+>>> is_happy([97, 98, 99, 100])
+1
+
+>>> is_happy([97, 97, 98, 98])
+0
+
+>>> is_happy([97, 100, 98])
+1
+
+>>> is_happy([120, 121, 121])
+0
+# テストケース
+>>> is_happy("a")
+0
+>>> is_happy("aa")
+0
+>>> is_happy("abcd")
+1
+>>> is_happy("aabb")
+0
+>>> is_happy("adb")
+1
+>>> is_happy("xyy")
+0
+>>> is_happy("iopaxpoi")
+1
+>>> is_happy("iopaxioi")
+0

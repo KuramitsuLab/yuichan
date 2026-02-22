@@ -1,0 +1,103 @@
+標準ライブラリを使う
+
+strange_sort_list = 入力 lst に対し {
+    length = |lst|
+    result = []
+    used = []
+
+    # Initialize used array
+    i = 0
+    length回、くり返す {
+        usedの末尾に 0 を 追加する
+        iを増やす
+    }
+
+    # Alternate between min and max
+    switch = 1
+    i = 0
+    length回、くり返す {
+        もし switch が 1 ならば、{
+            # Find min - initialize with first unused value
+            min_val = 0
+            min_idx = 0
+            first_found = 0
+            j = 0
+            length回、くり返す {
+                もし used[j] が 0 ならば、{
+                    もし first_found が 0 ならば、{
+                        min_val = lst[j]
+                        min_idx = j
+                        first_found = 1
+                    }
+                    そうでなければ {
+                        もし lst[j] が min_val より小さいならば、{
+                            min_val = lst[j]
+                            min_idx = j
+                        }
+                    }
+                }
+                jを増やす
+            }
+            resultの末尾に min_val を 追加する
+            used[min_idx] = 1
+            switch = 0
+        }
+        そうでなければ {
+            # Find max - initialize with first unused value
+            max_val = 0
+            max_idx = 0
+            first_found = 0
+            j = 0
+            length回、くり返す {
+                もし used[j] が 0 ならば、{
+                    もし first_found が 0 ならば、{
+                        max_val = lst[j]
+                        max_idx = j
+                        first_found = 1
+                    }
+                    そうでなければ {
+                        もし lst[j] が max_val より大きいならば、{
+                            max_val = lst[j]
+                            max_idx = j
+                        }
+                    }
+                }
+                jを増やす
+            }
+            resultの末尾に max_val を 追加する
+            used[max_idx] = 1
+            switch = 1
+        }
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> strange_sort_list([1, 2, 3, 4])
+[1, 4, 2, 3]
+
+>>> strange_sort_list([5, 5, 5, 5])
+[5, 5, 5, 5]
+
+>>> strange_sort_list([])
+[]
+# テストケース
+>>> strange_sort_list([1, 2, 3, 4])
+[1, 4, 2, 3]
+>>> strange_sort_list([5, 6, 7, 8, 9])
+[5, 9, 6, 8, 7]
+>>> strange_sort_list([1, 2, 3, 4, 5])
+[1, 5, 2, 4, 3]
+>>> strange_sort_list([5, 6, 7, 8, 9, 1])
+[1, 9, 5, 8, 6, 7]
+>>> strange_sort_list([5, 5, 5, 5])
+[5, 5, 5, 5]
+>>> strange_sort_list([])
+[]
+>>> strange_sort_list([1,2,3,4,5,6,7,8])
+[1, 8, 2, 7, 3, 6, 4, 5]
+>>> strange_sort_list([0,2,2,2,5,5,-5,-5])
+[-5, 5, -5, 5, 0, 2, 2, 2]
+>>> strange_sort_list([111111])
+[111111]

@@ -1,0 +1,7 @@
+# テストケース
+>>> longest([])
+""
+>>> longest(["x", "y", "z"])
+"x"
+>>> longest(["x", "yyy", "zzzz", "www", "kkkk", "abc"])
+"zzzz"

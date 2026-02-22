@@ -1,0 +1,29 @@
+# テストケース
+>>> is_nested("[[]]")
+1
+>>> is_nested("[]]]]]]][[[[[]")
+0
+>>> is_nested("[][]")
+0
+>>> is_nested("[]")
+0
+>>> is_nested("[[[[]]]]")
+1
+>>> is_nested("[]]]]]]]]]]")
+0
+>>> is_nested("[][][[]]")
+1
+>>> is_nested("[[]")
+0
+>>> is_nested("[]]")
+0
+>>> is_nested("[[]][[")
+1
+>>> is_nested("[[][]]")
+1
+>>> is_nested("")
+0
+>>> is_nested("[[[[[[[[")
+0
+>>> is_nested("]]]]]]]]")
+0

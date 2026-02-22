@@ -1,0 +1,14 @@
+標準ライブラリを使う
+
+triangle_area = 入力 a, h に対し {
+    area = 積(a, h)
+    result = 商(area, 2.0)
+    resultが答え
+}
+
+>>> triangle_area(5, 3)
+7.5
+>>> triangle_area(2, 2)
+2.0
+>>> triangle_area(10, 8)
+40.0

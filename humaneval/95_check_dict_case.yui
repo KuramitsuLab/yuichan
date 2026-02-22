@@ -1,0 +1,109 @@
+標準ライブラリを使う
+
+check_dict_case = 入力 dict に対し {
+    length = |dict|
+    result = 0
+
+    # Empty dictionary returns false
+    もし length が 0 ならば、{
+        resultが答え
+    }
+
+    # Check state: 0=start, 1=upper, 2=lower, 3=mixed
+    state = 0
+    i = 0
+    length回、くり返す {
+        pair = dict[i]
+        key = pair[0]
+        key_len = |key|
+
+        # Check if key is string (all letters)
+        is_string = 1
+        j = 0
+        key_len回、くり返す {
+            char = key[j]
+            is_letter = 0
+            # Check if uppercase letter (65-90)
+            もし char が 64 より大きいならば、{
+                もし char が 91 より小さいならば、{
+                    is_letter = 1
+                }
+            }
+            # Check if lowercase letter (97-122)
+            もし char が 96 より大きいならば、{
+                もし char が 123 より小さいならば、{
+                    is_letter = 1
+                }
+            }
+            もし is_letter が 0 ならば、{
+                is_string = 0
+            }
+            jを増やす
+        }
+
+        もし is_string が 0 ならば、{
+            state = 3
+        }
+
+        # If still valid string, check case
+        もし is_string が 1 ならば、{
+            # Check if all uppercase
+            is_upper = 1
+            is_lower = 1
+            j = 0
+            key_len回、くり返す {
+                char = key[j]
+                もし char が 96 より大きいならば、{
+                    is_upper = 0
+                }
+                もし char が 91 より小さいならば、{
+                    is_lower = 0
+                }
+                jを増やす
+            }
+
+            もし state が 0 ならば、{
+                もし is_upper が 1 ならば、{
+                    state = 1
+                }
+                もし is_lower が 1 ならば、{
+                    state = 2
+                }
+            }
+            そうでなければ {
+                もし state が 1 ならば、{
+                    もし is_upper が 0 ならば、{
+                        state = 3
+                    }
+                }
+                もし state が 2 ならば、{
+                    もし is_lower が 0 ならば、{
+                        state = 3
+                    }
+                }
+            }
+        }
+
+        iを増やす
+    }
+
+    # Return true if all upper or all lower
+    もし state が 1 ならば、{
+        result = 1
+    }
+    もし state が 2 ならば、{
+        result = 1
+    }
+
+    resultが答え
+}
+
+>>> check_dict_case([[[97], [97, 112, 112, 108, 101]], [[98], [98, 97, 110, 97, 110, 97]]])
+1
+
+>>> check_dict_case([[[97], [97, 112, 112, 108, 101]], [[65], [98, 97, 110, 97, 110, 97]], [[66], [98, 97, 110, 97, 110, 97]]])
+0
+
+>>> check_dict_case([[[83, 84, 65, 84, 69], [78, 67]], [[90, 73, 80], [49, 50, 51, 52, 53]]])
+1
+# テストケース

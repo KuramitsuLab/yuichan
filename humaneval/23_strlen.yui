@@ -1,0 +1,16 @@
+strlen = 入力 string に対し {
+    |string|が答え
+}
+
+>>> strlen("")
+0
+
+>>> strlen("abc")
+3
+# テストケース
+>>> strlen("")
+0
+>>> strlen("x")
+1
+>>> strlen("asdasnakj")
+9

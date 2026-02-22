@@ -1,0 +1,38 @@
+標準ライブラリを使う
+
+below_zero = 入力 operations に対し {
+    balance = 0
+    結果 = 0
+    長さ = |operations|
+    i = 0
+
+    長さ回、くり返す {
+        op = operations[i]
+        balance = 和(balance, op)
+        もし balance が 0 より小さいならば、{
+            結果 = 1
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> below_zero([1, 2, 3])
+0
+
+>>> below_zero([1, 2, -4, 5])
+1
+# テストケース
+>>> below_zero([])
+0
+>>> below_zero([1, 2, -3, 1, 2, -3])
+0
+>>> below_zero([1, 2, -4, 5, 6])
+1
+>>> below_zero([1, -1, 2, -2, 5, -5, 4, -4])
+0
+>>> below_zero([1, -1, 2, -2, 5, -5, 4, -5])
+1
+>>> below_zero([1, -2, 2, -2, 5, -5, 4, -4])
+1

@@ -1,0 +1,60 @@
+標準ライブラリを使う
+
+largest_prime_factor = 入力 n に対し {
+    largest = 1
+
+    i = 2
+    n回、くり返す {
+        もし i が n 以下 ならば、{
+            remainder = 剰余(n, i)
+            もし remainder が 0 ならば、{
+                # Check if i is prime
+                is_prime = 1
+                もし i が 2 より小さいならば、{
+                    is_prime = 0
+                }
+                もし i が 2 ならば、{
+                    is_prime = 1
+                }
+                もし i が 2 より大きいならば、{
+                    j = 2
+                    1000回、くり返す {
+                        もし j が i より小さいならば、{
+                            rem = 剰余(i, j)
+                            もし rem が 0 ならば、{
+                                is_prime = 0
+                            }
+                            jを増やす
+                        }
+                    }
+                }
+
+                もし is_prime が 1 ならば、{
+                    もし i が largest より大きいならば、{
+                        largest = i
+                    }
+                }
+            }
+            iを増やす
+        }
+    }
+
+    largestが答え
+}
+
+>>> largest_prime_factor(13195)
+29
+
+>>> largest_prime_factor(2048)
+2
+# テストケース
+>>> largest_prime_factor(15)
+5
+>>> largest_prime_factor(27)
+3
+>>> largest_prime_factor(63)
+7
+>>> largest_prime_factor(330)
+11
+>>> largest_prime_factor(13195)
+29

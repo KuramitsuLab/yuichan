@@ -1,0 +1,79 @@
+標準ライブラリを使う
+
+closest_integer = 入力 value に対し {
+    length = |value|
+    result = 0
+    is_negative = 0
+    i = 0
+
+    もし length が 0 より大きいならば、{
+        もし value[0] が 45 ならば、{  # '-'
+            is_negative = 1
+            i = 1
+        }
+    }
+
+    # Find decimal point position
+    dot_pos = length
+    j = 0
+    length回、くり返す {
+        もし value[j] が 46 ならば、{  # '.'
+            dot_pos = j
+        }
+        jを増やす
+    }
+
+    # Parse integer part
+    100回、くり返す {
+        もし i が dot_pos より小さいならば、{
+            char = value[i]
+            もし char が 47 より大きいならば、{
+                もし char が 58 より小さいならば、{
+                    digit = 差(char, 48)
+                    result = 和(積(result, 10), digit)
+                }
+            }
+            iを増やす
+        }
+    }
+
+    # Check decimal part for rounding
+    もし dot_pos が length より小さいならば、{
+        decimal_start = 和(dot_pos, 1)
+        もし decimal_start が length より小さいならば、{
+            first_decimal = value[decimal_start]
+            # If first decimal digit >= 5, round away from zero
+            もし first_decimal が 52 以上 ならば、{  # '5' or greater
+                もし is_negative が 1 ならば、{
+                    resultを増やす  # Round away from zero (more negative)
+                }
+                そうでなければ {
+                    resultを増やす  # Round up
+                }
+            }
+        }
+    }
+
+    もし is_negative が 1 ならば、{
+        result = 差(0, result)
+    }
+
+    resultが答え
+}
+
+>>> closest_integer([49, 48])
+10
+
+>>> closest_integer([49, 53, 46, 51])
+15
+# テストケース
+>>> closest_integer("10")
+10
+>>> closest_integer("14.5")
+15
+>>> closest_integer("-15.5")
+-16
+>>> closest_integer("15.3")
+15
+>>> closest_integer("0")
+0

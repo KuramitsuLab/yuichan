@@ -1,0 +1,81 @@
+標準ライブラリを使う
+
+sort_array = 入力 arr に対し {
+    length = |arr|
+
+    # Bubble sort
+    i = 0
+    length回、くり返す {
+        j = 0
+        limit = 差(差(length, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+
+            # Count bits for both numbers (use absolute value)
+            bits1 = 0
+            temp1 = 絶対値(arr[j])
+            100回、くり返す {
+                もし temp1 が 0 より大きいならば、{
+                    remainder = 剰余(temp1, 2)
+                    もし remainder が 1 ならば、{
+                        bits1を増やす
+                    }
+                    temp1 = 商(temp1, 2)
+                }
+            }
+
+            bits2 = 0
+            temp2 = 絶対値(arr[next_j])
+            100回、くり返す {
+                もし temp2 が 0 より大きいならば、{
+                    remainder = 剰余(temp2, 2)
+                    もし remainder が 1 ならば、{
+                        bits2を増やす
+                    }
+                    temp2 = 商(temp2, 2)
+                }
+            }
+
+            # Swap if needed
+            should_swap = 0
+            もし bits1 が bits2 より大きいならば、{
+                should_swap = 1
+            }
+            もし bits1 が bits2 ならば、{
+                もし arr[j] が arr[next_j] より大きいならば、{
+                    should_swap = 1
+                }
+            }
+
+            もし should_swap が 1 ならば、{
+                temp = arr[j]
+                arr[j] = arr[next_j]
+                arr[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    arrが答え
+}
+
+>>> sort_array([1, 5, 2, 3, 4])
+[1, 2, 4, 3, 5]
+# テストケース
+>>> sort_array([1,5,2,3,4])
+[1, 2, 4, 3, 5]
+>>> sort_array([-2,-3,-4,-5,-6])
+[-4, -2, -6, -5, -3]
+>>> sort_array([1,0,2,3,4])
+[0, 1, 2, 4, 3]
+>>> sort_array([])
+[]
+>>> sort_array([2,5,77,4,5,3,5,7,2,3,4])
+[2, 2, 4, 4, 3, 3, 5, 5, 5, 7, 77]
+>>> sort_array([3,6,44,12,32,5])
+[32, 3, 5, 6, 12, 44]
+>>> sort_array([2,4,8,16,32])
+[2, 4, 8, 16, 32]
+>>> sort_array([2,4,8,16,32])
+[2, 4, 8, 16, 32]

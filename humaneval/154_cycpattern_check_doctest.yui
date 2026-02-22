@@ -1,0 +1,13 @@
+# テストケース
+>>> cycpattern_check("xyzw","xyw")
+0
+>>> cycpattern_check("yello","ell")
+1
+>>> cycpattern_check("whattup","ptut")
+0
+>>> cycpattern_check("efef","fee")
+1
+>>> cycpattern_check("abab","aabb")
+0
+>>> cycpattern_check("winemtt","tinem")
+1

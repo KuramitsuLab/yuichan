@@ -1,0 +1,257 @@
+標準ライブラリを使う
+
+do_algebra = 入力 operator, operand に対し {
+    # Make copies to work with
+    ops = operator
+    vals = operand
+
+    ops_len = |ops|
+
+    # Process operators by priority: ** > *, // > +, -
+
+    # First pass: handle ** (power)
+    i = 0
+    100回、くり返す {
+        もし i が ops_len より小さいならば、{
+            op = ops[i]
+            # Check if operator is "**" ([42, 42])
+            op_len = |op|
+            is_power = 0
+            もし op_len が 2 ならば、{
+                もし op[0] が 42 ならば、{
+                    もし op[1] が 42 ならば、{
+                        is_power = 1
+                    }
+                }
+            }
+
+            もし is_power が 1 ならば、{
+                # Calculate power
+                left = vals[i]
+                right = vals[和(i, 1)]
+
+                # Compute left ** right
+                power_result = 1
+                j = 0
+                right回、くり返す {
+                    power_result = 積(power_result, left)
+                    jを増やす
+                }
+
+                # Replace vals[i] with result, remove vals[i+1]
+                vals[i] = power_result
+
+                # Shift vals left from i+2
+                k = 和(i, 1)
+                vals_len = |vals|
+                limit = 差(vals_len, 1)
+                limit回、くり返す {
+                    もし k が 差(vals_len, 1) より小さいならば、{
+                        vals[k] = vals[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                # Shift ops left from i+1
+                k = i
+                limit回、くり返す {
+                    もし k が 差(ops_len, 1) より小さいならば、{
+                        ops[k] = ops[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                ops_lenを減らす
+            }
+            そうでなければ {
+                iを増やす
+            }
+        }
+    }
+
+    # Second pass: handle * and //
+    i = 0
+    100回、くり返す {
+        もし i が ops_len より小さいならば、{
+            op = ops[i]
+            op_len = |op|
+
+            is_mult = 0
+            is_div = 0
+
+            # Check for * ([42])
+            もし op_len が 1 ならば、{
+                もし op[0] が 42 ならば、{
+                    is_mult = 1
+                }
+            }
+
+            # Check for // ([47, 47])
+            もし op_len が 2 ならば、{
+                もし op[0] が 47 ならば、{
+                    もし op[1] が 47 ならば、{
+                        is_div = 1
+                    }
+                }
+            }
+
+            もし is_mult が 1 ならば、{
+                left = vals[i]
+                right = vals[和(i, 1)]
+                result = 積(left, right)
+                vals[i] = result
+
+                # Shift vals and ops
+                k = 和(i, 1)
+                vals_len = |vals|
+                limit = 差(vals_len, 1)
+                limit回、くり返す {
+                    もし k が 差(vals_len, 1) より小さいならば、{
+                        vals[k] = vals[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                k = i
+                limit回、くり返す {
+                    もし k が 差(ops_len, 1) より小さいならば、{
+                        ops[k] = ops[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                ops_lenを減らす
+            }
+            そうでなければ {
+                もし is_div が 1 ならば、{
+                    left = vals[i]
+                    right = vals[和(i, 1)]
+                    result = 商(left, right)
+                    vals[i] = result
+
+                    # Shift vals and ops
+                    k = 和(i, 1)
+                    vals_len = |vals|
+                    limit = 差(vals_len, 1)
+                    limit回、くり返す {
+                        もし k が 差(vals_len, 1) より小さいならば、{
+                            vals[k] = vals[和(k, 1)]
+                        }
+                        kを増やす
+                    }
+
+                    k = i
+                    limit回、くり返す {
+                        もし k が 差(ops_len, 1) より小さいならば、{
+                            ops[k] = ops[和(k, 1)]
+                        }
+                        kを増やす
+                    }
+
+                    ops_lenを減らす
+                }
+                そうでなければ {
+                    iを増やす
+                }
+            }
+        }
+    }
+
+    # Third pass: handle + and -
+    i = 0
+    100回、くり返す {
+        もし i が ops_len より小さいならば、{
+            op = ops[i]
+            op_len = |op|
+
+            is_add = 0
+            is_sub = 0
+
+            # Check for + ([43])
+            もし op_len が 1 ならば、{
+                もし op[0] が 43 ならば、{
+                    is_add = 1
+                }
+            }
+
+            # Check for - ([45])
+            もし op_len が 1 ならば、{
+                もし op[0] が 45 ならば、{
+                    is_sub = 1
+                }
+            }
+
+            もし is_add が 1 ならば、{
+                left = vals[i]
+                right = vals[和(i, 1)]
+                result = 和(left, right)
+                vals[i] = result
+
+                # Shift vals and ops
+                k = 和(i, 1)
+                vals_len = |vals|
+                limit = 差(vals_len, 1)
+                limit回、くり返す {
+                    もし k が 差(vals_len, 1) より小さいならば、{
+                        vals[k] = vals[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                k = i
+                limit回、くり返す {
+                    もし k が 差(ops_len, 1) より小さいならば、{
+                        ops[k] = ops[和(k, 1)]
+                    }
+                    kを増やす
+                }
+
+                ops_lenを減らす
+            }
+            そうでなければ {
+                もし is_sub が 1 ならば、{
+                    left = vals[i]
+                    right = vals[和(i, 1)]
+                    result = 差(left, right)
+                    vals[i] = result
+
+                    # Shift vals and ops
+                    k = 和(i, 1)
+                    vals_len = |vals|
+                    limit = 差(vals_len, 1)
+                    limit回、くり返す {
+                        もし k が 差(vals_len, 1) より小さいならば、{
+                            vals[k] = vals[和(k, 1)]
+                        }
+                        kを増やす
+                    }
+
+                    k = i
+                    limit回、くり返す {
+                        もし k が 差(ops_len, 1) より小さいならば、{
+                            ops[k] = ops[和(k, 1)]
+                        }
+                        kを増やす
+                    }
+
+                    ops_lenを減らす
+                }
+                そうでなければ {
+                    iを増やす
+                }
+            }
+        }
+    }
+
+    vals[0]が答え
+}
+
+>>> do_algebra([], [1])
+1
+# テストケース
+>>> do_algebra(["**", "*", "+"], [2, 3, 4, 5])
+37
+>>> do_algebra(["+", "*", "-"], [2, 3, 4, 5])
+9
+>>> do_algebra(["//", "*"], [7, 3, 4])
+8

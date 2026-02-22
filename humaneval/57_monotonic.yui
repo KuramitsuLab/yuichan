@@ -1,0 +1,66 @@
+標準ライブラリを使う
+
+monotonic = 入力 l に対し {
+    length = |l|
+    result = 1
+
+    もし length が 1 以下 ならば、{
+        resultが答え
+    }
+
+    # Check if increasing
+    is_increasing = 1
+    i = 1
+    差(length, 1)回、くり返す {
+        prev_i = 差(i, 1)
+        もし l[prev_i] が l[i] より大きいならば、{
+            is_increasing = 0
+        }
+        iを増やす
+    }
+
+    # Check if decreasing
+    is_decreasing = 1
+    i = 1
+    差(length, 1)回、くり返す {
+        prev_i = 差(i, 1)
+        もし l[prev_i] が l[i] より小さいならば、{
+            is_decreasing = 0
+        }
+        iを増やす
+    }
+
+    もし is_increasing が 0 ならば、{
+        もし is_decreasing が 0 ならば、{
+            result = 0
+        }
+    }
+
+    resultが答え
+}
+
+>>> monotonic([1, 2, 4, 20])
+1
+
+>>> monotonic([1, 20, 4, 10])
+0
+
+>>> monotonic([4, 1, 0, -10])
+1
+# テストケース
+>>> monotonic([1, 2, 4, 10])
+1
+>>> monotonic([1, 2, 4, 20])
+1
+>>> monotonic([1, 20, 4, 10])
+0
+>>> monotonic([4, 1, 0, -10])
+1
+>>> monotonic([4, 1, 1, 0])
+1
+>>> monotonic([1, 2, 3, 2, 5, 60])
+0
+>>> monotonic([1, 2, 3, 4, 5, 60])
+1
+>>> monotonic([9, 9, 9, 9])
+1

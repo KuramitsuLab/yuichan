@@ -1,0 +1,92 @@
+標準ライブラリを使う
+
+is_nested = 入力 string に対し {
+    length = |string|
+    opening = []
+    closing = []
+
+    # Collect indices
+    i = 0
+    length回、くり返す {
+        char = string[i]
+        もし char が 91 ならば、{  # '['
+            openingの末尾に i を 追加する
+        }
+        そうでなければ {
+            closingの末尾に i を 追加する
+        }
+        iを増やす
+    }
+
+    # Reverse closing
+    close_len = |closing|
+    reversed_closing = []
+    i = 0
+    close_len回、くり返す {
+        idx = 差(差(close_len, i), 1)
+        reversed_closingの末尾に closing[idx] を 追加する
+        iを増やす
+    }
+
+    # Count matches
+    cnt = 0
+    open_len = |opening|
+    i = 0
+    j = 0
+    open_len回、くり返す {
+        もし j が close_len より小さいならば、{
+            open_idx = opening[i]
+            close_idx = reversed_closing[j]
+            もし open_idx が close_idx より小さいならば、{
+                cntを増やす
+                jを増やす
+            }
+        }
+        iを増やす
+    }
+
+    result = 0
+    もし cnt が 2 以上 ならば、{
+        result = 1
+    }
+
+    resultが答え
+}
+
+>>> is_nested([91, 91, 93, 93])
+1
+
+>>> is_nested([93, 93, 93, 93, 93, 93, 91, 91, 91, 91, 91, 93])
+0
+
+>>> is_nested([93, 93])
+0
+# テストケース
+>>> is_nested("[[]]")
+1
+>>> is_nested("[]]]]]]][[[[[]")
+0
+>>> is_nested("[][]")
+0
+>>> is_nested("[]")
+0
+>>> is_nested("[[[[]]]]")
+1
+>>> is_nested("[]]]]]]]]]]")
+0
+>>> is_nested("[][][[]]")
+1
+>>> is_nested("[[]")
+0
+>>> is_nested("[]]")
+0
+>>> is_nested("[[]][[")
+1
+>>> is_nested("[[][]]")
+1
+>>> is_nested("")
+0
+>>> is_nested("[[[[[[[[")
+0
+>>> is_nested("]]]]]]]]")
+0

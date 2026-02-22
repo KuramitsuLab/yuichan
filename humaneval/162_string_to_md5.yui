@@ -1,0 +1,215 @@
+標準ライブラリを使う
+
+string_to_md5 = 入力 text に対し {
+    # Handle empty string
+    text_len = |text|
+    もし text_len が 0 ならば、{
+        result = []
+        resultが答え
+    }
+
+    # MD5 Constants (K table - first 64 values)
+    K = [
+        3614090360, 3905402710, 606105819, 3250441966,
+        4118548399, 1200080426, 2821735955, 4249261313,
+        1770035416, 2336552879, 4294925233, 2304563134,
+        1804603682, 4254626195, 2792965006, 1236535329,
+        4129170786, 3225465664, 643717713, 3921069994,
+        3593408605, 38016083, 3634488961, 3889429448,
+        568446438, 3275163606, 4107603335, 1163531501,
+        2850285829, 4243563512, 1735328473, 2368359562,
+        4294588738, 2272392833, 1839030562, 4259657740,
+        2763975236, 1272893353, 4139469664, 3200236656,
+        681279174, 3936430074, 3572445317, 76029189,
+        3654602809, 3873151461, 530742520, 3299628645,
+        4096336452, 1126891415, 2878612391, 4237533241,
+        1700485571, 2399980690, 4293915773, 2240044497,
+        1873313359, 4264355552, 2734768916, 1309151649,
+        4149444226, 3174756917, 718787259, 3951481745
+    ]
+
+    # Shift amounts (s table)
+    s = [
+        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+        5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+        4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+        6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+    ]
+
+    # Initialize MD5 state
+    a0 = 1732584193
+    b0 = 4023233417
+    c0 = 2562383102
+    d0 = 271733878
+
+    # Padding
+    msg_len_bits = 積(text_len, 8)
+
+    # Append 0x80 (128)
+    padded = []
+    i = 0
+    text_len回、くり返す {
+        paddedの末尾に text[i] を 追加する
+        iを増やす
+    }
+    paddedの末尾に 128 を 追加する
+
+    # Append zeros until length ≡ 448 (mod 512)
+    current_len = 和(text_len, 1)
+    target_len = 積(商(和(current_len, 63), 64), 64)
+    target_len = 差(target_len, 8)
+
+    i = current_len
+    1000回、くり返す {
+        もし i が target_len より小さいならば、{
+            paddedの末尾に 0 を 追加する
+            iを増やす
+        }
+    }
+
+    # Append length as 64-bit little-endian
+    # For simplicity, only handle lengths < 2^32
+    paddedの末尾に 剰余(msg_len_bits, 256) を 追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 256), 256) を 追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 65536), 256) を 追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 16777216), 256) を 追加する
+    paddedの末尾に 0 を 追加する
+    paddedの末尾に 0 を 追加する
+    paddedの末尾に 0 を 追加する
+    paddedの末尾に 0 を 追加する
+
+    # Process each 512-bit block
+    padded_len = |padded|
+    num_blocks = 商(padded_len, 64)
+
+    block_idx = 0
+    num_blocks回、くり返す {
+        # Break block into 16 32-bit words (little-endian)
+        M = []
+        word_idx = 0
+        16回、くり返す {
+            offset = 和(積(block_idx, 64), 積(word_idx, 4))
+            byte0 = padded[offset]
+            byte1 = padded[和(offset, 1)]
+            byte2 = padded[和(offset, 2)]
+            byte3 = padded[和(offset, 3)]
+
+            word = byte0
+            word = 和(word, 剰余(左シフト(byte1, 8), 4294967296))
+            word = 和(word, 剰余(左シフト(byte2, 16), 4294967296))
+            word = 和(word, 剰余(左シフト(byte3, 24), 4294967296))
+            word = 剰余(word, 4294967296)
+
+            Mの末尾に word を 追加する
+            word_idxを増やす
+        }
+
+        # Initialize working variables
+        A = a0
+        B = b0
+        C = c0
+        D = d0
+
+        # Main loop (64 rounds)
+        i = 0
+        64回、くり返す {
+            F = 0
+            g = 0
+
+            もし i が 16 より小さいならば、{
+                # F = (B AND C) OR ((NOT B) AND D)
+                not_B = 剰余(ビット反転(B), 4294967296)
+                F = 剰余(論理和(剰余(論理積(B, C), 4294967296), 剰余(論理積(not_B, D), 4294967296)), 4294967296)
+                g = i
+            }
+            そうでなければ {
+                もし i が 32 より小さいならば、{
+                    # F = (D AND B) OR ((NOT D) AND C)
+                    not_D = 剰余(ビット反転(D), 4294967296)
+                    F = 剰余(論理和(剰余(論理積(D, B), 4294967296), 剰余(論理積(not_D, C), 4294967296)), 4294967296)
+                    g = 剰余(和(積(5, i), 1), 16)
+                }
+                そうでなければ {
+                    もし i が 48 より小さいならば、{
+                        # F = B XOR C XOR D
+                        F = 剰余(排他的論理和(B, 剰余(排他的論理和(C, D), 4294967296)), 4294967296)
+                        g = 剰余(和(積(3, i), 5), 16)
+                    }
+                    そうでなければ {
+                        # F = C XOR (B OR (NOT D))
+                        not_D = 剰余(ビット反転(D), 4294967296)
+                        F = 剰余(排他的論理和(C, 剰余(論理和(B, not_D), 4294967296)), 4294967296)
+                        g = 剰余(積(7, i), 16)
+                    }
+                }
+            }
+
+            # F = F + A + K[i] + M[g]
+            F = 和(F, A)
+            F = 和(F, K[i])
+            F = 和(F, M[g])
+            F = 剰余(F, 4294967296)
+
+            # LEFTROTATE
+            shift_amount = s[i]
+            left_part = 剰余(左シフト(F, shift_amount), 4294967296)
+            right_part = 右シフト(F, 差(32, shift_amount))
+            F = 剰余(論理和(left_part, right_part), 4294967296)
+
+            # F = F + B
+            F = 和(F, B)
+            F = 剰余(F, 4294967296)
+
+            A = D
+            D = C
+            C = B
+            B = F
+
+            iを増やす
+        }
+
+        # Add this block's hash to result
+        a0 = 剰余(和(a0, A), 4294967296)
+        b0 = 剰余(和(b0, B), 4294967296)
+        c0 = 剰余(和(c0, C), 4294967296)
+        d0 = 剰余(和(d0, D), 4294967296)
+
+        block_idxを増やす
+    }
+
+    # Convert to hex string (little-endian)
+    hex_chars = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102]
+    result = []
+
+    # Process a0, b0, c0, d0 as little-endian bytes
+    values = [a0, b0, c0, d0]
+    v_idx = 0
+    4回、くり返す {
+        val = values[v_idx]
+        byte_idx = 0
+        4回、くり返す {
+            byte = 剰余(val, 256)
+            val = 商(val, 256)
+
+            low = 剰余(byte, 16)
+            high = 商(byte, 16)
+
+            resultの末尾に hex_chars[high] を 追加する
+            resultの末尾に hex_chars[low] を 追加する
+
+            byte_idxを増やす
+        }
+        v_idxを増やす
+    }
+
+    resultが答え
+}
+
+>>> string_to_md5("")
+[]
+>>> string_to_md5("Hello world")
+"3e25960a79dbc69b674cd4ec67a72c62"
+>>> string_to_md5("A B C")
+"0ef78513b0cb8cef12743f5aeb35f888"
+>>> string_to_md5("password")
+"5f4dcc3b5aa765d61d8327deb882cf99"

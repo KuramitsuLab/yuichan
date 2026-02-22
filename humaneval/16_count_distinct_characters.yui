@@ -1,0 +1,57 @@
+標準ライブラリを使う
+
+count_distinct_characters = 入力 string に対し {
+    length = |string|
+
+    # Convert to lowercase and collect unique characters
+    seen = []
+    i = 0
+    length回、くり返す {
+        char = string[i]
+
+        # Convert to lowercase if uppercase (A-Z: 65-90 -> a-z: 97-122)
+        lower_char = char
+        もし char が 64 より大きいならば、{
+            もし char が 91 より小さいならば、{
+                lower_char = 和(char, 32)
+            }
+        }
+
+        # Check if already seen
+        seen_len = |seen|
+        is_new = 1
+        j = 0
+        seen_len回、くり返す {
+            もし seen[j] が lower_char ならば、{
+                is_new = 0
+            }
+            jを増やす
+        }
+
+        もし is_new が 1 ならば、{
+            seenの末尾に lower_char を 追加する
+        }
+
+        iを増やす
+    }
+
+    count = |seen|
+    countが答え
+}
+
+>>> count_distinct_characters([120, 121, 122, 88, 89, 90])
+3
+
+>>> count_distinct_characters([74, 101, 114, 114, 121])
+4
+# テストケース
+>>> count_distinct_characters("")
+0
+>>> count_distinct_characters("abcde")
+5
+>>> count_distinct_characters("abcdecadeCADE")
+5
+>>> count_distinct_characters("aaaaAAAAaaaa")
+1
+>>> count_distinct_characters("Jerry jERRY JeRRRY")
+5

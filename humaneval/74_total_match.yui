@@ -1,0 +1,74 @@
+total_match = 入力 lst1, lst2 に対し {
+    lst1長 = |lst1|
+    lst2長 = |lst2|
+
+    # lst1の全文字数を計算
+    合計1 = 0
+    i = 0
+    lst1長回、くり返す {
+        文字列 = lst1[i]
+        文字列長 = |文字列|
+        j = 0
+        文字列長回、くり返す {
+            合計1を増やす
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # lst2の全文字数を計算
+    合計2 = 0
+    i = 0
+    lst2長回、くり返す {
+        文字列 = lst2[i]
+        文字列長 = |文字列|
+        j = 0
+        文字列長回、くり返す {
+            合計2を増やす
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # 比較して返す
+    結果 = lst1
+    もし 合計1 が 合計2 より大きいならば、{
+        結果 = lst2
+    }
+
+    結果が答え
+}
+
+>>> total_match([], [])
+[]
+
+>>> total_match(["hi", "admin"], ["hI", "Hi"])
+["hI", "Hi"]
+
+>>> total_match(["hi", "admin"], ["hi", "hi", "admin", "project"])
+["hi", "admin"]
+
+>>> total_match(["hi", "admin"], ["hI", "hi", "hi"])
+["hI", "hi", "hi"]
+
+>>> total_match(["4"], ["1", "2", "3", "4", "5"])
+["4"]
+# テストケース
+>>> total_match([], [])
+[]
+>>> total_match(["hi", "admin"], ["hi", "hi"])
+["hi", "hi"]
+>>> total_match(["hi", "admin"], ["hi", "hi", "admin", "project"])
+["hi", "admin"]
+>>> total_match(["4"], ["1", "2", "3", "4", "5"])
+["4"]
+>>> total_match(["hi", "admin"], ["hI", "Hi"])
+["hI", "Hi"]
+>>> total_match(["hi", "admin"], ["hI", "hi", "hi"])
+["hI", "hi", "hi"]
+>>> total_match(["hi", "admin"], ["hI", "hi", "hii"])
+["hi", "admin"]
+>>> total_match([], ["this"])
+[]
+>>> total_match(["this"], [])
+[]

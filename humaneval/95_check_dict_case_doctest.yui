@@ -1,0 +1,13 @@
+# テストケース
+>>> check_dict_case({"p":"pineapple", "b":"banana"})
+1
+>>> check_dict_case({"p":"pineapple", "A":"banana", "B":"banana"})
+0
+>>> check_dict_case({"Name":"John", "Age":"36", "City":"Houston"})
+0
+>>> check_dict_case({"STATE":"NC", "ZIP":"12345"})
+1
+>>> check_dict_case({"fruit":"Orange", "taste":"Sweet"})
+1
+>>> check_dict_case({})
+0

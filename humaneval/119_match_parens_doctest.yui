@@ -1,0 +1,25 @@
+# テストケース
+>>> match_parens(["()(", ")"])
+"Yes"
+>>> match_parens([")", ")"])
+"No"
+>>> match_parens(["(()(())", "())())"])
+"No"
+>>> match_parens([")())", "(()()("])
+"Yes"
+>>> match_parens(["(())))", "(()())(("])
+"Yes"
+>>> match_parens(["()", "())"])
+"No"
+>>> match_parens(["(()(", "()))()"])
+"Yes"
+>>> match_parens(["((((", "((())"])
+"No"
+>>> match_parens([")(()", "(()("])
+"No"
+>>> match_parens([")(", ")("])
+"No"
+>>> match_parens(["(", ")"])
+"Yes"
+>>> match_parens([")", "("])
+"Yes"

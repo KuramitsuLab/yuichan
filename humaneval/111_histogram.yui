@@ -1,0 +1,184 @@
+標準ライブラリを使う
+
+histogram = 入力 test に対し {
+    length = |test|
+
+    # Empty string case
+    もし length が 0 ならば、{
+        result = []
+        resultが答え
+    }
+
+    # Split by space (32) and count occurrences
+    words = []
+    current_word = []
+
+    i = 0
+    length回、くり返す {
+        char = test[i]
+
+        もし char が 32 ならば、{
+            # Space - end current word
+            word_len = |current_word|
+            もし word_len が 0 より大きいならば、{
+                wordsの末尾に current_word を 追加する
+                current_word = []
+            }
+        }
+        そうでなければ {
+            # Add char to current word
+            current_wordの末尾に char を 追加する
+        }
+
+        iを増やす
+    }
+
+    # Add last word if exists
+    word_len = |current_word|
+    もし word_len が 0 より大きいならば、{
+        wordsの末尾に current_word を 追加する
+    }
+
+    # Count occurrences and find max
+    words_len = |words|
+    max_count = 0
+
+    i = 0
+    words_len回、くり返す {
+        word = words[i]
+        count = 0
+
+        # Count how many times this word appears
+        j = 0
+        words_len回、くり返す {
+            other_word = words[j]
+
+            # Compare words
+            word_len = |word|
+            other_len = |other_word|
+
+            same = 0
+            もし word_len が other_len ならば、{
+                all_match = 1
+                k = 0
+                word_len回、くり返す {
+                    もし word[k] が other_word[k] ならば、{
+                        # OK
+                    }
+                    そうでなければ {
+                        all_match = 0
+                    }
+                    kを増やす
+                }
+                same = all_match
+            }
+
+            もし same が 1 ならば、{
+                countを増やす
+            }
+
+            jを増やす
+        }
+
+        もし count が max_count より大きいならば、{
+            max_count = count
+        }
+
+        iを増やす
+    }
+
+    # Build result with words that have max_count
+    result = []
+
+    もし max_count が 0 より大きいならば、{
+        # Track which words we've already added
+        i = 0
+        words_len回、くり返す {
+            word = words[i]
+            count = 0
+
+            # Count occurrences
+            j = 0
+            words_len回、くり返す {
+                other_word = words[j]
+
+                # Compare words
+                word_len = |word|
+                other_len = |other_word|
+
+                same = 0
+                もし word_len が other_len ならば、{
+                    all_match = 1
+                    k = 0
+                    word_len回、くり返す {
+                        もし word[k] が other_word[k] ならば、{
+                            # OK
+                        }
+                        そうでなければ {
+                            all_match = 0
+                        }
+                        kを増やす
+                    }
+                    same = all_match
+                }
+
+                もし same が 1 ならば、{
+                    countを増やす
+                }
+
+                jを増やす
+            }
+
+            # If this word has max count, check if already in result
+            もし count が max_count ならば、{
+                already_added = 0
+                result_len = |result|
+
+                m = 0
+                result_len回、くり返す {
+                    result_word = result[m][0]
+
+                    # Compare
+                    word_len = |word|
+                    result_word_len = |result_word|
+
+                    same = 0
+                    もし word_len が result_word_len ならば、{
+                        all_match = 1
+                        k = 0
+                        word_len回、くり返す {
+                            もし word[k] が result_word[k] ならば、{
+                                # OK
+                            }
+                            そうでなければ {
+                                all_match = 0
+                            }
+                            kを増やす
+                        }
+                        same = all_match
+                    }
+
+                    もし same が 1 ならば、{
+                        already_added = 1
+                    }
+
+                    mを増やす
+                }
+
+                もし already_added が 0 ならば、{
+                    entry = []
+                    entryの末尾に word を 追加する
+                    entryの末尾に max_count を 追加する
+                    resultの末尾に entry を 追加する
+                }
+            }
+
+            iを増やす
+        }
+    }
+
+    resultが答え
+}
+
+>>> histogram("")
+[]

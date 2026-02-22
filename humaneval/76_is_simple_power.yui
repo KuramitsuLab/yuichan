@@ -1,0 +1,63 @@
+標準ライブラリを使う
+
+is_simple_power = 入力 x, n に対し {
+    結果 = 0
+
+    もし n が 1 ならば、{
+        もし x が 1 ならば、{
+            結果 = 1
+        }
+    }
+    そうでなければ {
+        power = 1
+        x回、くり返す {
+            もし power が x より小さいならば、{
+                power = 積(power, n)
+            }
+        }
+        もし power が x ならば、{
+            結果 = 1
+        }
+    }
+
+    結果が答え
+}
+
+>>> is_simple_power(1, 4)
+1
+
+>>> is_simple_power(2, 2)
+1
+
+>>> is_simple_power(8, 2)
+1
+
+>>> is_simple_power(3, 2)
+0
+
+>>> is_simple_power(3, 1)
+0
+
+>>> is_simple_power(5, 3)
+0
+# テストケース
+>>> is_simple_power(16, 2)
+1
+>>> is_simple_power(143214, 16)
+0
+>>> is_simple_power(4, 2)
+1
+>>> is_simple_power(9, 3)
+1
+>>> is_simple_power(16, 4)
+1
+>>> is_simple_power(24, 2)
+0
+>>> is_simple_power(128, 4)
+0
+>>> is_simple_power(12, 6)
+0
+>>> is_simple_power(1, 1)
+1
+>>> is_simple_power(1, 12)
+1

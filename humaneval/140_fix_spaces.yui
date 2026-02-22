@@ -1,0 +1,66 @@
+標準ライブラリを使う
+
+fix_spaces = 入力 text に対し {
+    length = |text|
+    result = []
+
+    i = 0
+    200回、くり返す {
+        もし i が length より小さいならば、{
+            char = text[i]
+            もし char が 32 ならば、{  # space
+                # Count consecutive spaces
+                space_count = 1
+                j = 和(i, 1)
+                100回、くり返す {
+                    もし j が length より小さいならば、{
+                        もし text[j] が 32 ならば、{
+                            space_countを増やす
+                            jを増やす
+                        }
+                        そうでなければ {
+                            j = length  # Exit loop
+                        }
+                    }
+                }
+
+                # Replace spaces based on count
+                もし space_count が 2 以下 ならば、{
+                    # Add underscores
+                    k = 0
+                    space_count回、くり返す {
+                        resultの末尾に 95 を 追加する  # '_'
+                        kを増やす
+                    }
+                }
+                そうでなければ {
+                    # Add single dash
+                    resultの末尾に 45 を 追加する  # '-'
+                }
+
+                # Skip the counted spaces
+                i = 和(i, 差(space_count, 1))
+            }
+            そうでなければ {
+                resultの末尾に char を 追加する
+            }
+            iを増やす
+        }
+    }
+
+    resultが答え
+}
+
+>>> fix_spaces([69, 120, 97, 109, 112, 108, 101])
+[69, 120, 97, 109, 112, 108, 101]
+# テストケース
+>>> fix_spaces("Example")
+"Example"
+>>> fix_spaces("Mudasir Hanif ")
+"Mudasir_Hanif_"
+>>> fix_spaces("Yellow Yellow  Dirty  Fellow")
+"Yellow_Yellow__Dirty__Fellow"
+>>> fix_spaces("Exa   mple")
+"Exa-mple"
+>>> fix_spaces("   Exa 1 2 2 mple")
+"-Exa_1_2_2_mple"

@@ -1,0 +1,41 @@
+標準ライブラリを使う
+
+correct_bracketing = 入力 brackets に対し {
+    depth = 0
+    i = 0
+    length = |brackets|
+
+    length回、くり返す {
+        b = brackets[i]
+        もし b が 60 ならば {
+            depthを増やす
+        }
+        そうでなければ {
+            depthを減らす
+        }
+
+        もし depth が 0 より小さい ならば {
+            0が答え
+        }
+
+        iを増やす
+    }
+
+    もし depth が 0 ならば {
+        1が答え
+    }
+    そうでなければ {
+        0が答え
+    }
+}
+
+>>> correct_bracketing("<")
+0
+>>> correct_bracketing("<>")
+1
+>>> correct_bracketing("<<><>>")
+1
+>>> correct_bracketing("><<>")
+0
+>>> correct_bracketing("<><><<><>><>")
+1

@@ -1,0 +1,130 @@
+標準ライブラリを使う
+
+simplify = 入力 x, n に対し {
+    # Parse x (numerator/denominator)
+    x_len = |x|
+    x_num = []
+    x_den = []
+    found_slash = 0
+    i = 0
+    x_len回、くり返す {
+        char = x[i]
+        もし char が 47 ならば、{  # '/'
+            found_slash = 1
+        }
+        そうでなければ {
+            もし found_slash が 0 ならば、{
+                x_numの末尾に char を 追加する
+            }
+            そうでなければ {
+                x_denの末尾に char を 追加する
+            }
+        }
+        iを増やす
+    }
+
+    # Parse n
+    n_len = |n|
+    n_num = []
+    n_den = []
+    found_slash = 0
+    i = 0
+    n_len回、くり返す {
+        char = n[i]
+        もし char が 47 ならば、{
+            found_slash = 1
+        }
+        そうでなければ {
+            もし found_slash が 0 ならば、{
+                n_numの末尾に char を 追加する
+            }
+            そうでなければ {
+                n_denの末尾に char を 追加する
+            }
+        }
+        iを増やす
+    }
+
+    # Convert to integers
+    a = 0
+    j = 0
+    xn_len = |x_num|
+    xn_len回、くり返す {
+        digit = 差(x_num[j], 48)
+        a = 和(積(a, 10), digit)
+        jを増やす
+    }
+
+    b = 0
+    j = 0
+    xd_len = |x_den|
+    xd_len回、くり返す {
+        digit = 差(x_den[j], 48)
+        b = 和(積(b, 10), digit)
+        jを増やす
+    }
+
+    c = 0
+    j = 0
+    nn_len = |n_num|
+    nn_len回、くり返す {
+        digit = 差(n_num[j], 48)
+        c = 和(積(c, 10), digit)
+        jを増やす
+    }
+
+    d = 0
+    j = 0
+    nd_len = |n_den|
+    nd_len回、くり返す {
+        digit = 差(n_den[j], 48)
+        d = 和(積(d, 10), digit)
+        jを増やす
+    }
+
+    # Calculate a*c / b*d
+    numerator = 積(a, c)
+    denominator = 積(b, d)
+
+    # Check if whole number
+    remainder = 剰余(numerator, denominator)
+    result = 0
+    もし remainder が 0 ならば、{
+        result = 1
+    }
+
+    resultが答え
+}
+
+>>> simplify([49, 47, 53], [53, 47, 49])
+1
+
+>>> simplify([49, 47, 54], [50, 47, 49])
+0
+# テストケース
+>>> simplify("1/5", "5/1")
+1
+>>> simplify("1/6", "2/1")
+0
+>>> simplify("5/1", "3/1")
+1
+>>> simplify("7/10", "10/2")
+0
+>>> simplify("2/10", "50/10")
+1
+>>> simplify("7/2", "4/2")
+1
+>>> simplify("11/6", "6/1")
+1
+>>> simplify("2/3", "5/2")
+0
+>>> simplify("5/2", "3/5")
+0
+>>> simplify("2/4", "8/4")
+1
+>>> simplify("2/4", "4/2")
+1
+>>> simplify("1/5", "5/1")
+1
+>>> simplify("1/5", "1/5")
+0

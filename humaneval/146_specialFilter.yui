@@ -1,0 +1,61 @@
+標準ライブラリを使う
+
+specialFilter = 入力 nums に対し {
+    length = |nums|
+    count = 0
+
+    i = 0
+    length回、くり返す {
+        num = nums[i]
+
+        もし num が 10 より大きいならば、{
+            # Get first and last digits
+            first_digit = 0
+            last_digit = 剰余(num, 10)  # Last digit is remainder
+            temp = num
+
+            # Find first digit
+            100回、くり返す {
+                もし temp が 0 より大きいならば、{
+                    first_digit = 剰余(temp, 10)
+                    temp = 商(temp, 10)
+                }
+            }
+
+            # Check if both are odd
+            first_rem = 剰余(first_digit, 2)
+            last_rem = 剰余(last_digit, 2)
+
+            もし first_rem が 1 ならば、{
+                もし last_rem が 1 ならば、{
+                    countを増やす
+                }
+            }
+        }
+
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> specialFilter([15, -73, 14, -15])
+1
+
+>>> specialFilter([33, -2, -3, 45, 21, 109])
+2
+# テストケース
+>>> specialFilter([5, -2, 1, -5])
+0
+>>> specialFilter([15, -73, 14, -15])
+1
+>>> specialFilter([33, -2, -3, 45, 21, 109])
+2
+>>> specialFilter([43, -12, 93, 125, 121, 109])
+4
+>>> specialFilter([71, -2, -33, 75, 21, 19])
+3
+>>> specialFilter([1])
+0
+>>> specialFilter([])
+0

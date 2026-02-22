@@ -1,0 +1,17 @@
+# テストケース
+>>> is_equal_to_sum_even(4)
+0
+>>> is_equal_to_sum_even(6)
+0
+>>> is_equal_to_sum_even(8)
+1
+>>> is_equal_to_sum_even(10)
+1
+>>> is_equal_to_sum_even(11)
+0
+>>> is_equal_to_sum_even(12)
+1
+>>> is_equal_to_sum_even(13)
+0
+>>> is_equal_to_sum_even(16)
+1

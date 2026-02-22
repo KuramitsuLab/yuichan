@@ -1,0 +1,41 @@
+標準ライブラリを使う
+
+generate_integers = 入力 a, b に対し {
+    lower = 最小値(a, b)
+    upper = 最大値(a, b)
+
+    lower = 最大値(2, lower)
+    upper = 最小値(8, upper)
+
+    result = []
+    i = lower
+    100回、くり返す {
+        もし i が upper 以下 ならば、{
+            remainder = 剰余(i, 2)
+            もし remainder が 0 ならば、{
+                resultの末尾に i を 追加する
+            }
+            iを増やす
+        }
+    }
+
+    resultが答え
+}
+
+>>> generate_integers(2, 8)
+[2, 4, 6, 8]
+
+>>> generate_integers(8, 2)
+[2, 4, 6, 8]
+
+>>> generate_integers(10, 14)
+[]
+# テストケース
+>>> generate_integers(2, 10)
+[2, 4, 6, 8]
+>>> generate_integers(10, 2)
+[2, 4, 6, 8]
+>>> generate_integers(132, 2)
+[2, 4, 6, 8]
+>>> generate_integers(17,89)
+[]

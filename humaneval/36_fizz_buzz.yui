@@ -1,0 +1,64 @@
+標準ライブラリを使う
+
+fizz_buzz = 入力 n に対し {
+    count = 0
+
+    i = 0
+    n回、くり返す {
+        # Check if divisible by 11 or 13
+        is_div = 0
+        remainder11 = 剰余(i, 11)
+        remainder13 = 剰余(i, 13)
+
+        もし remainder11 が 0 ならば、{
+            is_div = 1
+        }
+        もし remainder13 が 0 ならば、{
+            is_div = 1
+        }
+
+        # Count 7s in this number
+        もし is_div が 1 ならば、{
+            temp = i
+            100回、くり返す {
+                もし temp が 0 より大きいならば、{
+                    digit = 剰余(temp, 10)
+                    もし digit が 7 ならば、{
+                        countを増やす
+                    }
+                    temp = 商(temp, 10)
+                }
+            }
+        }
+
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> fizz_buzz(50)
+0
+
+>>> fizz_buzz(78)
+2
+
+>>> fizz_buzz(79)
+3
+# テストケース
+>>> fizz_buzz(50)
+0
+>>> fizz_buzz(78)
+2
+>>> fizz_buzz(79)
+3
+>>> fizz_buzz(100)
+3
+>>> fizz_buzz(200)
+6
+>>> fizz_buzz(4000)
+192
+>>> fizz_buzz(10000)
+639
+>>> fizz_buzz(100000)
+8026

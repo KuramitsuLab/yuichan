@@ -1,0 +1,119 @@
+標準ライブラリを使う
+
+match_parens = 入力 lst に対し {
+    s1 = lst[0]
+    s2 = lst[1]
+
+    # Try s1 + s2
+    combined1 = []
+    len1 = |s1|
+    i = 0
+    len1回、くり返す {
+        combined1の末尾に s1[i] を 追加する
+        iを増やす
+    }
+    len2 = |s2|
+    i = 0
+    len2回、くり返す {
+        combined1の末尾に s2[i] を 追加する
+        iを増やす
+    }
+
+    # Check combined1
+    valid1 = 1
+    depth1 = 0
+    i = 0
+    len_c1 = |combined1|
+    len_c1回、くり返す {
+        char = combined1[i]
+        もし char が 40 ならば、{
+            depth1を増やす
+        }
+        そうでなければ {
+            depth1を減らす
+        }
+        もし depth1 が 0 より小さいならば、{
+            valid1 = 0
+        }
+        iを増やす
+    }
+    もし depth1 が 0 以外 ならば、{
+        valid1 = 0
+    }
+
+    # Try s2 + s1
+    combined2 = []
+    i = 0
+    len2回、くり返す {
+        combined2の末尾に s2[i] を 追加する
+        iを増やす
+    }
+    i = 0
+    len1回、くり返す {
+        combined2の末尾に s1[i] を 追加する
+        iを増やす
+    }
+
+    # Check combined2
+    valid2 = 1
+    depth2 = 0
+    i = 0
+    len_c2 = |combined2|
+    len_c2回、くり返す {
+        char = combined2[i]
+        もし char が 40 ならば、{
+            depth2を増やす
+        }
+        そうでなければ {
+            depth2を減らす
+        }
+        もし depth2 が 0 より小さいならば、{
+            valid2 = 0
+        }
+        iを増やす
+    }
+    もし depth2 が 0 以外 ならば、{
+        valid2 = 0
+    }
+
+    result = [78, 111]  # "No"
+    もし valid1 が 1 ならば、{
+        result = [89, 101, 115]  # "Yes"
+    }
+    もし valid2 が 1 ならば、{
+        result = [89, 101, 115]  # "Yes"
+    }
+
+    resultが答え
+}
+
+>>> match_parens([[40, 41, 40], [41]])
+[89, 101, 115]
+
+>>> match_parens([[41], [41]])
+[78, 111]
+# テストケース
+>>> match_parens(["()(", ")"])
+"Yes"
+>>> match_parens([")", ")"])
+"No"
+>>> match_parens(["(()(())", "())())"])
+"No"
+>>> match_parens([")())", "(()()("])
+"Yes"
+>>> match_parens(["(())))", "(()())(("])
+"Yes"
+>>> match_parens(["()", "())"])
+"No"
+>>> match_parens(["(()(", "()))()"])
+"Yes"
+>>> match_parens(["((((", "((())"])
+"No"
+>>> match_parens([")(()", "(()("])
+"No"
+>>> match_parens([")(", ")("])
+"No"
+>>> match_parens(["(", ")"])
+"Yes"
+>>> match_parens([")", "("])
+"Yes"

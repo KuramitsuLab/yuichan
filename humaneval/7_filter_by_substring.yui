@@ -1,0 +1,64 @@
+標準ライブラリを使う
+
+filter_by_substring = 入力 strings, substring に対し {
+    文字列数 = |strings|
+    部分文字列長 = |substring|
+    結果 = []
+    i = 0
+
+    文字列数回、くり返す {
+        文字列 = strings[i]
+        文字列長 = |文字列|
+
+        # 部分文字列が含まれているかチェック
+        含む = 0
+        もし 部分文字列長 が 0 より大きいならば、{
+            上限 = 和(差(文字列長, 部分文字列長), 1)
+            j = 0
+
+            上限回、くり返す {
+                # 文字列[j:j+部分文字列長] と substring を比較
+                一致 = 1
+                k = 0
+                部分文字列長回、くり返す {
+                    インデックス = 和(j, k)
+                    もし インデックス が 文字列長 より小さいならば、{
+                        もし 文字列[インデックス] が substring[k] 以外 ならば、{
+                            一致 = 0
+                        }
+                    }
+                    kを増やす
+                }
+
+                もし 一致 が 1 ならば、{
+                    含む = 1
+                }
+
+                jを増やす
+            }
+        }
+
+        もし 含む が 1 ならば、{
+            結果の末尾に 文字列 を 追加する
+        }
+
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> filter_by_substring([], "a")
+[]
+
+>>> filter_by_substring(["abc", "bacd", "cde", "array"], "a")
+["abc", "bacd", "array"]
+# テストケース
+>>> filter_by_substring([], "john")
+[]
+>>> filter_by_substring(["xxx", "asd", "xxy", "john doe", "xxxAAA", "xxx"], "xxx")
+["xxx", "xxxAAA", "xxx"]
+>>> filter_by_substring(["xxx", "asd", "aaaxxy", "john doe", "xxxAAA", "xxx"], "xx")
+["xxx", "aaaxxy", "xxxAAA", "xxx"]
+>>> filter_by_substring(["grunt", "trumpet", "prune", "gruesome"], "run")
+["grunt", "prune"]

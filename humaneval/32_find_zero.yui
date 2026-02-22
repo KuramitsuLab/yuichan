@@ -1,0 +1,50 @@
+標準ライブラリを使う
+
+poly = 入力 xs, x に対し {
+    result = 0.0
+    n = |xs|
+    i = 0
+    current_power = 1.0
+    n回、くり返す {
+        coeff = 少数化(xs[i])
+        term = 積(coeff, current_power)
+        result = 和(result, term)
+        current_power = 積(current_power, x)
+        iを増やす
+    }
+    resultが答え
+}
+
+find_zero = 入力 xs に対し {
+    a = -10000.0
+    b = 10000.0
+    poly_a = poly(xs, a)
+    i = 0
+    200回、くり返す {
+        mid = 商(和(a, b), 2.0)
+        poly_mid = poly(xs, mid)
+        prod = 積(poly_a, poly_mid)
+        もし prod が 0.0 より大きいならば、{
+            a = mid
+            poly_a = poly_mid
+        }
+        そうでなければ {
+            b = mid
+        }
+        iを増やす
+    }
+    商(和(a, b), 2.0)が答え
+}
+
+approx_zero = 入力 x に対し {
+    ax = 絶対値(x)
+    result = 0
+    もし ax が 0.001 より小さいならば、{
+        result = 1
+    }
+    resultが答え
+}
+
+>>> approx_zero(poly([1, 1], find_zero([1, 1])))
+1
+# テストケース

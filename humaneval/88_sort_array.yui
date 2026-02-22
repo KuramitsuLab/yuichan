@@ -1,0 +1,79 @@
+標準ライブラリを使う
+
+sort_array = 入力 array に対し {
+    length = |array|
+
+    もし length が 0 ならば {
+        []が答え
+    }
+
+    result = []
+    i = 0
+
+    length回、くり返す {
+        resultの末尾に array[i] を 追加する
+        iを増やす
+    }
+
+    last_idx = 差(length, 1)
+    sum_val = 和(array[0], array[last_idx])
+    rem = 剰余(sum_val, 2)
+
+    もし rem が 0 ならば {
+        n = length
+
+        i = 0
+        n回、くり返す {
+            j = 0
+            limit = 差(差(n, i), 1)
+
+            limit回、くり返す {
+                j_next = 和(j, 1)
+
+                もし result[j] が result[j_next] より小さい ならば {
+                    temp = result[j]
+                    result[j] = result[j_next]
+                    result[j_next] = temp
+                }
+
+                jを増やす
+            }
+            iを増やす
+        }
+    }
+    そうでなければ {
+        n = length
+
+        i = 0
+        n回、くり返す {
+            j = 0
+            limit = 差(差(n, i), 1)
+
+            limit回、くり返す {
+                j_next = 和(j, 1)
+
+                もし result[j] が result[j_next] より大きい ならば {
+                    temp = result[j]
+                    result[j] = result[j_next]
+                    result[j_next] = temp
+                }
+
+                jを増やす
+            }
+            iを増やす
+        }
+    }
+
+    resultが答え
+}
+
+>>> sort_array([])
+[]
+>>> sort_array([5])
+[5]
+>>> sort_array([2, 4, 3, 0, 1, 5])
+[0, 1, 2, 3, 4, 5]
+>>> sort_array([2, 4, 3, 0, 1, 5, 6])
+[6, 5, 4, 3, 2, 1, 0]
+>>> sort_array([2, 1])
+[1, 2]

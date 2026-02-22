@@ -1,0 +1,81 @@
+標準ライブラリを使う
+
+triangle_area = 入力 a, b, c に対し {
+    結果 = -1
+
+    # 三角形の条件をチェック
+    ab合計 = 和(a, b)
+    ac合計 = 和(a, c)
+    bc合計 = 和(b, c)
+
+    有効 = 1
+    もし ab合計 が c 以下 ならば {
+        有効 = 0
+    }
+    もし ac合計 が b 以下 ならば {
+        有効 = 0
+    }
+    もし bc合計 が a 以下 ならば {
+        有効 = 0
+    }
+
+    もし 有効 が 1 ならば {
+        # ヘロンの公式: s = (a+b+c)/2
+        abc合計 = 和(a, b, c)
+        s = 商(abc合計, 2.0)
+
+        # area = sqrt(s * (s-a) * (s-b) * (s-c))
+        sa = 差(s, a)
+        sb = 差(s, b)
+        sc = 差(s, c)
+
+        積1 = 積(s, sa)
+        積2 = 積(積1, sb)
+        積3 = 積(積2, sc)
+
+        # 平方根の近似計算（ニュートン法）
+        # 初期値をより良い推定値に設定
+        x = 商(積3, 2.0)
+        もし x が 0 以下 ならば {
+            x = 1.0
+        }
+
+        i = 0
+        30回、くり返す {
+            もし x が 0 より大きい ならば {
+                商値 = 商(積3, x)
+                和値 = 和(x, 商値)
+                x = 商(和値, 2.0)
+            }
+            iを増やす
+        }
+
+        # Round to 2 decimal places
+        # area * 100 + 0.5, then divide by 100
+        scaled = 積(x, 100.0)
+        rounded_scaled = 和(scaled, 0.5)
+        truncated = 整数化(rounded_scaled)
+        結果 = 商(truncated, 100.0)
+    }
+
+    結果が答え
+}
+
+>>> triangle_area(3, 4, 5)
+6.0
+>>> triangle_area(1, 2, 10)
+-1
+>>> triangle_area(4, 8, 5)
+8.18
+>>> triangle_area(2, 2, 2)
+1.73
+>>> triangle_area(1, 2, 3)
+-1
+>>> triangle_area(10, 5, 7)
+16.25
+>>> triangle_area(2, 6, 3)
+-1
+>>> triangle_area(1, 1, 1)
+0.43
+>>> triangle_area(2, 2, 10)
+-1

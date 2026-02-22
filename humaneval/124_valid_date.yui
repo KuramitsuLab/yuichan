@@ -1,0 +1,148 @@
+標準ライブラリを使う
+
+valid_date = 入力 date に対し {
+    length = |date|
+    result = 0
+
+    # Basic checks
+    もし length が 10 以外 ならば、{
+        resultが答え
+    }
+
+    # Parse date (mm-dd-yyyy format)
+    month_str = []
+    day_str = []
+    year_str = []
+
+    もし length が 10 ならば、{
+        month_strの末尾に date[0] を 追加する
+        month_strの末尾に date[1] を 追加する
+        day_strの末尾に date[3] を 追加する
+        day_strの末尾に date[4] を 追加する
+        year_strの末尾に date[6] を 追加する
+        year_strの末尾に date[7] を 追加する
+        year_strの末尾に date[8] を 追加する
+        year_strの末尾に date[9] を 追加する
+    }
+
+    # Convert to integers
+    month = 和(積(10, 差(month_str[0], 48)), 差(month_str[1], 48))
+    day = 和(積(10, 差(day_str[0], 48)), 差(day_str[1], 48))
+
+    # Basic validation
+    valid = 1
+    もし month が 1 より小さいならば、{
+        valid = 0
+    }
+    もし month が 12 より大きいならば、{
+        valid = 0
+    }
+    もし day が 1 より小さいならば、{
+        valid = 0
+    }
+
+    # Check day based on month
+    もし valid が 1 ならば、{
+        # Months with 31 days: 1,3,5,7,8,10,12
+        is_31_day_month = 0
+        もし month が 1 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 3 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 5 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 7 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 8 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 10 ならば、{
+            is_31_day_month = 1
+        }
+        もし month が 12 ならば、{
+            is_31_day_month = 1
+        }
+
+        # Months with 30 days: 4,6,9,11
+        is_30_day_month = 0
+        もし month が 4 ならば、{
+            is_30_day_month = 1
+        }
+        もし month が 6 ならば、{
+            is_30_day_month = 1
+        }
+        もし month が 9 ならば、{
+            is_30_day_month = 1
+        }
+        もし month が 11 ならば、{
+            is_30_day_month = 1
+        }
+
+        # February (month 2): max 29 days
+        もし month が 2 ならば、{
+            もし day が 29 より大きいならば、{
+                valid = 0
+            }
+        }
+
+        # Check 31-day months
+        もし is_31_day_month が 1 ならば、{
+            もし day が 31 より大きいならば、{
+                valid = 0
+            }
+        }
+
+        # Check 30-day months
+        もし is_30_day_month が 1 ならば、{
+            もし day が 30 より大きいならば、{
+                valid = 0
+            }
+        }
+    }
+
+    result = valid
+    resultが答え
+}
+
+>>> valid_date([48, 51, 45, 49, 49, 45, 50, 48, 48, 48])
+1
+
+>>> valid_date([49, 53, 45, 48, 49, 45, 50, 48, 49, 50])
+0
+# テストケース
+>>> valid_date("03-11-2000")
+1
+>>> valid_date("15-01-2012")
+0
+>>> valid_date("04-0-2040")
+0
+>>> valid_date("06-04-2020")
+1
+>>> valid_date("01-01-2007")
+1
+>>> valid_date("03-32-2011")
+0
+>>> valid_date("")
+0
+>>> valid_date("04-31-3000")
+0
+>>> valid_date("06-06-2005")
+1
+>>> valid_date("21-31-2000")
+0
+>>> valid_date("04-12-2003")
+1
+>>> valid_date("04122003")
+0
+>>> valid_date("20030412")
+0
+>>> valid_date("2003-04")
+0
+>>> valid_date("2003-04-12")
+0
+>>> valid_date("04-2003")
+0

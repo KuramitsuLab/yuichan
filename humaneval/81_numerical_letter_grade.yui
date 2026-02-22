@@ -1,0 +1,95 @@
+標準ライブラリを使う
+
+numerical_letter_grade = 入力 grades に対し {
+    length = |grades|
+    result = []
+
+    i = 0
+    length回、くり返す {
+        gpa = grades[i]
+        letter = []
+
+        もし gpa が 4.0 ならば、{
+            letter = [65, 43]  # "A+"
+        }
+        そうでなければ {
+            もし gpa が 3.7 より大きいならば、{
+                letter = [65]  # "A"
+            }
+            そうでなければ {
+                もし gpa が 3.3 より大きいならば、{
+                    letter = [65, 45]  # "A-"
+                }
+                そうでなければ {
+                    もし gpa が 3.0 より大きいならば、{
+                        letter = [66, 43]  # "B+"
+                    }
+                    そうでなければ {
+                        もし gpa が 2.7 より大きいならば、{
+                            letter = [66]  # "B"
+                        }
+                        そうでなければ {
+                            もし gpa が 2.3 より大きいならば、{
+                                letter = [66, 45]  # "B-"
+                            }
+                            そうでなければ {
+                                もし gpa が 2.0 より大きいならば、{
+                                    letter = [67, 43]  # "C+"
+                                }
+                                そうでなければ {
+                                    もし gpa が 1.7 より大きいならば、{
+                                        letter = [67]  # "C"
+                                    }
+                                    そうでなければ {
+                                        もし gpa が 1.3 より大きいならば、{
+                                            letter = [67, 45]  # "C-"
+                                        }
+                                        そうでなければ {
+                                            もし gpa が 1.0 より大きいならば、{
+                                                letter = [68, 43]  # "D+"
+                                            }
+                                            そうでなければ {
+                                                もし gpa が 0.7 より大きいならば、{
+                                                    letter = [68]  # "D"
+                                                }
+                                                そうでなければ {
+                                                    もし gpa が 0.0 より大きいならば、{
+                                                        letter = [68, 45]  # "D-"
+                                                    }
+                                                    そうでなければ {
+                                                        letter = [69]  # "E"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        resultの末尾に letter を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> numerical_letter_grade([4.0, 3.0, 2.0])
+[[65, 43], [66], [67]]
+# テストケース
+>>> numerical_letter_grade([4.0, 3, 1.7, 2, 3.5])
+["A+", "B", "C-", "C", "A-"]
+>>> numerical_letter_grade([1.2])
+["D+"]
+>>> numerical_letter_grade([0.5])
+["D-"]
+>>> numerical_letter_grade([0.0])
+["E"]
+>>> numerical_letter_grade([1, 0.3, 1.5, 2.8, 3.3])
+["D", "D-", "C-", "B", "B+"]
+>>> numerical_letter_grade([0, 0.7])
+["E", "D-"]

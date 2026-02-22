@@ -1,0 +1,57 @@
+標準ライブラリを使う
+
+even_odd_count = 入力 num に対し {
+    abs_num = 絶対値(num)
+    even_count = 0
+    odd_count = 0
+    temp = abs_num
+
+    # Extract digits and count
+    100回、くり返す {
+        もし temp が 0 より大きいならば、{
+            digit = 剰余(temp, 10)
+            temp = 商(temp, 10)
+
+            remainder = 剰余(digit, 2)
+            もし remainder が 0 ならば、{
+                even_countを増やす
+            }
+            そうでなければ {
+                odd_countを増やす
+            }
+        }
+    }
+
+    # Handle zero case
+    もし abs_num が 0 ならば、{
+        even_count = 1
+    }
+
+    result = []
+    resultの末尾に even_count を 追加する
+    resultの末尾に odd_count を 追加する
+    resultが答え
+}
+
+>>> even_odd_count(-12)
+[1, 1]
+
+>>> even_odd_count(123)
+[1, 2]
+# テストケース
+>>> even_odd_count(7)
+[0, 1]
+>>> even_odd_count(-78)
+[1, 1]
+>>> even_odd_count(3452)
+[2, 2]
+>>> even_odd_count(346211)
+[3, 3]
+>>> even_odd_count(-345821)
+[3, 3]
+>>> even_odd_count(-2)
+[1, 0]
+>>> even_odd_count(-45347)
+[2, 3]
+>>> even_odd_count(0)
+[1, 0]

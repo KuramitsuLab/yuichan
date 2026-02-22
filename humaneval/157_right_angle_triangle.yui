@@ -1,0 +1,58 @@
+標準ライブラリを使う
+
+right_angle_triangle = 入力 a, b, c に対し {
+    a_sq = 積(a, a)
+    b_sq = 積(b, b)
+    c_sq = 積(c, c)
+
+    result = 0
+
+    # a^2 == b^2 + c^2
+    sum_bc = 和(b_sq, c_sq)
+    もし a_sq が sum_bc ならば、{
+        result = 1
+    }
+
+    # b^2 == a^2 + c^2
+    sum_ac = 和(a_sq, c_sq)
+    もし b_sq が sum_ac ならば、{
+        result = 1
+    }
+
+    # c^2 == a^2 + b^2
+    sum_ab = 和(a_sq, b_sq)
+    もし c_sq が sum_ab ならば、{
+        result = 1
+    }
+
+    resultが答え
+}
+
+>>> right_angle_triangle(3, 4, 5)
+1
+
+>>> right_angle_triangle(1, 2, 3)
+0
+# テストケース
+>>> right_angle_triangle(3, 4, 5)
+1
+>>> right_angle_triangle(1, 2, 3)
+0
+>>> right_angle_triangle(10, 6, 8)
+1
+>>> right_angle_triangle(2, 2, 2)
+0
+>>> right_angle_triangle(7, 24, 25)
+1
+>>> right_angle_triangle(10, 5, 7)
+0
+>>> right_angle_triangle(5, 12, 13)
+1
+>>> right_angle_triangle(15, 8, 17)
+1
+>>> right_angle_triangle(48, 55, 73)
+1
+>>> right_angle_triangle(1, 1, 1)
+0
+>>> right_angle_triangle(2, 2, 10)
+0

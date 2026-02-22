@@ -1,0 +1,32 @@
+all_prefixes = 入力 string に対し {
+    結果 = []
+    長さ = |string|
+    i = 0
+
+    長さ回、くり返す {
+        プレフィックス = []
+        j = 0
+        上限 = i
+        上限を増やす
+
+        上限回、くり返す {
+            プレフィックスの末尾に string[j] を 追加する
+            jを増やす
+        }
+
+        結果の末尾に プレフィックス を 追加する
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> all_prefixes("abc")
+["a", "ab", "abc"]
+# テストケース
+>>> all_prefixes("")
+[]
+>>> all_prefixes("asdfgh")
+["a", "as", "asd", "asdf", "asdfg", "asdfgh"]
+>>> all_prefixes("WWW")
+["W", "WW", "WWW"]

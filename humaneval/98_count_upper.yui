@@ -1,0 +1,65 @@
+標準ライブラリを使う
+
+count_upper = 入力 s に対し {
+    length = |s|
+    count = 0
+
+    # Uppercase vowels: A=65, E=69, I=73, O=79, U=85
+    i = 0
+    100回、くり返す {
+        もし i が length より小さいならば、{
+            remainder = 剰余(i, 2)
+            もし remainder が 0 ならば、{  # even index
+                char = s[i]
+                is_vowel = 0
+
+                もし char が 65 ならば、{  # A
+                    is_vowel = 1
+                }
+                もし char が 69 ならば、{  # E
+                    is_vowel = 1
+                }
+                もし char が 73 ならば、{  # I
+                    is_vowel = 1
+                }
+                もし char が 79 ならば、{  # O
+                    is_vowel = 1
+                }
+                もし char が 85 ならば、{  # U
+                    is_vowel = 1
+                }
+
+                もし is_vowel が 1 ならば、{
+                    countを増やす
+                }
+            }
+            i = 和(i, 2)
+        }
+    }
+
+    countが答え
+}
+
+>>> count_upper([97, 66, 67, 100, 69, 102])
+1
+
+>>> count_upper([97, 98, 99, 100, 101, 102, 103])
+0
+
+>>> count_upper([100, 66, 66, 69])
+0
+# テストケース
+>>> count_upper("aBCdEf")
+1
+>>> count_upper("abcdefg")
+0
+>>> count_upper("dBBE")
+0
+>>> count_upper("B")
+0
+>>> count_upper("U")
+1
+>>> count_upper("")
+0
+>>> count_upper("EEEE")
+2

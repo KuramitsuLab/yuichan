@@ -1,0 +1,176 @@
+標準ライブラリを使う
+
+get_closest_vowel = 入力 word に対し {
+    length = |word|
+    result = []
+
+    もし length が 3 より小さいならば、{
+        resultが答え
+    }
+
+    # Vowels: a=97, e=101, i=105, o=111, u=117, A=65, E=69, I=73, O=79, U=85
+
+    # Search from right (len-2 down to 1)
+    i = 差(length, 2)
+    found = 0
+    1000回、くり返す {
+        もし found が 0 ならば、{
+            もし i が 0 より大きいならば、{
+                char = word[i]
+
+                # Check if current char is vowel
+                is_curr_vowel = 0
+                もし char が 97 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 101 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 105 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 111 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 117 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 65 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 69 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 73 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 79 ならば、{
+                    is_curr_vowel = 1
+                }
+                もし char が 85 ならば、{
+                    is_curr_vowel = 1
+                }
+
+                もし is_curr_vowel が 1 ならば、{
+                    # Get neighbors
+                    prev_idx = 差(i, 1)
+                    next_idx = 和(i, 1)
+                    prev = word[prev_idx]
+                    next = word[next_idx]
+
+                    # Check if prev is consonant (not vowel)
+                    prev_vowel = 0
+                    もし prev が 97 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 101 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 105 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 111 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 117 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 65 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 69 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 73 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 79 ならば、{
+                        prev_vowel = 1
+                    }
+                    もし prev が 85 ならば、{
+                        prev_vowel = 1
+                    }
+
+                    # Check if next is consonant (not vowel)
+                    next_vowel = 0
+                    もし next が 97 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 101 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 105 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 111 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 117 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 65 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 69 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 73 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 79 ならば、{
+                        next_vowel = 1
+                    }
+                    もし next が 85 ならば、{
+                        next_vowel = 1
+                    }
+
+                    # Both must be consonants
+                    both_consonants = 0
+                    もし prev_vowel が 0 ならば、{
+                        もし next_vowel が 0 ならば、{
+                            both_consonants = 1
+                        }
+                    }
+
+                    もし both_consonants が 1 ならば、{
+                        resultの末尾に char を 追加する
+                        found = 1
+                    }
+                }
+                iを減らす
+            }
+        }
+    }
+
+    resultが答え
+}
+
+>>> get_closest_vowel([121, 111, 103, 117, 114, 116])
+[117]
+# テストケース
+>>> get_closest_vowel("yogurt")
+"u"
+>>> get_closest_vowel("full")
+"u"
+>>> get_closest_vowel("easy")
+""
+>>> get_closest_vowel("eAsy")
+""
+>>> get_closest_vowel("ali")
+""
+>>> get_closest_vowel("bad")
+"a"
+>>> get_closest_vowel("most")
+"o"
+>>> get_closest_vowel("ab")
+""
+>>> get_closest_vowel("ba")
+""
+>>> get_closest_vowel("quick")
+""
+>>> get_closest_vowel("anime")
+"i"
+>>> get_closest_vowel("Asia")
+""
+>>> get_closest_vowel("Above")
+"o"

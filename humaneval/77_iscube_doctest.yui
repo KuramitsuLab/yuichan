@@ -1,0 +1,17 @@
+# テストケース
+>>> iscube(1)
+1
+>>> iscube(2)
+0
+>>> iscube(-1)
+1
+>>> iscube(64)
+1
+>>> iscube(180)
+0
+>>> iscube(1000)
+1
+>>> iscube(0)
+1
+>>> iscube(1729)
+0

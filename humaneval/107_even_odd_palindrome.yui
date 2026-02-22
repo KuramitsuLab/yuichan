@@ -1,0 +1,74 @@
+標準ライブラリを使う
+
+even_odd_palindrome = 入力 n に対し {
+    even_count = 0
+    odd_count = 0
+
+    i = 1
+    n回、くり返す {
+        # Check if palindrome
+        digits = []
+        temp = i
+        100回、くり返す {
+            もし temp が 0 より大きいならば、{
+                digit = 剰余(temp, 10)
+                digitsの末尾に digit を 追加する
+                temp = 商(temp, 10)
+            }
+        }
+
+        # Check if palindrome
+        length = |digits|
+        is_palindrome = 1
+        j = 0
+        half = 商(length, 2)
+        half回、くり返す {
+            front_idx = j
+            back_idx = 差(差(length, j), 1)
+            もし digits[front_idx] が digits[back_idx] 以外 ならば、{
+                is_palindrome = 0
+            }
+            jを増やす
+        }
+
+        もし is_palindrome が 1 ならば、{
+            remainder = 剰余(i, 2)
+            もし remainder が 0 ならば、{
+                even_countを増やす
+            }
+            そうでなければ {
+                odd_countを増やす
+            }
+        }
+
+        iを増やす
+    }
+
+    result = []
+    resultの末尾に even_count を 追加する
+    resultの末尾に odd_count を 追加する
+    resultが答え
+}
+
+>>> even_odd_palindrome(3)
+[1, 2]
+
+>>> even_odd_palindrome(12)
+[4, 6]
+# テストケース
+>>> even_odd_palindrome(123)
+[8, 13]
+>>> even_odd_palindrome(12)
+[4, 6]
+>>> even_odd_palindrome(3)
+[1, 2]
+>>> even_odd_palindrome(63)
+[6, 8]
+>>> even_odd_palindrome(25)
+[5, 6]
+>>> even_odd_palindrome(19)
+[4, 6]
+>>> even_odd_palindrome(9)
+[4, 5]
+>>> even_odd_palindrome(1)
+[0, 1]

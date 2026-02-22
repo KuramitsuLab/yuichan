@@ -1,0 +1,68 @@
+標準ライブラリを使う
+
+triples_sum_to_zero = 入力 l に対し {
+    長さ = |l|
+    結果 = 0
+    i = 0
+
+    長さ回、くり返す {
+        値1 = l[i]
+        j = 和(i, 1)
+
+        差(長さ, j)回、くり返す {
+            もし j が 長さ より小さいならば、{
+                値2 = l[j]
+                k = 和(j, 1)
+
+                差(長さ, k)回、くり返す {
+                    もし k が 長さ より小さいならば、{
+                        値3 = l[k]
+                        合計 = 和(値1, 値2, 値3)
+                        もし 合計 が 0 ならば、{
+                            結果 = 1
+                        }
+                    }
+                    kを増やす
+                }
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> triples_sum_to_zero([1, 3, 5, 0])
+0
+
+>>> triples_sum_to_zero([1, 3, -2, 1])
+1
+
+>>> triples_sum_to_zero([1, 2, 3, 7])
+0
+
+>>> triples_sum_to_zero([2, 4, -5, 3, 9, 7])
+1
+
+>>> triples_sum_to_zero([1])
+0
+# テストケース
+>>> triples_sum_to_zero([1, 3, 5, 0])
+0
+>>> triples_sum_to_zero([1, 3, 5, -1])
+0
+>>> triples_sum_to_zero([1, 3, -2, 1])
+1
+>>> triples_sum_to_zero([1, 2, 3, 7])
+0
+>>> triples_sum_to_zero([1, 2, 5, 7])
+0
+>>> triples_sum_to_zero([2, 4, -5, 3, 9, 7])
+1
+>>> triples_sum_to_zero([1])
+0
+>>> triples_sum_to_zero([1, 3, 5, -100])
+0
+>>> triples_sum_to_zero([100, 3, 5, -100])
+0

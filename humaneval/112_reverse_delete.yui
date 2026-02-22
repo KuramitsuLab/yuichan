@@ -1,0 +1,68 @@
+標準ライブラリを使う
+
+reverse_delete = 入力 s, c に対し {
+    s_len = |s|
+    c_len = |c|
+    result_str = []
+
+    # Remove characters
+    i = 0
+    s_len回、くり返す {
+        char = s[i]
+        should_remove = 0
+
+        j = 0
+        c_len回、くり返す {
+            もし char が c[j] ならば、{
+                should_remove = 1
+            }
+            jを増やす
+        }
+
+        もし should_remove が 0 ならば、{
+            result_strの末尾に char を 追加する
+        }
+
+        iを増やす
+    }
+
+    # Check palindrome
+    rs_len = |result_str|
+    is_palindrome = 1
+    i = 0
+    half = 商(rs_len, 2)
+    half回、くり返す {
+        back_idx = 差(差(rs_len, i), 1)
+        もし result_str[i] が result_str[back_idx] 以外 ならば、{
+            is_palindrome = 0
+        }
+        iを増やす
+    }
+
+    result = []
+    resultの末尾に result_str を 追加する
+    resultの末尾に is_palindrome を 追加する
+    resultが答え
+}
+
+>>> reverse_delete([97, 98, 99, 100, 101], [97, 101])
+[[98, 99, 100], 0]
+# テストケース
+>>> reverse_delete("abcde","ae")
+["bcd",0]
+>>> reverse_delete("abcdef", "b")
+["acdef",0]
+>>> reverse_delete("abcdedcba","ab")
+["cdedc",1]
+>>> reverse_delete("dwik","w")
+["dik",0]
+>>> reverse_delete("a","a")
+["",1]
+>>> reverse_delete("abcdedcba","")
+["abcdedcba",1]
+>>> reverse_delete("abcdedcba","v")
+["abcdedcba",1]
+>>> reverse_delete("vabba","v")
+["abba",1]
+>>> reverse_delete("mamma", "mia")
+["", 1]

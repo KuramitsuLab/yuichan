@@ -1,0 +1,13 @@
+# テストケース
+>>> is_bored("Hello world")
+0
+>>> is_bored("Is the sky blue?")
+0
+>>> is_bored("I love It !")
+1
+>>> is_bored("bIt")
+0
+>>> is_bored("I feel good today. I will be productive. will kill It")
+2
+>>> is_bored("You and I are going for a walk")
+0

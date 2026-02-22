@@ -1,0 +1,108 @@
+標準ライブラリを使う
+
+find_max = 入力 words に対し {
+    length = |words|
+    result = []
+
+    もし length が 0 ならば、{
+        resultが答え
+    }
+
+    best_word = words[0]
+    best_unique = 0
+
+    i = 0
+    length回、くり返す {
+        word = words[i]
+        word_len = |word|
+
+        # Count unique characters
+        unique_count = 0
+        j = 0
+        word_len回、くり返す {
+            char = word[j]
+            # Check if this char appears earlier
+            is_unique = 1
+            k = 0
+            j回、くり返す {
+                もし word[k] が char ならば、{
+                    is_unique = 0
+                }
+                kを増やす
+            }
+            もし is_unique が 1 ならば、{
+                unique_countを増やす
+            }
+            jを増やす
+        }
+
+        # Update best if this has more unique chars
+        should_update = 0
+        もし unique_count が best_unique より大きいならば、{
+            should_update = 1
+        }
+
+        # If same unique count, use lexicographic order
+        もし unique_count が best_unique ならば、{
+            # Compare lexicographically
+            best_len = |best_word|
+            min_len = word_len
+            もし best_len が word_len より小さいならば、{
+                min_len = best_len
+            }
+
+            m = 0
+            is_less = 0
+            found_diff = 0
+            min_len回、くり返す {
+                もし found_diff が 0 ならば、{
+                    もし word[m] が best_word[m] より小さいならば、{
+                        is_less = 1
+                        found_diff = 1
+                    }
+                    もし word[m] が best_word[m] より大きいならば、{
+                        found_diff = 1
+                    }
+                }
+                mを増やす
+            }
+
+            もし is_less が 1 ならば、{
+                should_update = 1
+            }
+        }
+
+        もし should_update が 1 ならば、{
+            best_word = word
+            best_unique = unique_count
+        }
+
+        iを増やす
+    }
+
+    best_wordが答え
+}
+
+>>> find_max([[110, 97, 109, 101], [111, 102], [115, 116, 114, 105, 110, 103]])
+[115, 116, 114, 105, 110, 103]
+# テストケース
+>>> find_max(["name", "of", "string"])
+"string"
+>>> find_max(["name", "enam", "game"])
+"enam"
+>>> find_max(["aaaaaaa", "bb", "cc"])
+"aaaaaaa"
+>>> find_max(["abc", "cba"])
+"abc"
+>>> find_max(["play", "this", "game", "of","footbott"])
+"footbott"
+>>> find_max(["we", "are", "gonna", "rock"])
+"gonna"
+>>> find_max(["we", "are", "a", "mad", "nation"])
+"nation"
+>>> find_max(["this", "is", "a", "prrk"])
+"this"
+>>> find_max(["b"])
+"b"
+>>> find_max(["play", "play", "play"])
+"play"

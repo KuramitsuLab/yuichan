@@ -1,0 +1,17 @@
+# テストケース
+>>> is_happy("a")
+0
+>>> is_happy("aa")
+0
+>>> is_happy("abcd")
+1
+>>> is_happy("aabb")
+0
+>>> is_happy("adb")
+1
+>>> is_happy("xyy")
+0
+>>> is_happy("iopaxpoi")
+1
+>>> is_happy("iopaxioi")
+0

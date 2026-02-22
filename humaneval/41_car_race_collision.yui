@@ -1,0 +1,25 @@
+標準ライブラリを使う
+
+car_race_collision = 入力 n に対し {
+    積(n, n)が答え
+}
+
+>>> car_race_collision(2)
+4
+
+>>> car_race_collision(3)
+9
+
+>>> car_race_collision(10)
+100
+# テストケース
+>>> car_race_collision(2)
+4
+>>> car_race_collision(3)
+9
+>>> car_race_collision(4)
+16
+>>> car_race_collision(8)
+64
+>>> car_race_collision(10)
+100

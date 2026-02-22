@@ -1,0 +1,9 @@
+# テストケース
+>>> special_factorial(4)
+288
+>>> special_factorial(5)
+34560
+>>> special_factorial(7)
+125411328000
+>>> special_factorial(1)
+1

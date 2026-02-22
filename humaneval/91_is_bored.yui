@@ -1,0 +1,62 @@
+標準ライブラリを使う
+
+is_bored = 入力 S に対し {
+    length = |S|
+    count = 0
+    sentence_start = 1
+
+    i = 0
+    length回、くり返す {
+        char = S[i]
+
+        # Skip spaces when looking for sentence start
+        もし sentence_start が 1 ならば、{
+            もし char が 32 ならば、{  # space - skip it
+                # Do nothing, keep sentence_start = 1
+            }
+            そうでなければ {
+                # Found first non-space character
+                もし char が 73 ならば、{  # 'I'
+                    もし i が 差(length, 1) より小さいならば、{
+                        next_char = S[和(i, 1)]
+                        もし next_char が 32 ならば、{  # space
+                            countを増やす
+                        }
+                    }
+                }
+                sentence_start = 0
+            }
+        }
+
+        # Check for sentence delimiters
+        もし char が 46 ならば、{
+            sentence_start = 1
+        }  # '.'
+        もし char が 63 ならば、{
+            sentence_start = 1
+        }  # '?'
+        もし char が 33 ならば、{
+            sentence_start = 1
+        }  # '!'
+
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> is_bored([72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100])
+0
+# テストケース
+>>> is_bored("Hello world")
+0
+>>> is_bored("Is the sky blue?")
+0
+>>> is_bored("I love It !")
+1
+>>> is_bored("bIt")
+0
+>>> is_bored("I feel good today. I will be productive. will kill It")
+2
+>>> is_bored("You and I are going for a walk")
+0

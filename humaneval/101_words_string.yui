@@ -1,0 +1,56 @@
+標準ライブラリを使う
+
+words_string = 入力 s に対し {
+    length = |s|
+    result = []
+    current_word = []
+
+    i = 0
+    length回、くり返す {
+        char = s[i]
+
+        もし char が 32 ならば、{  # space
+            もし |current_word| が 0 より大きいならば、{
+                resultの末尾に current_word を 追加する
+                current_word = []
+            }
+        }
+        もし char が 44 ならば、{  # comma
+            もし |current_word| が 0 より大きいならば、{
+                resultの末尾に current_word を 追加する
+                current_word = []
+            }
+        }
+        そうでなければ {
+            もし char が 32 以外 ならば、{
+                もし char が 44 以外 ならば、{
+                    current_wordの末尾に char を 追加する
+                }
+            }
+        }
+
+        iを増やす
+    }
+
+    もし |current_word| が 0 より大きいならば、{
+        resultの末尾に current_word を 追加する
+    }
+
+    resultが答え
+}
+
+>>> words_string([72, 105, 44, 32, 109, 121, 32, 110, 97, 109, 101, 32, 105, 115, 32, 74, 111, 104, 110])
+[[72, 105], [109, 121], [110, 97, 109, 101], [105, 115], [74, 111, 104, 110]]
+# テストケース
+>>> words_string("Hi, my name is John")
+["Hi", "my", "name", "is", "John"]
+>>> words_string("One, two, three, four, five, six")
+["One", "two", "three", "four", "five", "six"]
+>>> words_string("Hi, my name")
+["Hi", "my", "name"]
+>>> words_string("One,, two, three, four, five, six,")
+["One", "two", "three", "four", "five", "six"]
+>>> words_string("")
+[]
+>>> words_string("ahmed     , gamal")
+["ahmed", "gamal"]

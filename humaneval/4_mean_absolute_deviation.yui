@@ -1,0 +1,38 @@
+標準ライブラリを使う
+
+mean_absolute_deviation = 入力 numbers に対し {
+    長さ = |numbers|
+
+    # 平均を計算（浮動小数点）
+    合計 = 和(numbers)
+    合計_float = 積(合計, 1.0)
+    長さ_float = 積(長さ, 1.0)
+    平均 = 商(合計_float, 長さ_float)
+
+    # 絶対偏差の合計を計算
+    偏差合計 = 0.0
+    i = 0
+
+    長さ回、くり返す {
+        値 = numbers[i]
+        値_float = 積(値, 1.0)
+        差分 = 差(値_float, 平均)
+        絶対差分 = 絶対値(差分)
+        偏差合計 = 和(偏差合計, 絶対差分)
+        iを増やす
+    }
+
+    # 平均絶対偏差を計算（浮動小数点）
+    偏差合計_float = 積(偏差合計, 1.0)
+    商(偏差合計_float, 長さ_float)が答え
+}
+
+>>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])
+1.0
+# テストケース
+>>> mean_absolute_deviation([1.0, 2.0, 3.0])
+0.6666666666666666
+>>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])
+1.0
+>>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0, 5.0])
+1.2

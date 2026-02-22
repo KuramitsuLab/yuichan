@@ -1,0 +1,69 @@
+標準ライブラリを使う
+
+hex_key = 入力 num に対し {
+    length = |num|
+    count = 0
+
+    i = 0
+    length回、くり返す {
+        char = num[i]
+        is_prime = 0
+
+        もし char が 50 ならば、{
+            is_prime = 1
+        }
+        もし char が 51 ならば、{
+            is_prime = 1
+        }
+        もし char が 53 ならば、{
+            is_prime = 1
+        }
+        もし char が 55 ならば、{
+            is_prime = 1
+        }
+        もし char が 66 ならば、{
+            is_prime = 1
+        }
+        もし char が 68 ならば、{
+            is_prime = 1
+        }
+
+        もし is_prime が 1 ならば、{
+            countを増やす
+        }
+
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> hex_key([65, 66])
+1
+
+>>> hex_key([49, 48, 55, 55, 69])
+2
+
+>>> hex_key([65, 66, 69, 68, 49, 65, 51, 51])
+4
+
+>>> hex_key([49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 48])
+6
+
+>>> hex_key([50, 48, 50, 48])
+2
+# テストケース
+>>> hex_key("AB")
+1
+>>> hex_key("1077E")
+2
+>>> hex_key("ABED1A33")
+4
+>>> hex_key("2020")
+2
+>>> hex_key("123456789ABCDEF0")
+6
+>>> hex_key("112233445566778899AABBCCDDEEFF00")
+12
+>>> hex_key([])
+0

@@ -1,0 +1,99 @@
+標準ライブラリを使う
+
+anti_shuffle = 入力 s に対し {
+    length = |s|
+    words = []
+    current_word = []
+
+    # Split by space
+    i = 0
+    length回、くり返す {
+        char = s[i]
+        もし char が 32 ならば、{  # space
+            wordsの末尾に current_word を 追加する
+            current_word = []
+        }
+        そうでなければ {
+            current_wordの末尾に char を 追加する
+        }
+        iを増やす
+    }
+    wordsの末尾に current_word を 追加する
+
+    # Sort each word
+    num_words = |words|
+    sorted_words = []
+    i = 0
+    num_words回、くり返す {
+        word = words[i]
+        word_len = |word|
+
+        # Bubble sort word characters
+        j = 0
+        word_len回、くり返す {
+            k = 0
+            limit = 差(差(word_len, j), 1)
+            limit回、くり返す {
+                next_k = 和(k, 1)
+                もし word[k] が word[next_k] より大きいならば、{
+                    temp = word[k]
+                    word[k] = word[next_k]
+                    word[next_k] = temp
+                }
+                kを増やす
+            }
+            jを増やす
+        }
+
+        sorted_wordsの末尾に word を 追加する
+        iを増やす
+    }
+
+    # Join with spaces
+    result = []
+    i = 0
+    num_words回、くり返す {
+        word = sorted_words[i]
+        word_len = |word|
+
+        j = 0
+        word_len回、くり返す {
+            resultの末尾に word[j] を 追加する
+            jを増やす
+        }
+
+        # Add space if not last word
+        last_idx = 差(num_words, 1)
+        もし i が last_idx より小さいならば、{
+            resultの末尾に 32 を 追加する  # space
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> anti_shuffle([72, 105])
+[72, 105]
+
+>>> anti_shuffle([104, 101, 108, 108, 111])
+[101, 104, 108, 108, 111]
+
+>>> anti_shuffle([72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33, 33, 33])
+[72, 101, 108, 108, 111, 32, 33, 33, 33, 87, 100, 108, 111, 114]
+# テストケース
+>>> anti_shuffle("Hi")
+"Hi"
+>>> anti_shuffle("hello")
+"ehllo"
+>>> anti_shuffle("number")
+"bemnru"
+>>> anti_shuffle("abcd")
+"abcd"
+>>> anti_shuffle("Hello World!!!")
+"Hello !!!Wdlor"
+>>> anti_shuffle("")
+""
+>>> anti_shuffle("Hi. My name is Mister Robot. How are you?")
+".Hi My aemn is Meirst .Rboot How aer ?ouy"

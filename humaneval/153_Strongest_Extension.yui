@@ -1,0 +1,94 @@
+標準ライブラリを使う
+
+Strongest_Extension = 入力 class_name, extensions に対し {
+    # Find extension with maximum strength (uppercase - lowercase)
+    ext_count = |extensions|
+    best_ext = []
+    best_strength = -1000
+    first = 1
+
+    i = 0
+    ext_count回、くり返す {
+        ext = extensions[i]
+        ext_len = |ext|
+
+        # Count uppercase and lowercase letters
+        upper_count = 0
+        lower_count = 0
+        j = 0
+        ext_len回、くり返す {
+            char = ext[j]
+            # Uppercase: A-Z (65-90)
+            もし char が 64 より大きいならば、{
+                もし char が 91 より小さいならば、{
+                    upper_countを増やす
+                }
+            }
+            # Lowercase: a-z (97-122)
+            もし char が 96 より大きいならば、{
+                もし char が 123 より小さいならば、{
+                    lower_countを増やす
+                }
+            }
+            jを増やす
+        }
+
+        strength = 差(upper_count, lower_count)
+
+        # Update best if this is stronger (or first)
+        もし first が 1 ならば、{
+            best_ext = ext
+            best_strength = strength
+            first = 0
+        }
+        そうでなければ {
+            もし strength が best_strength より大きいならば、{
+                best_ext = ext
+                best_strength = strength
+            }
+        }
+
+        iを増やす
+    }
+
+    # Build result: class_name.best_ext
+    result = []
+    class_len = |class_name|
+    i = 0
+    class_len回、くり返す {
+        resultの末尾に class_name[i] を 追加する
+        iを増やす
+    }
+    resultの末尾に 46 を 追加する  # '.'
+
+    best_len = |best_ext|
+    i = 0
+    best_len回、くり返す {
+        resultの末尾に best_ext[i] を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> Strongest_Extension([77, 121], [[97, 65, 97]])
+[77, 121, 46, 97, 65, 97]
+# テストケース
+>>> Strongest_Extension("Watashi", ["tEN", "niNE", "eIGHt8OKe"])
+"Watashi.eIGHt8OKe"
+>>> Strongest_Extension("Boku123", ["nani", "NazeDa", "YEs.WeCaNe", "32145tggg"])
+"Boku123.YEs.WeCaNe"
+>>> Strongest_Extension("**YESIMHERE", ["t", "eMptY", "nothing", "zeR00", "NuLl**", "123NoooneB321"])
+"**YESIMHERE.NuLl**"
+>>> Strongest_Extension("K", ["Ta", "TAR", "t234An", "cosSo"])
+"K.TAR"
+>>> Strongest_Extension("__HAHA", ["Tab", "123", "781345", "-*-"])
+"__HAHA.123"
+>>> Strongest_Extension("YameRore", ["HhAas", "okIWILL123", "WorkOut", "Fails", "-*-"])
+"YameRore.okIWILL123"
+>>> Strongest_Extension("finNNalLLly", ["Die", "NowW", "Wow", "WoW"])
+"finNNalLLly.WoW"
+>>> Strongest_Extension("*", ["Bb", "91245"])
+"*.Bb"
+>>> Strongest_Extension("Sp", ["671235", "Bb"])
+"Sp.671235"

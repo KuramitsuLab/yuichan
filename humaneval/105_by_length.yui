@@ -1,0 +1,128 @@
+標準ライブラリを使う
+
+by_length = 入力 arr に対し {
+    length = |arr|
+
+    # Filter and collect valid numbers (1-9)
+    filtered = []
+    i = 0
+    length回、くり返す {
+        value = arr[i]
+        is_valid = 0
+        もし value が 0 より大きいならば、{
+            もし value が 10 より小さいならば、{
+                is_valid = 1
+            }
+        }
+        もし is_valid が 1 ならば、{
+            filteredの末尾に value を 追加する
+        }
+        iを増やす
+    }
+
+    # Sort descending (bubble sort)
+    filtered_len = |filtered|
+    i = 0
+    filtered_len回、くり返す {
+        j = 0
+        limit = 差(差(filtered_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            もし filtered[j] が filtered[next_j] より小さいならば、{
+                temp = filtered[j]
+                filtered[j] = filtered[next_j]
+                filtered[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # Map to names
+    result = []
+    i = 0
+    filtered_len回、くり返す {
+        value = filtered[i]
+        name = []
+
+        もし value が 1 ならば、{
+            nameの末尾に 79 を 追加する  # O
+            nameの末尾に 110 を 追加する  # n
+            nameの末尾に 101 を 追加する  # e
+        }
+        もし value が 2 ならば、{
+            nameの末尾に 84 を 追加する  # T
+            nameの末尾に 119 を 追加する  # w
+            nameの末尾に 111 を 追加する  # o
+        }
+        もし value が 3 ならば、{
+            nameの末尾に 84 を 追加する  # T
+            nameの末尾に 104 を 追加する  # h
+            nameの末尾に 114 を 追加する  # r
+            nameの末尾に 101 を 追加する  # e
+            nameの末尾に 101 を 追加する  # e
+        }
+        もし value が 4 ならば、{
+            nameの末尾に 70 を 追加する  # F
+            nameの末尾に 111 を 追加する  # o
+            nameの末尾に 117 を 追加する  # u
+            nameの末尾に 114 を 追加する  # r
+        }
+        もし value が 5 ならば、{
+            nameの末尾に 70 を 追加する  # F
+            nameの末尾に 105 を 追加する  # i
+            nameの末尾に 118 を 追加する  # v
+            nameの末尾に 101 を 追加する  # e
+        }
+        もし value が 6 ならば、{
+            nameの末尾に 83 を 追加する  # S
+            nameの末尾に 105 を 追加する  # i
+            nameの末尾に 120 を 追加する  # x
+        }
+        もし value が 7 ならば、{
+            nameの末尾に 83 を 追加する  # S
+            nameの末尾に 101 を 追加する  # e
+            nameの末尾に 118 を 追加する  # v
+            nameの末尾に 101 を 追加する  # e
+            nameの末尾に 110 を 追加する  # n
+        }
+        もし value が 8 ならば、{
+            nameの末尾に 69 を 追加する  # E
+            nameの末尾に 105 を 追加する  # i
+            nameの末尾に 103 を 追加する  # g
+            nameの末尾に 104 を 追加する  # h
+            nameの末尾に 116 を 追加する  # t
+        }
+        もし value が 9 ならば、{
+            nameの末尾に 78 を 追加する  # N
+            nameの末尾に 105 を 追加する  # i
+            nameの末尾に 110 を 追加する  # n
+            nameの末尾に 101 を 追加する  # e
+        }
+
+        resultの末尾に name を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> by_length([2, 1, 1, 4, 5, 8, 2, 3])
+[[69, 105, 103, 104, 116], [70, 105, 118, 101], [70, 111, 117, 114], [84, 104, 114, 101, 101], [84, 119, 111], [84, 119, 111], [79, 110, 101], [79, 110, 101]]
+
+>>> by_length([])
+[]
+
+>>> by_length([1, -1, 55])
+[[79, 110, 101]]
+# テストケース
+>>> by_length([2, 1, 1, 4, 5, 8, 2, 3])
+["Eight", "Five", "Four", "Three", "Two", "Two", "One", "One"]
+>>> by_length([])
+[]
+>>> by_length([1, -1 , 55])
+["One"]
+>>> by_length([1, -1, 3, 2])
+["Three", "Two", "One"]
+>>> by_length([9, 4, 8])
+["Nine", "Eight", "Four"]

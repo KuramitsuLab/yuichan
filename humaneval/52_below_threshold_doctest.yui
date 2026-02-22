@@ -1,0 +1,13 @@
+# テストケース
+>>> below_threshold([1, 2, 4, 10], 100)
+1
+>>> below_threshold([1, 20, 4, 10], 5)
+0
+>>> below_threshold([1, 20, 4, 10], 21)
+1
+>>> below_threshold([1, 20, 4, 10], 22)
+1
+>>> below_threshold([1, 8, 4, 10], 11)
+1
+>>> below_threshold([1, 8, 4, 10], 10)
+0

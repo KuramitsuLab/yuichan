@@ -1,0 +1,77 @@
+標準ライブラリを使う
+
+circular_shift = 入力 x, shift に対し {
+    # Convert number to digits
+    digits = []
+    temp = x
+    100回、くり返す {
+        もし temp が 0 より大きいならば、{
+            digit = 剰余(temp, 10)
+            digitsの末尾に digit を 追加する
+            temp = 商(temp, 10)
+        }
+    }
+
+    # Reverse to get correct order
+    length = |digits|
+    reversed_digits = []
+    i = 0
+    length回、くり返す {
+        idx = 差(差(length, i), 1)
+        reversed_digitsの末尾に digits[idx] を 追加する
+        iを増やす
+    }
+
+    # If shift > length, return reversed
+    result = []
+    もし shift が length より大きいならば、{
+        result = digits
+    }
+    そうでなければ {
+        # Circular shift right
+        # Take last 'shift' digits and put them first
+        i = 0
+        start_idx = 差(length, shift)
+        shift回、くり返す {
+            idx = 和(start_idx, i)
+            resultの末尾に reversed_digits[idx] を 追加する
+            iを増やす
+        }
+        # Then add the remaining digits
+        i = 0
+        start_idx回、くり返す {
+            resultの末尾に reversed_digits[i] を 追加する
+            iを増やす
+        }
+    }
+
+    # Convert to character codes
+    result_len = |result|
+    char_result = []
+    i = 0
+    result_len回、くり返す {
+        digit = result[i]
+        char_code = 和(48, digit)  # '0' is 48
+        char_resultの末尾に char_code を 追加する
+        iを増やす
+    }
+
+    char_resultが答え
+}
+
+>>> circular_shift(12, 1)
+[50, 49]
+
+>>> circular_shift(12, 2)
+[49, 50]
+# テストケース
+>>> circular_shift(100, 2)
+"001"
+>>> circular_shift(12, 2)
+"12"
+>>> circular_shift(97, 8)
+"79"
+>>> circular_shift(12, 1)
+"21"
+>>> circular_shift(11, 101)
+"11"

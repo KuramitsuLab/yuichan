@@ -1,0 +1,100 @@
+標準ライブラリを使う
+
+parse_music = 入力 music_string に対し {
+    length = |music_string|
+    result = []
+    current = []
+
+    i = 0
+    length回、くり返す {
+        char = music_string[i]
+
+        もし char が 32 ならば、{  # space
+            もし |current| が 0 より大きいならば、{
+                # Check what note it is
+                cur_len = |current|
+                value = 0
+
+                # Check for 'o' (111)
+                もし cur_len が 1 ならば、{
+                    もし current[0] が 111 ならば、{
+                        value = 4
+                    }
+                }
+
+                # Check for 'o|' (111, 124)
+                もし cur_len が 2 ならば、{
+                    もし current[0] が 111 ならば、{
+                        もし current[1] が 124 ならば、{
+                            value = 2
+                        }
+                    }
+                }
+
+                # Check for '.|' (46, 124)
+                もし cur_len が 2 ならば、{
+                    もし current[0] が 46 ならば、{
+                        もし current[1] が 124 ならば、{
+                            value = 1
+                        }
+                    }
+                }
+
+                もし value が 0 より大きいならば、{
+                    resultの末尾に value を 追加する
+                }
+                current = []
+            }
+        }
+        そうでなければ {
+            currentの末尾に char を 追加する
+        }
+
+        iを増やす
+    }
+
+    # Process last note
+    もし |current| が 0 より大きいならば、{
+        cur_len = |current|
+        value = 0
+
+        もし cur_len が 1 ならば、{
+            もし current[0] が 111 ならば、{
+                value = 4
+            }
+        }
+
+        もし cur_len が 2 ならば、{
+            もし current[0] が 111 ならば、{
+                もし current[1] が 124 ならば、{
+                    value = 2
+                }
+            }
+            もし current[0] が 46 ならば、{
+                もし current[1] が 124 ならば、{
+                    value = 1
+                }
+            }
+        }
+
+        もし value が 0 より大きいならば、{
+            resultの末尾に value を 追加する
+        }
+    }
+
+    resultが答え
+}
+
+>>> parse_music([111, 32, 111, 124, 32, 46, 124, 32, 111, 124, 32, 111, 124, 32, 46, 124, 32, 46, 124, 32, 46, 124, 32, 46, 124, 32, 111, 32, 111])
+[4, 2, 1, 2, 2, 1, 1, 1, 1, 4, 4]
+# テストケース
+>>> parse_music("")
+[]
+>>> parse_music("o o o o")
+[4, 4, 4, 4]
+>>> parse_music(".| .| .| .|")
+[1, 1, 1, 1]
+>>> parse_music("o| o| .| .| o o o o")
+[2, 2, 1, 1, 4, 4, 4, 4]
+>>> parse_music("o| .| o| .| o o| o o|")
+[2, 1, 2, 1, 4, 2, 4, 2]

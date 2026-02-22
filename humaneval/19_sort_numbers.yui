@@ -1,0 +1,167 @@
+標準ライブラリを使う
+
+sort_numbers = 入力 numbers に対し {
+    length = |numbers|
+    words = []
+    current_word = []
+
+    # Split by space
+    i = 0
+    length回、くり返す {
+        char = numbers[i]
+        もし char が 32 ならば、{
+            もし |current_word| が 0 より大きいならば、{
+                wordsの末尾に current_word を 追加する
+                current_word = []
+            }
+        }
+        そうでなければ {
+            current_wordの末尾に char を 追加する
+        }
+        iを増やす
+    }
+    もし |current_word| が 0 より大きいならば、{
+        wordsの末尾に current_word を 追加する
+    }
+
+    # Assign values and sort (simple bubble sort)
+    num_words = |words|
+    i = 0
+    num_words回、くり返す {
+        j = 0
+        limit = 差(差(num_words, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+
+            # Determine values
+            val1 = 10
+            val2 = 10
+
+            # Check words[j]
+            w1_len = |words[j]|
+            もし w1_len が 4 ならば、{ 
+                val1 = 0 
+            }  # zero
+            もし w1_len が 3 ならば、{
+                もし words[j][0] が 111 ならば、{ 
+                    val1 = 1 
+                }  # one
+                もし words[j][0] が 116 ならば、{ 
+                    val1 = 2 
+                }  # two
+                もし words[j][0] が 115 ならば、{ 
+                    val1 = 6
+                }  # six
+            }
+            もし w1_len が 5 ならば、{
+                もし words[j][0] が 116 ならば、{ 
+                    val1 = 3 
+                }  # three
+                もし words[j][1] が 105 ならば、{ 
+                    val1 = 8 
+                }  # eight
+                もし words[j][0] が 115 ならば、{ 
+                    val1 = 7 
+                }  # seven
+            }
+            もし w1_len が 4 ならば、{
+                もし words[j][0] が 102 ならば、{
+                    # four or five - check 2nd char
+                    もし words[j][1] が 111 ならば、{
+                        val1 = 4
+                    }  # four (o)
+                    もし words[j][1] が 105 ならば、{
+                        val1 = 5
+                    }  # five (i)
+                }
+                もし words[j][0] が 110 ならば、{
+                    val1 = 9
+                }  # nine
+            }
+
+            # Check words[next_j]
+            w2_len = |words[next_j]|
+            もし w2_len が 4 ならば、{ 
+                val2 = 0 
+            }
+            もし w2_len が 3 ならば、{
+                もし words[next_j][0] が 111 ならば、{ 
+                    val2 = 1 
+                }
+                もし words[next_j][0] が 116 ならば、{ 
+                    val2 = 2 
+                }
+                もし words[next_j][0] が 115 ならば、{ 
+                    val2 = 6 
+                }
+            }
+            もし w2_len が 5 ならば、{
+                もし words[next_j][0] が 116 ならば、{ 
+                    val2 = 3 
+                }
+                もし words[next_j][1] が 105 ならば、{ 
+                    val2 = 8 
+                }
+                もし words[next_j][0] が 115 ならば、{ 
+                    val2 = 7 
+                }
+            }
+            もし w2_len が 4 ならば、{
+                もし words[next_j][0] が 102 ならば、{
+                    # four or five - check 2nd char
+                    もし words[next_j][1] が 111 ならば、{
+                        val2 = 4
+                    }  # four (o)
+                    もし words[next_j][1] が 105 ならば、{
+                        val2 = 5
+                    }  # five (i)
+                }
+                もし words[next_j][0] が 110 ならば、{
+                    val2 = 9
+                }  # nine
+            }
+
+            もし val1 が val2 より大きいならば、{
+                temp = words[j]
+                words[j] = words[next_j]
+                words[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # Join with spaces
+    result = []
+    i = 0
+    num_words回、くり返す {
+        word = words[i]
+        word_len = |word|
+        j = 0
+        word_len回、くり返す {
+            resultの末尾に word[j] を 追加する
+            jを増やす
+        }
+        last_idx = 差(num_words, 1)
+        もし i が last_idx より小さいならば、{
+            resultの末尾に 32 を 追加する
+        }
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> sort_numbers([116, 104, 114, 101, 101, 32, 111, 110, 101, 32, 102, 105, 118, 101])
+[111, 110, 101, 32, 116, 104, 114, 101, 101, 32, 102, 105, 118, 101]
+# テストケース
+>>> sort_numbers("")
+""
+>>> sort_numbers("three")
+"three"
+>>> sort_numbers("three five nine")
+"three five nine"
+>>> sort_numbers("five zero four seven nine eight")
+"zero four five seven eight nine"
+>>> sort_numbers("six five four three two one zero")
+"zero one two three four five six"

@@ -1,0 +1,26 @@
+標準ライブラリを使う
+
+greatest_common_divisor = 入力 a, b に対し {
+    もし b が 0 ならば、{
+        aが答え
+    }
+    そうでなければ {
+        余り = 剰余(a, b)
+        greatest_common_divisor(b, 余り)が答え
+    }
+}
+
+>>> greatest_common_divisor(3, 5)
+1
+
+>>> greatest_common_divisor(25, 15)
+5
+# テストケース
+>>> greatest_common_divisor(3, 7)
+1
+>>> greatest_common_divisor(10, 15)
+5
+>>> greatest_common_divisor(49, 14)
+7
+>>> greatest_common_divisor(144, 60)
+12

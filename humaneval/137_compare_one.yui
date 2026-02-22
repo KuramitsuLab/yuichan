@@ -1,0 +1,152 @@
+標準ライブラリを使う
+
+compare_one = 入力 a, b に対し {
+    # Parse a to float
+    a_val = 0.0
+    a_is_str = 文字列判定(a)
+
+    もし a_is_str が true ならば、{
+        # Parse string to float (handle comma as decimal)
+        a_len = |a|
+        a_int = 0
+        a_frac = 0.0
+        found_dec = 0
+        dec_places = 0
+
+        i = 0
+        a_len回、くり返す {
+            char = a[i]
+
+            # Check for digit (48-57)
+            is_digit = 0
+            digit = 0
+            もし char が 47 より大きいならば、{
+                もし char が 58 より小さいならば、{
+                    is_digit = 1
+                    digit = 差(char, 48)
+                }
+            }
+
+            もし is_digit が 1 ならば、{
+                もし found_dec が 0 ならば、{
+                    a_int = 和(積(a_int, 10), digit)
+                }
+                そうでなければ {
+                    dec_placesを増やす
+                    divisor = 1.0
+                    j = 0
+                    dec_places回、くり返す {
+                        divisor = 積(divisor, 10.0)
+                        jを増やす
+                    }
+                    digit_f = 少数化(digit)
+                    frac = 商(digit_f, divisor)
+                    a_frac = 和(a_frac, frac)
+                }
+            }
+
+            # Comma (44) or period (46) = decimal point
+            もし char が 44 ならば、{
+                found_dec = 1
+            }
+            もし char が 46 ならば、{
+                found_dec = 1
+            }
+
+            iを増やす
+        }
+
+        a_int_f = 少数化(a_int)
+        a_val = 和(a_int_f, a_frac)
+    }
+    そうでなければ {
+        # It's a number - convert to float
+        a_val = 少数化(a)
+    }
+
+    # Parse b to float
+    b_val = 0.0
+    b_is_str = 文字列判定(b)
+
+    もし b_is_str が true ならば、{
+        # Parse string to float (handle comma as decimal)
+        b_len = |b|
+        b_int = 0
+        b_frac = 0.0
+        found_dec = 0
+        dec_places = 0
+
+        i = 0
+        b_len回、くり返す {
+            char = b[i]
+
+            # Check for digit (48-57)
+            is_digit = 0
+            digit = 0
+            もし char が 47 より大きいならば、{
+                もし char が 58 より小さいならば、{
+                    is_digit = 1
+                    digit = 差(char, 48)
+                }
+            }
+
+            もし is_digit が 1 ならば、{
+                もし found_dec が 0 ならば、{
+                    b_int = 和(積(b_int, 10), digit)
+                }
+                そうでなければ {
+                    dec_placesを増やす
+                    divisor = 1.0
+                    j = 0
+                    dec_places回、くり返す {
+                        divisor = 積(divisor, 10.0)
+                        jを増やす
+                    }
+                    digit_f = 少数化(digit)
+                    frac = 商(digit_f, divisor)
+                    b_frac = 和(b_frac, frac)
+                }
+            }
+
+            # Comma (44) or period (46) = decimal point
+            もし char が 44 ならば、{
+                found_dec = 1
+            }
+            もし char が 46 ならば、{
+                found_dec = 1
+            }
+
+            iを増やす
+        }
+
+        b_int_f = 少数化(b_int)
+        b_val = 和(b_int_f, b_frac)
+    }
+    そうでなければ {
+        # It's a number - convert to float
+        b_val = 少数化(b)
+    }
+
+    # Compare values
+    result = []
+
+    # Check if equal
+    もし a_val が b_val ならば、{
+        result = []
+    }
+    そうでなければ {
+        もし a_val が b_val より大きいならば、{
+            result = a
+        }
+        そうでなければ {
+            result = b
+        }
+    }
+
+    resultが答え
+}
+
+>>> compare_one(1, 2)
+2
+>>> compare_one(1, 1)
+[]

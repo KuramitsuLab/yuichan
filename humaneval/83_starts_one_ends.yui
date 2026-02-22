@@ -1,0 +1,41 @@
+標準ライブラリを使う
+
+starts_one_ends = 入力 n に対し {
+    result = 1
+
+    もし n が 1 ならば、{
+        resultが答え
+    }
+
+    # Calculate 10^(n-2)
+    power = 1
+    exp = 差(n, 2)
+    i = 0
+    exp回、くり返す {
+        power = 積(power, 10)
+        iを増やす
+    }
+
+    result = 積(18, power)
+    resultが答え
+}
+
+>>> starts_one_ends(1)
+1
+
+>>> starts_one_ends(2)
+18
+
+>>> starts_one_ends(3)
+180
+# テストケース
+>>> starts_one_ends(1)
+1
+>>> starts_one_ends(2)
+18
+>>> starts_one_ends(3)
+180
+>>> starts_one_ends(4)
+1800
+>>> starts_one_ends(5)
+18000

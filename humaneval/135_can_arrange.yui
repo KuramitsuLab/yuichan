@@ -1,0 +1,38 @@
+標準ライブラリを使う
+
+can_arrange = 入力 arr に対し {
+    length = |arr|
+    ind = -1
+
+    もし length が 0 より大きいならば、{
+        i = 1
+        loop_count = 差(length, 1)
+
+        loop_count回、くり返す {
+            prev_i = 差(i, 1)
+            もし arr[i] が arr[prev_i] より小さいならば、{
+                ind = i
+            }
+            iを増やす
+        }
+    }
+
+    indが答え
+}
+
+>>> can_arrange([1, 2, 4, 3, 5])
+3
+
+>>> can_arrange([1, 2, 3])
+-1
+# テストケース
+>>> can_arrange([1,2,4,3,5])
+3
+>>> can_arrange([1,2,4,5])
+-1
+>>> can_arrange([1,4,2,5,6,7,8,9,10])
+2
+>>> can_arrange([4,8,5,7,3])
+4
+>>> can_arrange([])
+-1

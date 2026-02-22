@@ -1,0 +1,44 @@
+標準ライブラリを使う
+
+separate_paren_groups = 入力 paren_string に対し {
+    length = |paren_string|
+    result = []
+    current_string = []
+    current_depth = 0
+
+    i = 0
+    length回、くり返す {
+        char = paren_string[i]
+
+        もし char が 40 ならば、{
+            current_depthを増やす
+            current_stringの末尾に char を 追加する
+        }
+
+        もし char が 41 ならば、{
+            current_depthを減らす
+            current_stringの末尾に char を 追加する
+
+            もし current_depth が 0 ならば、{
+                resultの末尾に current_string を 追加する
+                current_string = []
+            }
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> separate_paren_groups([40, 32, 41, 32, 40, 40, 32, 41, 41, 32, 40, 40, 32, 41, 40, 32, 41, 41])
+[[40, 41], [40, 40, 41, 41], [40, 40, 41, 40, 41, 41]]
+# テストケース
+>>> separate_paren_groups("(()()) ((())) () ((())()())")
+["(()())", "((()))", "()", "((())()())"]
+>>> separate_paren_groups("() (()) ((())) (((())))")
+["()", "(())", "((()))", "(((())))"]
+>>> separate_paren_groups("(()(())((())))")
+["(()(())((())))"]
+>>> separate_paren_groups("( ) (( )) (( )( ))")
+["()", "(())", "(()())"]

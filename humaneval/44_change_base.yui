@@ -1,0 +1,63 @@
+標準ライブラリを使う
+
+change_base = 入力 x, base に対し {
+    digits = []
+    temp = x
+
+    # Convert to base
+    100回、くり返す {
+        もし temp が 0 より大きいならば、{
+            remainder = 剰余(temp, base)
+            digitsの末尾に remainder を 追加する
+            temp = 商(temp, base)
+        }
+    }
+
+    # Reverse to get correct order and convert to char codes
+    length = |digits|
+    result = []
+    i = 0
+    length回、くり返す {
+        idx = 差(差(length, i), 1)
+        digit = digits[idx]
+        char_code = 和(48, digit)  # '0' is 48
+        resultの末尾に char_code を 追加する
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> change_base(8, 3)
+"22"
+
+>>> change_base(8, 2)
+"1000"
+
+>>> change_base(7, 2)
+"111"
+# テストケース
+>>> change_base(8, 3)
+"22"
+>>> change_base(9, 3)
+"100"
+>>> change_base(234, 2)
+"11101010"
+>>> change_base(16, 2)
+"10000"
+>>> change_base(8, 2)
+"1000"
+>>> change_base(7, 2)
+"111"
+>>> change_base(2, 3)
+"2"
+>>> change_base(3, 4)
+"3"
+>>> change_base(4, 5)
+"4"
+>>> change_base(5, 6)
+"5"
+>>> change_base(6, 7)
+"6"
+>>> change_base(7, 8)
+"7"

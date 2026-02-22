@@ -1,0 +1,86 @@
+標準ライブラリを使う
+
+count_nums = 入力 arr に対し {
+    length = |arr|
+    count = 0
+
+    i = 0
+    length回、くり返す {
+        n = arr[i]
+        is_negative = 0
+        abs_n = n
+
+        もし n が 0 より小さいならば、{
+            is_negative = 1
+            abs_n = 差(0, n)
+        }
+
+        # Extract digits
+        digits = []
+        temp = abs_n
+        100回、くり返す {
+            もし temp が 0 より大きいならば、{
+                digit = 剰余(temp, 10)
+                digitsの末尾に digit を 追加する
+                temp = 商(temp, 10)
+            }
+        }
+
+        # Calculate sum of signed digits
+        digit_len = |digits|
+        digit_sum = 0
+
+        もし digit_len が 0 より大きいならば、{
+            j = 0
+            digit_len回、くり返す {
+                value = digits[j]
+
+                # First digit (last in array due to extraction order) is negative if number was negative
+                last_idx = 差(digit_len, 1)
+                もし j が last_idx ならば、{
+                    もし is_negative が 1 ならば、{
+                        value = 差(0, value)
+                    }
+                }
+
+                digit_sum = 和(digit_sum, value)
+                jを増やす
+            }
+        }
+
+        # Count if sum > 0
+        もし digit_sum が 0 より大きいならば、{
+            countを増やす
+        }
+
+        iを増やす
+    }
+
+    countが答え
+}
+
+>>> count_nums([])
+0
+
+>>> count_nums([-1, 11, -11])
+1
+
+>>> count_nums([1, 1, 2])
+3
+# テストケース
+>>> count_nums([])
+0
+>>> count_nums([-1, -2, 0])
+0
+>>> count_nums([1, 1, 2, -2, 3, 4, 5])
+6
+>>> count_nums([1, 6, 9, -6, 0, 1, 5])
+5
+>>> count_nums([1, 100, 98, -7, 1, -1])
+4
+>>> count_nums([12, 23, 34, -45, -56, 0])
+5
+>>> count_nums([-0, 1])
+1
+>>> count_nums([1])
+1

@@ -1,0 +1,15 @@
+# テストケース
+>>> approx_zero(poly([-10, -2], find_zero([-10, -2])))
+1
+>>> approx_zero(poly([-3, -6, -7, 7], find_zero([-3, -6, -7, 7])))
+1
+>>> approx_zero(poly([8, 3], find_zero([8, 3])))
+1
+>>> approx_zero(poly([-10, -8], find_zero([-10, -8])))
+1
+>>> approx_zero(poly([-3, 6, 9, -10], find_zero([-3, 6, 9, -10])))
+1
+>>> approx_zero(poly([10, 7, 3, -3], find_zero([10, 7, 3, -3])))
+1
+>>> approx_zero(poly([8, -2, -10, -5, 3, 1, -2, -6], find_zero([8, -2, -10, -5, 3, 1, -2, -6])))
+1

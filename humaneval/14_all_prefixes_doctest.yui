@@ -1,0 +1,7 @@
+# テストケース
+>>> all_prefixes("")
+[]
+>>> all_prefixes("asdfgh")
+["a", "as", "asd", "asdf", "asdfg", "asdfgh"]
+>>> all_prefixes("WWW")
+["W", "WW", "WWW"]

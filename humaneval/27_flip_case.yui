@@ -1,0 +1,46 @@
+flip_case = 入力 string に対し {
+    長さ = |string|
+    結果 = []
+    i = 0
+
+    長さ回、くり返す {
+        文字 = string[i]
+        新文字 = 文字
+
+        # 大文字 A-Z (65-90) -> 小文字 a-z (97-122) に変換
+        # 差は32
+        もし 文字 が 65 以上 ならば、{
+            もし 文字 が 90 以下 ならば、{
+                新文字 = 文字
+                32回、くり返す {
+                    新文字を増やす
+                }
+            }
+        }
+
+        # 小文字 a-z (97-122) -> 大文字 A-Z (65-90) に変換
+        もし 文字 が 97 以上 ならば、{
+            もし 文字 が 122 以下 ならば、{
+                新文字 = 文字
+                32回、くり返す {
+                    新文字を減らす
+                }
+            }
+        }
+
+        結果の末尾に 新文字 を 追加する
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> flip_case("Hello")
+"hELLO"
+# テストケース
+>>> flip_case("")
+""
+>>> flip_case("Hello!")
+"hELLO!"
+>>> flip_case("These violent delights have violent ends")
+"tHESE VIOLENT DELIGHTS HAVE VIOLENT ENDS"

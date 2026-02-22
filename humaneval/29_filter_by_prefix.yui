@@ -1,0 +1,45 @@
+標準ライブラリを使う
+
+filter_by_prefix = 入力 strings, prefix に対し {
+    num_strings = |strings|
+    prefix_len = |prefix|
+    result = []
+
+    i = 0
+    num_strings回、くり返す {
+        string = strings[i]
+        string_len = |string|
+
+        # Check if string starts with prefix
+        has_prefix = 0
+        もし string_len が prefix_len 以上 ならば、{
+            has_prefix = 1
+            j = 0
+            prefix_len回、くり返す {
+                もし string[j] が prefix[j] 以外 ならば、{
+                    has_prefix = 0
+                }
+                jを増やす
+            }
+        }
+
+        もし has_prefix が 1 ならば、{
+            resultの末尾に string を 追加する
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> filter_by_prefix([], [97])
+[]
+
+>>> filter_by_prefix([[97, 98, 99], [98, 99, 100], [99, 100, 101], [97, 114, 114, 97, 121]], [97])
+[[97, 98, 99], [97, 114, 114, 97, 121]]
+# テストケース
+>>> filter_by_prefix([], "john")
+[]
+>>> filter_by_prefix(["xxx", "asd", "xxy", "john doe", "xxxAAA", "xxx"], "xxx")
+["xxx", "xxxAAA", "xxx"]

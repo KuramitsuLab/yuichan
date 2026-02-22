@@ -1,0 +1,68 @@
+標準ライブラリを使う
+
+unique_digits = 入力 x に対し {
+    length = |x|
+    valid_nums = []
+
+    # Check each number
+    i = 0
+    length回、くり返す {
+        num = x[i]
+        all_odd = 1
+
+        # Check all digits
+        temp = num
+        100回、くり返す {
+            もし temp が 0 より大きいならば、{
+                digit = 剰余(temp, 10)
+                temp = 商(temp, 10)
+
+                remainder = 剰余(digit, 2)
+                もし remainder が 0 ならば、{
+                    all_odd = 0
+                }
+            }
+        }
+
+        もし all_odd が 1 ならば、{
+            valid_numsの末尾に num を 追加する
+        }
+
+        iを増やす
+    }
+
+    # Bubble sort
+    valid_len = |valid_nums|
+    i = 0
+    valid_len回、くり返す {
+        j = 0
+        limit = 差(差(valid_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            もし valid_nums[j] が valid_nums[next_j] より大きいならば、{
+                temp = valid_nums[j]
+                valid_nums[j] = valid_nums[next_j]
+                valid_nums[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    valid_numsが答え
+}
+
+>>> unique_digits([15, 33, 1422, 1])
+[1, 15, 33]
+
+>>> unique_digits([152, 323, 1422, 10])
+[]
+# テストケース
+>>> unique_digits([15, 33, 1422, 1])
+[1, 15, 33]
+>>> unique_digits([152, 323, 1422, 10])
+[]
+>>> unique_digits([12345, 2033, 111, 151])
+[111, 151]
+>>> unique_digits([135, 103, 31])
+[31, 135]

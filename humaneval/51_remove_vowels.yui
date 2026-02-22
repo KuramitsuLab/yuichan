@@ -1,0 +1,81 @@
+remove_vowels = 入力 text に対し {
+    長さ = |text|
+    結果 = []
+    i = 0
+
+    長さ回、くり返す {
+        文字 = text[i]
+        母音でない = 1
+
+        # 母音チェック: a=97, e=101, i=105, o=111, u=117
+        # 大文字: A=65, E=69, I=73, O=79, U=85
+        もし 文字 が 97 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 101 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 105 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 111 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 117 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 65 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 69 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 73 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 79 ならば、{
+            母音でない = 0
+        }
+        もし 文字 が 85 ならば、{
+            母音でない = 0
+        }
+
+        もし 母音でない が 1 ならば、{
+            結果の末尾に 文字 を 追加する
+        }
+
+        iを増やす
+    }
+
+    結果が答え
+}
+
+>>> remove_vowels("")
+""
+
+>>> remove_vowels("abcdef")
+"bcdf"
+
+>>> remove_vowels("aaaaa")
+""
+
+>>> remove_vowels("aaBAA")
+"B"
+
+>>> remove_vowels("zbcd")
+"zbcd"
+# テストケース
+>>> remove_vowels("")
+""
+>>> remove_vowels("abcdef\nghijklm")
+"bcdf\nghjklm"
+>>> remove_vowels("fedcba")
+"fdcb"
+>>> remove_vowels("eeeee")
+""
+>>> remove_vowels("acBAA")
+"cB"
+>>> remove_vowels("EcBOO")
+"cB"
+>>> remove_vowels("ybcd")
+"ybcd"

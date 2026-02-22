@@ -1,0 +1,11 @@
+# テストケース
+>>> make_palindrome("")
+""
+>>> make_palindrome("x")
+"x"
+>>> make_palindrome("xyz")
+"xyzyx"
+>>> make_palindrome("xyx")
+"xyx"
+>>> make_palindrome("jerry")
+"jerryrrej"

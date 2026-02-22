@@ -1,0 +1,115 @@
+標準ライブラリを使う
+
+sorted_list_sum = 入力 lst に対し {
+    length = |lst|
+
+    # First, sort alphabetically using bubble sort
+    i = 0
+    length回、くり返す {
+        j = 0
+        limit = 差(差(length, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            word1 = lst[j]
+            word2 = lst[next_j]
+            len1 = |word1|
+            len2 = |word2|
+
+            # Compare lexicographically
+            min_len = len1
+            もし len2 が len1 より小さいならば、{
+                min_len = len2
+            }
+
+            should_swap = 0
+            k = 0
+            found_diff = 0
+            min_len回、くり返す {
+                もし found_diff が 0 ならば、{
+                    もし word1[k] が word2[k] より大きいならば、{
+                        should_swap = 1
+                        found_diff = 1
+                    }
+                    もし word1[k] が word2[k] より小さいならば、{
+                        found_diff = 1
+                    }
+                }
+                kを増やす
+            }
+
+            # If all chars match but different lengths, shorter comes first
+            もし found_diff が 0 ならば、{
+                もし len1 が len2 より大きいならば、{
+                    should_swap = 1
+                }
+            }
+
+            もし should_swap が 1 ならば、{
+                temp = lst[j]
+                lst[j] = lst[next_j]
+                lst[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    # Filter even-length words
+    filtered = []
+    i = 0
+    length回、くり返す {
+        word = lst[i]
+        word_len = |word|
+        remainder = 剰余(word_len, 2)
+        もし remainder が 0 ならば、{
+            filteredの末尾に word を 追加する
+        }
+        iを増やす
+    }
+
+    # Bubble sort by length (alphabetical order already preserved)
+    filtered_len = |filtered|
+    i = 0
+    filtered_len回、くり返す {
+        j = 0
+        limit = 差(差(filtered_len, i), 1)
+        limit回、くり返す {
+            next_j = 和(j, 1)
+            len1 = |filtered[j]|
+            len2 = |filtered[next_j]|
+
+            should_swap = 0
+            もし len1 が len2 より大きいならば、{
+                should_swap = 1
+            }
+
+            もし should_swap が 1 ならば、{
+                temp = filtered[j]
+                filtered[j] = filtered[next_j]
+                filtered[next_j] = temp
+            }
+            jを増やす
+        }
+        iを増やす
+    }
+
+    filteredが答え
+}
+
+>>> sorted_list_sum([[97, 97], [97], [97, 97, 97]])
+[[97, 97]]
+# テストケース
+>>> sorted_list_sum(["aa", "a", "aaa"])
+["aa"]
+>>> sorted_list_sum(["school", "AI", "asdf", "b"])
+["AI", "asdf", "school"]
+>>> sorted_list_sum(["d", "b", "c", "a"])
+[]
+>>> sorted_list_sum(["d", "dcba", "abcd", "a"])
+["abcd", "dcba"]
+>>> sorted_list_sum(["AI", "ai", "au"])
+["AI", "ai", "au"]
+>>> sorted_list_sum(["a", "b", "b", "c", "c", "a"])
+[]
+>>> sorted_list_sum(["aaaa", "bbbb", "dd", "cc"])
+["cc", "dd", "aaaa", "bbbb"]

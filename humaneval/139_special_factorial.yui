@@ -1,0 +1,27 @@
+標準ライブラリを使う
+
+special_factorial = 入力 n に対し {
+    fact_i = 1
+    special_fact = 1
+
+    i = 1
+    n回、くり返す {
+        fact_i = 積(fact_i, i)
+        special_fact = 積(special_fact, fact_i)
+        iを増やす
+    }
+
+    special_factが答え
+}
+
+>>> special_factorial(4)
+288
+# テストケース
+>>> special_factorial(4)
+288
+>>> special_factorial(5)
+34560
+>>> special_factorial(7)
+125411328000
+>>> special_factorial(1)
+1

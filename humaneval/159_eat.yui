@@ -1,0 +1,44 @@
+標準ライブラリを使う
+
+eat = 入力 number, need, remaining に対し {
+    result = []
+
+    もし need が remaining 以下 ならば、{
+        total_eaten = 和(number, need)
+        left = 差(remaining, need)
+        resultの末尾に total_eaten を 追加する
+        resultの末尾に left を 追加する
+    }
+    そうでなければ {
+        total_eaten = 和(number, remaining)
+        resultの末尾に total_eaten を 追加する
+        resultの末尾に 0 を 追加する
+    }
+
+    resultが答え
+}
+
+>>> eat(5, 6, 10)
+[11, 4]
+
+>>> eat(4, 8, 9)
+[12, 1]
+
+>>> eat(1, 10, 10)
+[11, 0]
+
+>>> eat(2, 11, 5)
+[7, 0]
+# テストケース
+>>> eat(5, 6, 10)
+[11, 4]
+>>> eat(4, 8, 9)
+[12, 1]
+>>> eat(1, 10, 10)
+[11, 0]
+>>> eat(2, 11, 5)
+[7, 0]
+>>> eat(4, 5, 7)
+[9, 2]
+>>> eat(4, 5, 1)
+[5, 0]

@@ -1,0 +1,75 @@
+標準ライブラリを使う
+
+prod_signs = 入力 arr に対し {
+    length = |arr|
+    result = []
+
+    もし length が 0 ならば、{
+        resultが答え
+    }
+
+    # 0が含まれているかチェック
+    has_zero = 0
+    i = 0
+    length回、くり返す {
+        もし arr[i] が 0 ならば、{
+            has_zero = 1
+        }
+        iを増やす
+    }
+
+    もし has_zero が 1 ならば、{
+        resultの末尾に 0 を 追加する
+        resultが答え
+    }
+
+    # 負の数をカウント
+    negative_count = 0
+    magnitude_sum = 0
+    i = 0
+    length回、くり返す {
+        value = arr[i]
+        abs_value = 絶対値(value)
+        magnitude_sum = 和(magnitude_sum, abs_value)
+
+        もし value が 0 より小さいならば、{
+            negative_countを増やす
+        }
+        iを増やす
+    }
+
+    # 負の数が奇数個なら積は-1、偶数個なら1
+    remainder = 剰余(negative_count, 2)
+    prod = 1
+    もし remainder が 1 ならば、{
+        prod = -1
+    }
+
+    result_value = 積(prod, magnitude_sum)
+    resultの末尾に result_value を 追加する
+    resultが答え
+}
+
+>>> prod_signs([1, 2, 2, -4])
+[-9]
+
+>>> prod_signs([0, 1])
+[0]
+
+>>> prod_signs([])
+[]
+# テストケース
+>>> prod_signs([1, 2, 2, -4])
+[-9]
+>>> prod_signs([0, 1])
+[0]
+>>> prod_signs([1, 1, 1, 2, 3, -1, 1])
+[-10]
+>>> prod_signs([2, 4,1, 2, -1, -1, 9])
+[20]
+>>> prod_signs([-1, 1, -1, 1])
+[4]
+>>> prod_signs([-1, 1, 1, 1])
+[-4]
+>>> prod_signs([-1, 1, 1, 0])
+[0]

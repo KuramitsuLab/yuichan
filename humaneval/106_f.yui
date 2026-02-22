@@ -1,0 +1,47 @@
+標準ライブラリを使う
+
+f = 入力 n に対し {
+    result = []
+
+    i = 1
+    n回、くり返す {
+        remainder = 剰余(i, 2)
+
+        もし remainder が 0 ならば、{
+            # Even index: calculate factorial
+            factorial = 1
+            j = 1
+            i回、くり返す {
+                factorial = 積(factorial, j)
+                jを増やす
+            }
+            resultの末尾に factorial を 追加する
+        }
+        そうでなければ {
+            # Odd index: calculate sum 1 to i
+            sum = 0
+            j = 1
+            i回、くり返す {
+                sum = 和(sum, j)
+                jを増やす
+            }
+            resultの末尾に sum を 追加する
+        }
+
+        iを増やす
+    }
+
+    resultが答え
+}
+
+>>> f(5)
+[1, 2, 6, 24, 15]
+# テストケース
+>>> f(5)
+[1, 2, 6, 24, 15]
+>>> f(7)
+[1, 2, 6, 24, 15, 720, 28]
+>>> f(1)
+[1]
+>>> f(3)
+[1, 2, 6]

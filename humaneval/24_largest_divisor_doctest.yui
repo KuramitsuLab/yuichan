@@ -1,0 +1,11 @@
+# テストケース
+>>> largest_divisor(3)
+1
+>>> largest_divisor(7)
+1
+>>> largest_divisor(10)
+5
+>>> largest_divisor(100)
+50
+>>> largest_divisor(49)
+7

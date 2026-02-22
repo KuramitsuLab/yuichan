@@ -1,0 +1,19 @@
+# テストケース
+>>> reverse_delete("abcde","ae")
+["bcd",0]
+>>> reverse_delete("abcdef", "b")
+["acdef",0]
+>>> reverse_delete("abcdedcba","ab")
+["cdedc",1]
+>>> reverse_delete("dwik","w")
+["dik",0]
+>>> reverse_delete("a","a")
+["",1]
+>>> reverse_delete("abcdedcba","")
+["abcdedcba",1]
+>>> reverse_delete("abcdedcba","v")
+["abcdedcba",1]
+>>> reverse_delete("vabba","v")
+["abba",1]
+>>> reverse_delete("mamma", "mia")
+["", 1]
