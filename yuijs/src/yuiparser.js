@@ -89,7 +89,7 @@ class Source extends YuiSyntax {
             if (this.isDefined(wrongTerminal) && this.isMatch(wrongTerminal, { unconsumed: true, lskipWs })) {
                 const expected = this.forExample(terminal);
                 const matched = this.matchedString(wrongTerminal);
-                throw new YuiError(['wrong', 'token', `❌\`${matched}\``, `✅\`${expected}\``], this.p({ length: 1 }));
+                throw new YuiError(['frequent-mistake', `❌\`${matched}\``, `✅\`${expected}\``], this.p({ length: 1 }));
             }
         }
         const savedPos = this.pos;
@@ -117,12 +117,12 @@ class Source extends YuiSyntax {
         if (this.isMatch(terminal, { ifUndefined, unconsumed, lskipWs, lskipLf })) return;
         const expectedToken = this.forExample(terminal);
         if (openingPos !== null) {
-            throw new YuiError(['expected', 'closing', `✅\`${expectedToken}\``], this.p({ startPos: openingPos }));
+            throw new YuiError(['expected-closing', `✅\`${expectedToken}\``], this.p({ startPos: openingPos }));
         }
         const snippet = this.captureLine();
         throw new YuiError(
-            ['expected', 'token', `✅\`${expectedToken}\``, `❌\`${snippet}\``, `🔍${terminal}`],
-            this.p({ length: 1 }), null, BK
+            ['expected-token', `✅\`${expectedToken}\``, `❌\`${snippet}\``, `🔍${terminal}`],
+            this.p({ length: 1 }), BK
         );
     }
 
@@ -296,7 +296,7 @@ function parse(nonterminal, source, pc, { lskipWs = true, lskipLf = false, BK = 
                 source.pos = startPos;
                 const snippet = source.captureLine();
                 throw new YuiError(
-                    ['expected', nonterminal.slice(1).toLowerCase(), `❌${snippet}`, `⚠️${e.message}`],
+                    [`expected-${nonterminal.slice(1).toLowerCase()}`, `❌${snippet}`, `⚠️${e.message}`],
                     source.p({ length: 1 })
                 );
             }
@@ -337,7 +337,7 @@ class ConstParser extends ParserCombinator {
         if (source.isMatch('boolean-false', { ifUndefined: false })) {
             return source.p({ node: new ConstNode(false), startPos: savedPos });
         }
-        throw new YuiError(['expected', 'null or boolean'], source.p({ length: 1 }), null, true);
+        throw new YuiError(['expected-null or boolean'], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@Boolean'] = new ConstParser();
@@ -361,7 +361,7 @@ class NumberParser extends ParserCombinator {
             const num = source.source.slice(savedPos, source.pos);
             return source.p({ node: new NumberNode(parseInt(num, 10)), startPos: savedPos });
         }
-        throw new YuiError(['expected', 'number'], source.p({ length: 1 }), null, true);
+        throw new YuiError(['expected-number'], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@Number'] = new NumberParser();
@@ -383,7 +383,7 @@ class StringParser extends ParserCombinator {
                 if (source.isMatch('string-end', { unconsumed: true })) break;
                 if (source.isMatch('string-escape')) {
                     if (source.isEos()) {
-                        throw new YuiError(['bad', 'escape sequence'], source.p({ length: 1 }));
+                        throw new YuiError(['bad-escape-sequence'], source.p({ length: 1 }));
                     }
                     const nextChar = source.source[source.pos];
                     source.pos++;
@@ -408,7 +408,7 @@ class StringParser extends ParserCombinator {
             const contents = expressionCount === 0 ? stringContent.join('') : stringContent;
             return source.p({ node: new StringNode(contents), startPos: openingQuotePos });
         }
-        throw new YuiError(['expected', 'string'], source.p({ length: 1 }), null, true);
+        throw new YuiError(['expected-string'], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@String'] = new StringParser();
@@ -429,7 +429,7 @@ class ArrayParser extends ParserCombinator {
             source.tryMatch('array-end', { lskipLf: true, openingPos });
             return source.p({ node: new ArrayNode(args), startPos: openingPos });
         }
-        throw new YuiError(['expected', 'array'], source.p({ length: 1 }), null, true);
+        throw new YuiError(['expected-array'], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@Array'] = new ArrayParser();
@@ -452,7 +452,7 @@ class ObjectParser extends ParserCombinator {
             source.tryMatch('object-end', { lskipLf: true, openingPos });
             return source.p({ node: new ObjectNode(args), startPos: openingPos });
         }
-        throw new YuiError(['expected', 'object'], source.p({ length: 1 }), null, true);
+        throw new YuiError(['expected-object'], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@Object'] = new ObjectParser();
@@ -482,7 +482,7 @@ class NameParser extends ParserCombinator {
             return source.p({ node: new NameNode(name), startPos });
         }
         const snippet = source.captureLine().trim();
-        throw new YuiError(['wrong', 'name', `❌${snippet}`], source.p({ length: 1 }), null, true);
+        throw new YuiError(['wrong-name', `❌${snippet}`], source.p({ length: 1 }), true);
     }
 }
 NONTERMINALS['@Name'] = new NameParser();
@@ -894,7 +894,7 @@ class BlockParser extends ParserCombinator {
                 if (source.isMatch('whitespace', { lskipWs: false })) {
                     if (source.isMatch('block-end', { unconsumed: true })) {
                         throw new YuiError(
-                            ['wrong', 'indent', `✅\`${endLevelIndent}\``],
+                            ['wrong-indent-level', `✅\`${endLevelIndent}\``],
                             source.p({ startPos: lineStartPos, length: endLevelIndent.length })
                         );
                     }
@@ -931,7 +931,7 @@ class StatementParser extends ParserCombinator {
         }
         source.pos = savedPos;
         const line = source.captureLine();
-        throw new YuiError(['wrong', 'statement', `❌${line}`], source.p({ length: 1 }));
+        throw new YuiError(['wrong-statement', `❌${line}`], source.p({ length: 1 }));
     }
 }
 NONTERMINALS['@Statement'] = new StatementParser();

@@ -124,7 +124,7 @@ class YuiRuntime(object):
         if len(self.call_frames) > 512:
             args = ", ".join(str(arg) for arg in self.call_frames[-1][1])
             snippet = f"{self.call_frames[-1][0]}({args})"
-            raise YuiError(("error", "recursion", f"🔍{snippet}"), self.call_frames[-1][2], self)
+            raise YuiError(("too-many-recursions", f"🔍{snippet}"), self.call_frames[-1][2], self)
 
     def update_variable(self, name: str, env: Dict[str, Any], pos: int):
         """変数更新時のフック（サブクラスでオーバーライド可能）"""
@@ -183,7 +183,7 @@ class YuiRuntime(object):
 
         # タイムアウトチェック
         if self.timeout > 0 and (time.time() - self.startTime) > self.timeout:
-            raise YuiError(("error", "timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node, self)
+            raise YuiError(("runtime-timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node, self)
     
 @dataclass
 class ExpressionNode(ASTNode):
@@ -363,7 +363,7 @@ class NameNode(ExpressionNode):
     def evaluate(self, runtime: YuiRuntime)-> YuiValue:
         """変数の値を返す（インデックスがあれば配列要素を返す）"""
         if not runtime.hasenv(self.name):
-            raise YuiError(("undefined", "variable", f"❌{self.name}"), self, runtime)
+            raise YuiError(("undefined-variable", f"❌{self.name}"), self, runtime)
         self.evaluated_value = runtime.getenv(self.name)
         return self.evaluated_value
     
@@ -417,7 +417,7 @@ class BinaryNode(ASTNode):
         return visitor.visitBinaryNode(self)
 
     def evaluate(self, runtime):
-        raise YuiError(("error", "internal", f"🔍{self.operator} operator is not implemented"), self, runtime)
+        raise YuiError(("internal-error", f"🔍{self.operator} operator is not implemented"), self, runtime)
 
 
 class YuiFunction(ABC):
@@ -481,7 +481,7 @@ class NativeFunction(YuiFunction):
             e.runtime = runtime
             raise e
         except Exception as e:
-            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node, runtime)
+            raise YuiError(("internal-error", f"🔍{self.name}", f"⚠️ {e}"), node, runtime)
 
 
 @dataclass
@@ -505,10 +505,10 @@ class FuncAppNode(ExpressionNode):
         if isinstance(self.name_node, NameNode):
             name = f'@{self.name_node.name}'
             if not runtime.hasenv(name):
-                raise YuiError(("undefined", "function", f"❌{self.name_node.name}"), self.name_node, runtime)
+                raise YuiError(("undefined-function", f"❌{self.name_node.name}"), self.name_node, runtime)
             function = runtime.getenv(name)
         if not isinstance(function, YuiFunction):
-            raise YuiError(("error", "type", "✅<function>", f"❌{function}"), self.name_node, runtime)
+            raise YuiError(("type-error", "✅<function>", f"❌{function}"), self.name_node, runtime)
         
         arguments = []
         for argnone in self.arguments:
@@ -545,7 +545,7 @@ class AssignmentNode(StatementNode):
     def evaluate(self, runtime: YuiRuntime):
         """式を評価して変数に代入する"""
         if not hasattr(self.variable, 'update'):
-            raise YuiError(("expected", "variable", f"❌{self.variable}"), self.variable, runtime)
+            raise YuiError(("expected-variable", f"❌{self.variable}"), self.variable, runtime)
         self.expression.evaluate(runtime)
         self.variable.update(self.expression, runtime)
 
@@ -837,5 +837,5 @@ class AssertNode(StatementNode):
         except Exception as e:
             print(f"Error during test evaluation: {e}")
             pass
-        raise YuiError(("failed", "test", f"🔍{self.test}", f"❌{tested}", f"✅{reference_value}"), self, runtime)
+        raise YuiError(("failed", f"🔍{self.test}", f"❌{tested}", f"✅{reference_value}"), self, runtime)
 

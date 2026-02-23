@@ -106,7 +106,7 @@ class Source(YuiSyntax):
             if self.is_defined(wrong_terminal) and self.is_match(wrong_terminal, unconsumed=True, lskip_ws=lskip_ws):
                 expected = self.for_example(terminal)
                 matched = self.matched_string(wrong_terminal)
-                raise YuiError(("wrong", "token", f"❌`{matched}`", f"✅`{expected}`"), self.p(length=1))
+                raise YuiError(("frequent-mistake", f"❌`{matched}`", f"✅`{expected}`"), self.p(length=1))
         saved_pos = self.pos    
         if lskip_ws or lskip_lf:
             self.skip_whitespaces_and_comments(include_linefeed=lskip_lf)
@@ -128,9 +128,9 @@ class Source(YuiSyntax):
             return
         expected_token = self.for_example(terminal)
         if opening_pos is not None:
-            raise YuiError(("expected", "closing", f"✅`{expected_token}`"), self.p(start_pos=opening_pos))
+            raise YuiError(("expected-closing", f"✅`{expected_token}`"), self.p(start_pos=opening_pos))
         snippet = self.capture_line()
-        raise YuiError(("expected", "token", f"✅`{expected_token}`", f"❌`{snippet}`", f"🔍{terminal}"), self.p(length=1), BK=BK)
+        raise YuiError(("expected-token", f"✅`{expected_token}`", f"❌`{snippet}`", f"🔍{terminal}"), self.p(length=1), BK=BK)
 
     def find_match(self, terminal: str, suffixes: List[str], lskip_lf=False) -> Optional[str]:
         for suffix in suffixes:
@@ -302,7 +302,7 @@ def parse(nonterminal: str, source: Source, pc: dict, lskip_ws=True, lskip_lf=Fa
             if e.BK == True and BK == False:
                 source.pos = saved_pos
                 snippet = source.capture_line()
-                raise YuiError(("expected", nonterminal[1:].lower(), f"❌{snippet}", f"⚠️{e}"), source.p(length=1))
+                raise YuiError((f"expected-{nonterminal[1:].lower()}", f"❌{snippet}", f"⚠️{e}"), source.p(length=1))
             raise e
     return result
 
@@ -328,7 +328,7 @@ class ConstParser(ParserCombinator):
             return source.p(ConstNode(True), start_pos=saved_pos)
         if source.is_match("boolean-false", if_undefined=False):
             return source.p(ConstNode(False), start_pos=saved_pos)
-        raise YuiError(("expected", "null or boolean"), source.p(length=1), BK=True)
+        raise YuiError(("expected-boolean",), source.p(length=1), BK=True)
 
 NONTERMINALS["@Boolean"] = ConstParser()
 
@@ -349,7 +349,7 @@ class NumberParser(ParserCombinator):
             else:
                 number = source.source[saved_pos:source.pos]
             return source.p(NumberNode(int(number)), start_pos=saved_pos)
-        raise YuiError(("expected", "number"), source.p(length=1), BK=True)
+        raise YuiError(("expected-number",), source.p(length=1), BK=True)
 
 NONTERMINALS["@Number"] = NumberParser()
 
@@ -371,7 +371,7 @@ class StringParser(ParserCombinator):
                     break
                 if source.is_match("string-escape"):
                     if source.is_eos():
-                        raise YuiError(("bad", "escape sequence"), source.p(length=1))
+                        raise YuiError(("wrong-escape-sequence"), source.p(length=1))
                     next_char = source.source[source.pos]
                     source.pos += 1
                     if next_char == 'n':
@@ -392,7 +392,7 @@ class StringParser(ParserCombinator):
             if expression_count == 0:
                 string_content = ''.join(string_content)
             return source.p(StringNode(string_content), start_pos=opening_quote_pos)
-        raise YuiError(("expected", "string"), source.p(length=1), BK=True)
+        raise YuiError(("expected-string",), source.p(length=1), BK=True)
 
 NONTERMINALS["@String"] = StringParser()
 
@@ -411,7 +411,7 @@ class ArrayParser(ParserCombinator):
                     continue
             source.try_match("array-end", lskip_lf=True, opening_pos=opening_pos)
             return source.p(ArrayNode(arguments), start_pos=opening_pos)
-        raise YuiError(("expected", "array"), source.p(length=1), BK=True)
+        raise YuiError(("expected-array",), source.p(length=1), BK=True)
 
 NONTERMINALS["@Array"] = ArrayParser()
 
@@ -431,7 +431,7 @@ class ObjectParser(ParserCombinator):
                     continue
             source.try_match("object-end", lskip_lf=True, opening_pos=opening_pos)
             return source.p(ObjectNode(arguments), start_pos=opening_pos)
-        raise YuiError(("expected", "object"), source.p(length=1), BK=True)
+        raise YuiError(("expected-object",), source.p(length=1), BK=True)
 
 NONTERMINALS["@Object"] = ObjectParser()
 
@@ -455,7 +455,7 @@ class NameParser(ParserCombinator):
             name = source.source[start_pos:source.pos]
             return source.p(NameNode(name), start_pos=start_pos)
         snippet = source.capture_line().strip()
-        raise YuiError(("wrong", "name", f"❌{snippet}"), source.p(length=1), BK=True)
+        raise YuiError(("wrong-name", f"❌{snippet}"), source.p(length=1), BK=True)
 
 NONTERMINALS["@Name"] = NameParser()
 
@@ -835,7 +835,7 @@ class BlockParser(ParserCombinator):
             if source.consume_string(end_level_indent): 
                 if source.is_match('whitespace', lskip_ws=False): # deeper end_level_indent
                     if source.is_match("block-end", unconsumed=True):
-                        raise YuiError(("wrong", "indent", f"✅`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)))
+                        raise YuiError(("wrong-indent-level", f"✅`{end_level_indent}`"), source.p(start_pos=linestart_pos, length=len(end_level_indent)))
                     #print('>>>', source.pos, source.capture_line())
                     statements.extend(parse("@Statement[]", source, pc))
                     #print('<<<', source.pos, source.capture_line())
@@ -878,7 +878,7 @@ class StatementParser(ParserCombinator):
                 raise e
         source.pos = saved_pos
         line = source.capture_line()
-        raise YuiError(("wrong", "statement", f"❌{line}"), source.p(length=1))
+        raise YuiError(("wrong-statement", f"❌{line}"), source.p(length=1))
 
 NONTERMINALS["@Statement"] = StatementParser()
 

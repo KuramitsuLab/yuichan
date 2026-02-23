@@ -12,7 +12,7 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, ImportNode,
 )
-from .yuitypes import YuiValue, YuiType, YuiError
+from .yuitypes import YuiValue, YuiType, YuiError, _format_messages
 from .yuistdlib import standard_lib
 from .yuiparser import YuiParser
 
@@ -108,6 +108,18 @@ class YuiRuntime(object):
         lines.append(f"{LF}{indent_prefix}}}")
         return ''.join(lines)
 
+    def format_error(self, error: 'YuiError', prefix: str = " ", marker: str = '^', lineoffset: int = 0) -> str: # type: ignore
+        """YuiError を実行時エラーとして整形したメッセージを返す（環境情報付き）"""
+        message = _format_messages(error.messages)
+        if error.error_node:
+            line, col, snippet = error.error_node.extract()
+            length = max(error.error_node.end_pos - error.error_node.pos, 3) if error.error_node.end_pos is not None else 3
+            make_pointer = marker * min(length, 16)
+            snippet = snippet.split('\n')[0]
+            indent = " " * (col - 1)
+            message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
+        return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringfy_env(stack=-1)}\n"
+
     def push_call_frame(self, func_name: str, args: List[Any], node):
         """関数呼び出しフレームをスタックに追加"""
         self.call_frames.append((func_name, args, node))
@@ -129,7 +141,7 @@ class YuiRuntime(object):
         if len(self.call_frames) > 512:
             args = ", ".join(str(arg) for arg in self.call_frames[-1][1])
             snippet = f"{self.call_frames[-1][0]}({args})"
-            raise YuiError(("error", "recursion", f"🔍{snippet}"), self.call_frames[-1][2])
+            raise YuiError(("too-many-recursions", f"🔍{snippet}"), self.call_frames[-1][2])
 
     def update_variable(self, name: str, env: Dict[str, Any], pos: int):
         """変数更新時のフック（サブクラスでオーバーライド可能）"""
@@ -175,7 +187,7 @@ class YuiRuntime(object):
 
         # タイムアウトチェック
         if self.timeout > 0 and (time.time() - self.startTime) > self.timeout:
-            raise YuiError(("error", "timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node)
+            raise YuiError(("runtime-timeout", f"❌{self.timeout}[sec]", f"✅{self.timeout}[sec]"), node)
 
     def exec(self, source: str, syntax: Union[str,dict] = 'yui', timeout: int = 30, eval_mode: bool = True):
         """Yuiプログラムを実行する"""
@@ -248,7 +260,7 @@ class YuiRuntime(object):
 
     def visitNameNode(self, node: NameNode):
         if not self.hasenv(node.name):
-            raise YuiError(("undefined", "variable", f"❌{node.name}"), node)
+            raise YuiError(("undefined-variable", f"❌{node.name}"), node)
         return self.getenv(node.name)
 
     def visitGetIndexNode(self, node: GetIndexNode):
@@ -267,10 +279,7 @@ class YuiRuntime(object):
 
     def visitBinaryNode(self, node: BinaryNode):
         if not (self.allow_binary_ops or (self.function_defined and self.test_passed)):
-            raise YuiError(
-                ("error", "binary operator not enabled", f"🔍{node.operator}"),
-                node,
-            )
+            raise YuiError(("unsupported-operator", f"🔍{node.operator}"), node)
         left = node.left_node.visit(self)
         right = node.right_node.visit(self)
         op = node.operator
@@ -298,24 +307,24 @@ class YuiRuntime(object):
             result = l * r
         elif op == '/':
             if r == 0:
-                raise YuiError(("error", "division by zero", f"❌{r}"), node)
+                raise YuiError(("division-by-zero", f"❌{r}"), node)
             result = l / r if is_float else l // r
         elif op == '%':
             if r == 0:
-                raise YuiError(("error", "division by zero", f"❌{r}"), node)
+                raise YuiError(("division-by-zero", f"❌{r}"), node)
             result = l % r  # Python: 正の除数に対して常に非負
         else:
-            raise YuiError(("error", "unsupported operator", f"🔍{op}"), node)
+            raise YuiError(("unsupported-operator", f"🔍{op}"), node)
 
         return YuiValue(float(result) if is_float else result)
 
     def visitFuncAppNode(self, node: FuncAppNode):
         name = f'@{node.name_node.name}'
         if not self.hasenv(name):
-            raise YuiError(("undefined", "function", f"❌{node.name_node.name}"), node.name_node)
+            raise YuiError(("undefined-function", f"❌{node.name_node.name}"), node.name_node)
         function = self.getenv(name)
         if not isinstance(function, YuiFunction):
-            raise YuiError(("error", "type", "✅<function>", f"❌{function}"), node.name_node)
+            raise YuiError(("type-error", "✅<function>", f"❌{function}"), node.name_node)
 
         # 引数を訪問した直後に値を確定させる（再帰で同一ノードが上書きされる問題を防ぐ）
         arg_values = [arg_node.visit(self) for arg_node in node.arguments]
@@ -332,7 +341,7 @@ class YuiRuntime(object):
 
     def visitAssignmentNode(self, node: AssignmentNode):
         if not hasattr(node.variable, 'update'):
-            raise YuiError(("expected", "variable", f"❌{node.variable}"), node.variable)
+            raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.expression.visit(self)
         node.variable.update(value, self)
 
@@ -426,7 +435,7 @@ class YuiRuntime(object):
         except Exception:
             pass
         raise YuiError(
-            ("failed", "test", f"🔍{node.test}", f"❌{tested}", f"✅{reference_value}"),
+            ("failed", f"🔍{node.test}", f"❌{tested}", f"✅{reference_value}"),
             node,
         )
 
@@ -528,7 +537,7 @@ class NativeFunction(YuiFunction):
                 e.error_node = node
             raise e
         except Exception as e:
-            raise YuiError(("error", "internal", f"🔍{self.name}", f"⚠️ {e}"), node)
+            raise YuiError(("internal-error", f"🔍{self.name}", f"⚠️ {e}"), node)
 
 class YuiBreakException(RuntimeError):
     """ループを抜けるための例外"""

@@ -231,7 +231,7 @@ class BinaryNode(ASTNode):
         self.comparative = comparative
 
     # def evaluate(self, runtime):
-    #     raise YuiError(("error", "internal", f"🔍{self.operator} operator is not implemented"), self, runtime)
+    #     raise YuiError(("internal-error", f"🔍{self.operator} operator is not implemented"), self, runtime)
 
     def visit(self, visitor):
         return visitor.visitBinaryNode(self)

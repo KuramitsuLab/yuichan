@@ -10,7 +10,7 @@ import {
     AssertNode, ImportNode,
 } from './yuiast.js';
 
-import { YuiValue, YuiType, YuiError } from './yuitypes.js';
+import { YuiValue, YuiType, YuiError, formatMessages } from './yuitypes.js';
 import { standardLib } from './yuistdlib.js';
 import { YuiParser } from './yuiparser.js';
 
@@ -169,6 +169,22 @@ export class YuiRuntime {
         }
         lines.push(`\n${indentPrefix}}`);
         return lines.join('');
+    }
+
+    formatError(error, prefix = ' ', marker = '^', lineoffset = 0) {
+        let message = formatMessages(error.messages);
+        if (error.errorNode) {
+            const [line, col, snippet] = error.errorNode.extract();
+            const length = Math.max(
+                error.errorNode.endPos != null ? error.errorNode.endPos - error.errorNode.pos : 3,
+                3
+            );
+            const makePointer = marker.repeat(Math.min(length, 16));
+            const firstLine = snippet.split('\n')[0];
+            const indent = ' '.repeat(col - 1);
+            message = `${message} line ${line + lineoffset}, column ${col}:\n${prefix}${firstLine}\n${prefix}${indent}${makePointer}`;
+        }
+        return `[実行時エラー/RuntimeError] ${message}\n[環境/Environment] ${this.stringfyEnv(-1)}\n`;
     }
 
     pushCallFrame(funcName, args, node) {

@@ -51,11 +51,11 @@ def standard_lib(modules: list):
         """関数の引数の数をチェックする"""
         if expected == -1: #少なくとも一つの引数が必要
             if len(nodeargs) < 1:
-                raise YuiError(("required", "arguments", f"❌{len(nodeargs)}", f"✅>0"))
+                raise YuiError(("mismatch-argument-number", f"❌{len(nodeargs)}", f"✅>0"))
             return
         if len(nodeargs) != expected:
             last = nodeargs[-1] if nodeargs else None
-            raise YuiError(("expected", "arguments", f"✅{expected}", f"❌{len(nodeargs)}"), last)
+            raise YuiError(("mismatch-argument-number", f"✅{expected}", f"❌{len(nodeargs)}"), last)
 
     def array_to_varargs(nodeargs:list) -> list:
         """引数が配列1つの場合、その要素を展開して返す"""
@@ -77,7 +77,7 @@ def standard_lib(modules: list):
         YuiType.NumberType.match_or_raise(nodeargs[0])
         value = YuiType.matched_native(nodeargs[0])
         if value < 0:
-            raise YuiError(("error", "negative sqrt", f"❌{value}", f"✅>=0"))
+            raise YuiError(("not-negative-number", f"❌{value}", f"✅>=0"))
         return YuiValue(math.sqrt(value))
     modules.append(('√|平方根|sqrt', yui_sqrt))
 
@@ -93,7 +93,7 @@ def standard_lib(modules: list):
         YuiType.IntType.match_or_raise(nodeargs[0])
         x = YuiType.matched_native(nodeargs[0])
         if x <= 0:
-            raise YuiError(("error", "invalid argument", f"❌{x}", f"✅>0"))
+            raise YuiError(("not-negative-number", f"❌{x}", f"✅>0"))
         return YuiValue(random.randint(0, x - 1))
     modules.append((f'🎲{TY_FLOAT}|乱整数|randint', yui_randint))
 
@@ -162,7 +162,7 @@ def standard_lib(modules: list):
             for nodearg in nodeargs[1:]:
                 d = float(YuiType.matched_native(nodearg))
                 if d == 0.0:
-                    raise YuiError((f"error", "division by zero", f"❌{d}"), nodearg)
+                    raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total /= d
             return YuiValue(total)
         else:
@@ -170,7 +170,7 @@ def standard_lib(modules: list):
             for nodearg in nodeargs[1:]:
                 d = YuiType.matched_native(nodearg)
                 if d == 0:
-                    raise YuiError((f"error", "division by zero", f"❌{d}"), nodearg)
+                    raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total //= d
             return YuiValue(total)
     modules.append(('✂️|商|quotient', yui_div))
@@ -184,7 +184,7 @@ def standard_lib(modules: list):
             for nodearg in nodeargs[1:]:
                 d = float(YuiType.matched_native(nodearg))
                 if d == 0.0:
-                    raise YuiError((f"error", "division by zero", f"❌{d}"), nodearg)
+                    raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total %= d
             return YuiValue(total)
         else:
@@ -192,7 +192,7 @@ def standard_lib(modules: list):
             for nodearg in nodeargs[1:]:
                 d = YuiType.matched_native(nodearg)
                 if d == 0:
-                    raise YuiError((f"error", "division by zero", f"❌{d}"), nodearg)
+                    raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total %= d
             return YuiValue(total)
     modules.append(('🍕|剰余|remainder', yui_mod))
@@ -282,7 +282,7 @@ def standard_lib(modules: list):
             try:
                 return YuiValue(float(string_value))
             except ValueError:
-                raise YuiError((f"error", "conversion", f"❌{string_value}"))
+                raise YuiError((f"float-conversion", f"❌{string_value}"))
         value = float(YuiType.matched_native(nodeargs[0]))
         return YuiValue(value)
     modules.append((f'{TY_FLOAT}|少数化|tofloat', yui_tofloat))

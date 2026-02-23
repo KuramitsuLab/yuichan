@@ -28,7 +28,8 @@ def _strip_asserts(block) -> 'BlockNode':
             if (filtered
                     and isinstance(filtered[-1], PassNode)
                     and filtered[-1].comment
-                    and filtered[-1].comment.lower().startswith('test')):
+                    and (filtered[-1].comment.lower().startswith('test')
+                         or filtered[-1].comment.startswith('テスト'))):
                 filtered.pop()
         else:
             filtered.append(stmt)
@@ -57,12 +58,12 @@ class YuiExample:
 
 def example_hello_world():
     statements = [
-        PassNode(comment='Print "Hello, world!"'),
+        PassNode(comment='"Hello, world!" と表示する'),
         PrintExpressionNode(StringNode("Hello, world!")),
     ]
     return YuiExample(
         name="hello_world",
-        description="Print 'Hello, world!'",
+        description="'Hello, world!' を表示する",
         ast_node=BlockNode(statements, top_level=True),
         kind='sample',
     )
@@ -70,20 +71,20 @@ def example_hello_world():
 def example_variables():
     """基本的な算術演算のサンプル"""
     statements = [
-        PassNode(comment="Define variables x and y"),
+        PassNode(comment="変数 x と y を定義する"),
         AssignmentNode(NameNode("x"),NumberNode(1)),
         AssignmentNode(NameNode("y"),MinusNode(NumberNode(2))),
-        PassNode(comment="Increment x"),
+        PassNode(comment="x を1増やす"),
         IncrementNode(NameNode("x")),
-        PassNode(comment="Decrement y"),
+        PassNode(comment="y を1減らす"),
         DecrementNode(NameNode("y")),
-        PassNode(comment="Test that x is 2 and y is -3"),
+        PassNode(comment="テスト: x が 2、y が -3"),
         AssertNode(NameNode("x"), NumberNode(2)),
         AssertNode(NameNode("y"), MinusNode(NumberNode(3))),
     ]
     return YuiExample(
         name="variables",
-        description="Basic variable definition and increment/decrement",
+        description="変数の定義とインクリメント/デクリメント",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -91,7 +92,7 @@ def example_variables():
 def example_loop():
     """ループのサンプル"""
     statements = [
-        PassNode(comment="Loop 10 times and break at 5"),
+        PassNode(comment="10回ループして5回目でブレイク"),
         AssignmentNode(NameNode("count"),NumberNode(0)),
         RepeatNode(
             NumberNode(10),
@@ -100,12 +101,12 @@ def example_loop():
                 IfNode(NameNode("count"), "==", NumberNode(5), BlockNode(BreakNode())),
             ]),
         ),
-        PassNode(comment="Test that count is 5"),
+        PassNode(comment="テスト: count が 5"),
         AssertNode(NameNode("count"), NumberNode(5)),
     ]
     return YuiExample(
         name="loop",
-        description="Loop 10 times and break at 5",
+        description="10回ループして5回目でブレイク",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -113,7 +114,7 @@ def example_loop():
 def example_fizzbuzz():
     """1から100までのFizzBuzzをリストに追加する"""
     statements = [
-        PassNode(comment="FizzBuzz from 1 to 100, collected into a list"),
+        PassNode(comment="1から100までのFizzBuzzをリストに収集する"),
         AssignmentNode(NameNode("result"), ArrayNode([])),
         AssignmentNode(NameNode("i"),    NumberNode(0)),
         AssignmentNode(NameNode("fizz"), NumberNode(0)),
@@ -142,16 +143,16 @@ def example_fizzbuzz():
             ),
         ])),
         PrintExpressionNode(NameNode("result")),
-        PassNode(comment="Test: length is 100"),
+        PassNode(comment="テスト: 長さが100"),
         AssertNode(ArrayLenNode(NameNode("result")), NumberNode(100)),
-        PassNode(comment="Test: spot-check Fizz, Buzz, FizzBuzz positions"),
+        PassNode(comment="テスト: Fizz、Buzz、FizzBuzz の位置を確認"),
         AssertNode(GetIndexNode(NameNode("result"), NumberNode(2)),  StringNode("Fizz")),
         AssertNode(GetIndexNode(NameNode("result"), NumberNode(4)),  StringNode("Buzz")),
         AssertNode(GetIndexNode(NameNode("result"), NumberNode(14)), StringNode("FizzBuzz")),
     ]
     return YuiExample(
         name="fizzbuzz",
-        description="FizzBuzz from 1 to 100, collected into a list",
+        description="1から100までのFizzBuzzをリストに収集する",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -162,21 +163,21 @@ def example_nested_conditional_branches():
     then_block = IncrementNode(NameNode("y"))
     else_block = IncrementNode(NameNode("z"))
     statements = [
-        PassNode(comment="Test nested conditions on x and y"),
+        PassNode(comment="x と y に対するネストした条件をテスト"),
         AssignmentNode(NameNode("x"), NumberNode(1)),
         AssignmentNode(NameNode("y"), NumberNode(2)),
         AssignmentNode(NameNode("z"), NumberNode(3)),
-        PassNode(comment="If x is 0, check y and increment y or z accordingly"),
+        PassNode(comment="x が 0 なら y を確認して y または z を増やす"),
         IfNode(NameNode("x"),"==", NumberNode(0),
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(1),then_block, else_block)),
             BlockNode(IfNode(NameNode("y"),"==", NumberNode(2),then_block, else_block))
         ),
-        PassNode(comment="Test that y was incremented and z was not"),
+        PassNode(comment="テスト: y が増えて z が増えていない"),
         AssertNode(NameNode("y"), NumberNode(3)),
     ]
     return YuiExample(
         name="nested_conditional_branches",
-        description="Nested conditional branching",
+        description="ネストした条件分岐",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -186,29 +187,29 @@ def example_comparisons():
     else_block = IncrementNode(NameNode("z"))
 
     statements = [
-        PassNode(comment="Various comparisons on x"),
+        PassNode(comment="x に対するさまざまな比較"),
         AssignmentNode(NameNode("x"), NumberNode(1)),
         AssignmentNode(NameNode("y"), NumberNode(0)),
         AssignmentNode(NameNode("z"), NumberNode(0)),
-        PassNode(comment="Is x equal to 1?"),
+        PassNode(comment="x は 1 と等しいか？"),
         IfNode(NameNode("x"),"==", NumberNode(1),then_block, else_block),
-        PassNode(comment="Is x not equal to 1?"),
+        PassNode(comment="x は 1 と等しくないか？"),
         IfNode(NameNode("x"),"!=", NumberNode(1),then_block, else_block),
-        PassNode(comment="Is x less than 1?"),
+        PassNode(comment="x は 1 より小さいか？"),
         IfNode(NameNode("x"),"<", NumberNode(1),then_block, else_block),
-        PassNode(comment="Is x greater than 1?"),
+        PassNode(comment="x は 1 より大きいか？"),
         IfNode(NameNode("x"),">", NumberNode(1),then_block, else_block),
-        PassNode(comment="Is x less than or equal to 1?"),
+        PassNode(comment="x は 1 以下か？"),
         IfNode(NameNode("x"),"<=", NumberNode(1),then_block, else_block),
-        PassNode(comment="Is x greater than or equal to 1?"),
+        PassNode(comment="x は 1 以上か？"),
         IfNode(NameNode("x"),">=", NumberNode(1),then_block, else_block),
-        PassNode(comment="Test that all conditions were evaluated correctly"),
+        PassNode(comment="テスト: すべての条件が正しく評価された"),
         AssertNode(NameNode("y"), NumberNode(3)),
         AssertNode(NameNode("z"), NumberNode(3)),
     ]
     return YuiExample(
         name="comparisons",
-        description="Comparison operations",
+        description="比較演算",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -216,22 +217,22 @@ def example_comparisons():
 def example_array():
     """配列操作のサンプル"""
     statements = [
-        PassNode(comment="Create an array A with elements 1, 2, 3"),
+        PassNode(comment="要素 1, 2, 3 を持つ配列 A を作成する"),
         AssignmentNode(NameNode("A"),ArrayNode([NumberNode(1),NumberNode(2),NumberNode(3)])),
-        PassNode(comment="Append 0 to the end of A"),
+        PassNode(comment="A の末尾に 0 を追加する"),
         AppendNode(NameNode("A"),NumberNode(0)),
-        PassNode(comment="Increment the first element of A"),
+        PassNode(comment="A の最初の要素を1増やす"),
         IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0))),
-        PassNode(comment="If 2 is in A, set the first element to the fourth element"),
+        PassNode(comment="A に 2 があれば、最初の要素を4番目の要素に設定する"),
         IfNode(NumberNode(2), "in", NameNode("A"),
             AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)),GetIndexNode(NameNode("A"), NumberNode(3)))
         ),
-        PassNode(comment="Test that the array has 4 elements"),
+        PassNode(comment="テスト: 配列が4要素"),
         AssertNode(ArrayLenNode(NameNode("A")), NumberNode(4)),
     ]
     return YuiExample(
         name="array",
-        description="Array creation and element manipulation",
+        description="配列の作成と要素操作",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -239,24 +240,24 @@ def example_array():
 def example_strings():
     """文字列操作のサンプル"""
     statements = [
-        PassNode(comment="Create a string s with value 'hello'"),
+        PassNode(comment="'hello' という文字列 s を作成する"),
         AssignmentNode(NameNode("s"), StringNode("hello")),
-        PassNode(comment="Set the first character of s to 'H'"),
-        PassNode(comment="Note: strings are just the array of character codes. So we can manipulate them like arrays."),
+        PassNode(comment="s の最初の文字を 'H' に設定する"),
+        PassNode(comment="注: 文字列は文字コードの配列です。配列と同様に操作できます。"),
         AssignmentNode(GetIndexNode(NameNode("s"), NumberNode(0)), GetIndexNode(StringNode("H"), 0)),
-        PassNode(comment='Append " world" to s'),
+        PassNode(comment='s に " world" を連結する'),
         AssignmentNode(NameNode("t"), StringNode(" world")),
         AssignmentNode(NameNode("i"), NumberNode(0)),
         RepeatNode(ArrayLenNode(NameNode("t")), BlockNode([
             AppendNode(NameNode("s"), GetIndexNode(NameNode("t"), NameNode("i"))),
             IncrementNode(NameNode("i")),
         ])),
-        PassNode(comment="Test that s is now 'Hello world'"),
+        PassNode(comment="テスト: s が 'Hello world' になっている"),
         AssertNode(NameNode("s"), StringNode("Hello world")),
     ]
     return YuiExample(
         name="strings",
-        description="String creation and manipulation",
+        description="文字列の作成と操作",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -264,29 +265,29 @@ def example_strings():
 def example_objects():
     """オブジェクト操作のサンプル"""
     statements = [
-        PassNode(comment="Create an object O with properties x and y"),
+        PassNode(comment="プロパティ x と y を持つオブジェクト O を作成する"),
         AssignmentNode(NameNode("O"), ObjectNode({
             "x": NumberNode(0),
             "y": NumberNode(0)
         })),
-        PassNode(comment="Set the x property of O to 1"),
+        PassNode(comment="O の x プロパティを 1 に設定する"),
         AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(1)),
-        PassNode(comment="Set the y property of O to 2"),
+        PassNode(comment="O の y プロパティを 2 に設定する"),
         AssignmentNode(GetIndexNode(NameNode("O"), StringNode("y")), NumberNode(2)),
-        PassNode(comment="Test that O has properties x=1 and y=2"),
+        PassNode(comment="テスト: O のプロパティが x=1、y=2"),
         AssertNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(1)),
         AssertNode(GetIndexNode(NameNode("O"), StringNode("y")), NumberNode(2)),
     ]
     return YuiExample(
         name="objects",
-        description="Object creation and property manipulation",
+        description="オブジェクトの作成とプロパティ操作",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
 
 def example_function():
     statements = [
-        PassNode(comment="Define function that adds 1"),
+        PassNode(comment="1を加算する関数を定義する"),
         FuncDefNode(
             NameNode("succ"), [NameNode("n")],
             BlockNode([
@@ -301,14 +302,14 @@ def example_function():
     ]
     return YuiExample(
         name="function",
-        description="Function definition and call (increment function)",
+        description="関数の定義と呼び出し（インクリメント関数）",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
 
 def example_function_no_argument():
     statements = [
-        PassNode(comment="Define function that adds 1"),
+        PassNode(comment="引数なしで 0 を返す関数を定義する"),
         FuncDefNode(
             NameNode("zero"), [], BlockNode(ReturnNode(NumberNode(0)))
         ),
@@ -316,17 +317,17 @@ def example_function_no_argument():
     ]
     return YuiExample(
         name="function_no_argument",
-        description="Function definition and call (zero-argument function and multi-argument function)",
+        description="関数の定義と呼び出し（引数なし関数と複数引数関数）",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
 
 def example_function_without_return():
     statements = [
-        PassNode(comment="Define function that creates a point object"),
+        PassNode(comment="点オブジェクトを作成する関数を定義する"),
         FuncDefNode(
             NameNode("point"), [NameNode("x"), NameNode("y")], BlockNode([
-                PassNode(comment="If function does not return anything, return the local environment as an object"),
+                PassNode(comment="関数が何も返さない場合、ローカル環境をオブジェクトとして返す"),
             ])
         ),
         AssignmentNode(NameNode("O"), FuncAppNode(NameNode("point"), [NumberNode(0), NumberNode(0)])),
@@ -334,7 +335,7 @@ def example_function_without_return():
     ]
     return YuiExample(
         name="function_without_return",
-        description="Function definition and call (function without return value)",
+        description="関数の定義と呼び出し（戻り値なし関数）",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -342,14 +343,14 @@ def example_function_without_return():
 def example_recursive_function():
     """関数のサンプル"""
     statements = [
-        PassNode(comment="Define recursive function that computes factorial"),
+        PassNode(comment="階乗を計算する再帰関数を定義する"),
         FuncDefNode(
             NameNode("fact"), [NameNode("n")],
             BlockNode([
                 IfNode(NameNode("n"), "==", NumberNode(0),
                     BlockNode([ReturnNode(NumberNode(1))]),
                     BlockNode([
-                        PassNode(comment="Yui does not have arithmetic operators."),
+                        PassNode(comment="Yui には算術演算子がありません。"),
                         ReturnNode(FuncAppNode(NameNode("multiplex"), 
                         [NameNode("n"), FuncAppNode(NameNode("fact"), 
                                                     [FuncAppNode(NameNode("decrease"), [NameNode("n")])])]))
@@ -357,7 +358,7 @@ def example_recursive_function():
                 )
             ])
         ),
-        PassNode(comment="multiplex(a, b) function for a * b."),
+        PassNode(comment="multiplex(a, b): a * b を計算する関数"),
         FuncDefNode(
             NameNode("multiplex"), [NameNode("a"), NameNode("b")], BlockNode([
                 AssignmentNode(NameNode("result"), NumberNode(0)),
@@ -369,21 +370,21 @@ def example_recursive_function():
                 ReturnNode(NameNode("result"))
             ])
         ),
-        PassNode(comment="decrease(n) function for n-1."),
+        PassNode(comment="decrease(n): n-1 を計算する関数"),
         FuncDefNode(
             NameNode("decrease"), [NameNode("n")], BlockNode([
                 DecrementNode(NameNode("n")),
                 ReturnNode(NameNode("n"))
             ])
         ),
-        PassNode(comment="Test fact(0) is 1"),
+        PassNode(comment="テスト: fact(0) が 1"),
         AssertNode(FuncAppNode(NameNode("fact"),[NumberNode(0)]), NumberNode(1)),
-        PassNode(comment="Test that fact(5) is 120"),
+        PassNode(comment="テスト: fact(5) が 120"),
         AssertNode(FuncAppNode(NameNode("fact"),[NumberNode(5)]), NumberNode(120)),
     ]
     return YuiExample(
         name="recursive_function",
-        description="Recursive function definition and call (factorial function)",
+        description="再帰関数の定義と呼び出し（階乗関数）",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -402,8 +403,8 @@ def example_float_add():
     アルゴリズム: i=7 から i=1 まで逆順に桁ごとに加算し繰り上がりを伝播する
     """
     statements = [
-        PassNode(comment="float format: [sign, d1..d7]  sign=1 or -1, d1..d7 = abs(x)*1e6 digits"),
-        PassNode(comment="float_add(a, b): add two same-sign float arrays (no stdlib)"),
+        PassNode(comment="float形式: [符号, d1..d7]  符号=1または-1、d1..d7 = abs(x)*1e6 の各桁"),
+        PassNode(comment="float_add(a, b): 同符号の float 配列を足し合わせる（stdlib なし）"),
         FuncDefNode(
             NameNode("float_add"), [NameNode("a"), NameNode("b")],
             BlockNode([
@@ -464,7 +465,7 @@ def example_float_add():
         AssertNode(GetIndexNode(NameNode("c"), NumberNode(2)), NumberNode(6)),
         AssertNode(GetIndexNode(NameNode("c"), NumberNode(3)), NumberNode(4)),
         AssertNode(GetIndexNode(NameNode("c"), NumberNode(4)), NumberNode(0)),
-        PassNode(comment="1.99 + 1.01 = 3.00  (tests carry propagation)"),
+        PassNode(comment="1.99 + 1.01 = 3.00  (繰り上がり伝播のテスト)"),
         AssignmentNode(NameNode("a"), ArrayNode([
             NumberNode(1), NumberNode(1), NumberNode(9), NumberNode(9),
             NumberNode(0), NumberNode(0), NumberNode(0), NumberNode(0),
@@ -482,7 +483,7 @@ def example_float_add():
     ]
     return YuiExample(
         name="float_add",
-        description="Add two same-sign floats as digit arrays (no stdlib)",
+        description="同符号の float を桁配列として加算する（stdlib なし）",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -550,42 +551,42 @@ def example_arithmetic():
         ])
     )
     statements = [
-        PassNode(comment="Arithmetic functions for non-negative integers"),
+        PassNode(comment="非負整数向けの四則演算関数"),
         PassNode(comment="add(a, b): a + b"),
         add_func,
-        PassNode(comment="subtract(a, b): a - b  (requires a >= b)"),
+        PassNode(comment="subtract(a, b): a - b  (a >= b が必要)"),
         subtract_func,
         PassNode(comment="multiply(a, b): a * b"),
         multiply_func,
-        PassNode(comment="divide(a, b): integer quotient a // b"),
+        PassNode(comment="divide(a, b): 整数商 a // b"),
         divide_func,
-        PassNode(comment="modulo(a, b): remainder a % b"),
+        PassNode(comment="modulo(a, b): 余り a % b"),
         modulo_func,
-        PassNode(comment="Usage examples"),
+        PassNode(comment="使用例"),
         PrintExpressionNode(FuncAppNode(NameNode("add"),      [NumberNode(3),  NumberNode(4)])),
         PrintExpressionNode(FuncAppNode(NameNode("subtract"), [NumberNode(10), NumberNode(3)])),
         PrintExpressionNode(FuncAppNode(NameNode("multiply"), [NumberNode(3),  NumberNode(4)])),
         PrintExpressionNode(FuncAppNode(NameNode("divide"),   [NumberNode(10), NumberNode(3)])),
         PrintExpressionNode(FuncAppNode(NameNode("modulo"),   [NumberNode(10), NumberNode(3)])),
-        PassNode(comment="Test add"),
+        PassNode(comment="テスト: add"),
         AssertNode(FuncAppNode(NameNode("add"), [NumberNode(3), NumberNode(4)]), NumberNode(7)),
         AssertNode(FuncAppNode(NameNode("add"), [NumberNode(0), NumberNode(5)]), NumberNode(5)),
-        PassNode(comment="Test subtract"),
+        PassNode(comment="テスト: subtract"),
         AssertNode(FuncAppNode(NameNode("subtract"), [NumberNode(10), NumberNode(3)]), NumberNode(7)),
         AssertNode(FuncAppNode(NameNode("subtract"), [NumberNode(5),  NumberNode(5)]), NumberNode(0)),
-        PassNode(comment="Test multiply"),
+        PassNode(comment="テスト: multiply"),
         AssertNode(FuncAppNode(NameNode("multiply"), [NumberNode(3), NumberNode(4)]), NumberNode(12)),
         AssertNode(FuncAppNode(NameNode("multiply"), [NumberNode(0), NumberNode(5)]), NumberNode(0)),
-        PassNode(comment="Test divide"),
+        PassNode(comment="テスト: divide"),
         AssertNode(FuncAppNode(NameNode("divide"), [NumberNode(10), NumberNode(3)]), NumberNode(3)),
         AssertNode(FuncAppNode(NameNode("divide"), [NumberNode(9),  NumberNode(3)]), NumberNode(3)),
-        PassNode(comment="Test modulo"),
+        PassNode(comment="テスト: modulo"),
         AssertNode(FuncAppNode(NameNode("modulo"), [NumberNode(10), NumberNode(3)]), NumberNode(1)),
         AssertNode(FuncAppNode(NameNode("modulo"), [NumberNode(15), NumberNode(5)]), NumberNode(0)),
     ]
     return YuiExample(
         name="arithmetic",
-        description="Arithmetic functions (add, subtract, multiply, divide, modulo) for non-negative integers",
+        description="非負整数向けの算術関数（add, subtract, multiply, divide, modulo）",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -625,18 +626,18 @@ def example_monte_carlo():
     )
     statements = [
         ImportNode(),
-        PassNode(comment="Monte Carlo method: estimate π by random point sampling"),
-        PassNode(comment="Throw n random points at a unit square [0,1)×[0,1)."),
-        PassNode(comment="Points inside the unit circle (dist ≤ 1) are counted."),
+        PassNode(comment="モンテカルロ法: ランダム点のサンプリングで π を推定する"),
+        PassNode(comment="単位正方形 [0,1)×[0,1) に n 個のランダム点を投げる。"),
+        PassNode(comment="単位円内の点（dist ≤ 1）をカウントする。"),
         PassNode(comment="π ≈ 4 × (hits / n)"),
         monte_carlo_func,
-        PassNode(comment="More samples → closer to π ≈ 3.14159..."),
+        PassNode(comment="サンプル数が多いほど π ≈ 3.14159... に近づく"),
         PrintExpressionNode(FuncAppNode(NameNode("monte_carlo"), [NumberNode(100)])),
         PrintExpressionNode(FuncAppNode(NameNode("monte_carlo"), [NumberNode(1000)])),
     ]
     return YuiExample(
         name="monte_carlo",
-        description="Estimate π using the Monte Carlo method (stdlib: 乱数, 平方根)",
+        description="モンテカルロ法で π を推定する（stdlib: 乱数, 平方根）",
         ast_node=BlockNode(statements, top_level=True),
         kind='sample',
     )
@@ -645,14 +646,14 @@ def example_monte_carlo():
 def example_null_assignment():
     """null の代入と比較"""
     statements = [
-        PassNode(comment="Assign null to a variable"),
+        PassNode(comment="変数に null を代入する"),
         AssignmentNode(NameNode("x"), ConstNode(None)),
-        PassNode(comment="Test that x is null"),
+        PassNode(comment="テスト: x が null"),
         AssertNode(NameNode("x"), ConstNode(None)),
     ]
     return YuiExample(
         name="null_assignment",
-        description="Assign null to a variable and compare",
+        description="変数に null を代入して比較する",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -661,16 +662,16 @@ def example_null_assignment():
 def example_boolean_assignment():
     """true / false の代入とアサート"""
     statements = [
-        PassNode(comment="Assign true and false to variables"),
+        PassNode(comment="true と false を変数に代入する"),
         AssignmentNode(NameNode("t"), ConstNode(True)),
         AssignmentNode(NameNode("f"), ConstNode(False)),
-        PassNode(comment="Test that t is true and f is false"),
+        PassNode(comment="テスト: t が true で f が false"),
         AssertNode(NameNode("t"), ConstNode(True)),
         AssertNode(NameNode("f"), ConstNode(False)),
     ]
     return YuiExample(
         name="boolean_assignment",
-        description="Assign true/false to variables and compare",
+        description="変数に true/false を代入して比較する",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
@@ -679,19 +680,19 @@ def example_boolean_assignment():
 def example_boolean_branch():
     """boolean で条件分岐"""
     statements = [
-        PassNode(comment="Branch on a boolean value"),
+        PassNode(comment="boolean 値で条件分岐する"),
         AssignmentNode(NameNode("flag"), ConstNode(True)),
         AssignmentNode(NameNode("result"), NumberNode(0)),
         IfNode(NameNode("flag"), "==", ConstNode(True),
             BlockNode(AssignmentNode(NameNode("result"), NumberNode(1))),
             BlockNode(AssignmentNode(NameNode("result"), NumberNode(2))),
         ),
-        PassNode(comment="Test that result is 1 because flag was true"),
+        PassNode(comment="テスト: flag が true だったので result が 1"),
         AssertNode(NameNode("result"), NumberNode(1)),
     ]
     return YuiExample(
         name="boolean_branch",
-        description="Conditional branch based on a boolean value",
+        description="boolean 値に基づく条件分岐",
         ast_node=BlockNode(statements, top_level=True),
         kind='both',
     )
@@ -700,7 +701,7 @@ def example_boolean_branch():
 def example_null_check():
     """null チェック関数"""
     statements = [
-        PassNode(comment="Define is_null function"),
+        PassNode(comment="is_null 関数を定義する"),
         FuncDefNode(
             NameNode("is_null"), [NameNode("v")],
             BlockNode([
@@ -710,14 +711,14 @@ def example_null_check():
                 )
             ])
         ),
-        PassNode(comment="Test is_null with null and non-null values"),
+        PassNode(comment="テスト: null と非 null の値で is_null を確認"),
         AssertNode(FuncAppNode(NameNode("is_null"), [ConstNode(None)]),  ConstNode(True)),
         AssertNode(FuncAppNode(NameNode("is_null"), [NumberNode(0)]),    ConstNode(False)),
         AssertNode(FuncAppNode(NameNode("is_null"), [StringNode("")]),   ConstNode(False)),
     ]
     return YuiExample(
         name="null_check",
-        description="Function that checks if a value is null",
+        description="値が null かどうかを確認する関数",
         ast_node=BlockNode(statements, top_level=True),
         kind='test',
     )
