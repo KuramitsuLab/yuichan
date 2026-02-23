@@ -74,7 +74,7 @@ class TestCodeGeneration:
     def test_AssignmentNode(self):
         node = AssignmentNode(NameNode("x"), NumberNode(10))
         emitter = self.init_coder()
-        assert emitter.emit(node) == 'x=10'
+        assert emitter.emit(node) == 'x = 10'
 
     def test_IncrementNode(self):
         node = IncrementNode(NameNode("x"))
@@ -112,4 +112,4 @@ class TestCodeGeneration:
             AssignmentNode(NameNode("y"), NumberNode(2)),
         ], top_level=True)
         emitter = self.init_coder()
-        assert emitter.emit(node) == 'x=1\ny=2'
+        assert emitter.emit(node) == 'x = 1\ny = 2'

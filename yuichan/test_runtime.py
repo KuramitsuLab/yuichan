@@ -113,6 +113,12 @@ class TestNativeFunctionWrapping:
         assert isinstance(env['x'], YuiValue)
         assert val(env, 'x') == 3
 
+    def test_sqrt_stores_yuivalue(self):
+        env = run_std("x = 平方根(4)")
+        assert isinstance(env['x'], YuiValue)
+        assert YuiType.is_float(env['x'])
+        assert abs(val(env, 'x') - 2.0) < 1e-6
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # アサート (>>>) が NativeFunction の戻り値で正しく動作すること (回帰テスト)
@@ -251,3 +257,157 @@ class TestBasicExec:
     def test_syntax_error_raises_yuierror(self):
         with pytest.raises(YuiError):
             run("もし もし もし")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 二項演算子 (allow_binary_ops=True)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBinaryOps:
+    """BinaryNode の評価テスト"""
+
+    def run_bin(self, source: str) -> dict:
+        rt = YuiRuntime()
+        rt.allow_binary_ops = True
+        rt.exec(source, 'yui', eval_mode=False)
+        return rt.environments[-1]
+
+    # ── 無効時のエラー ────────────────────────────────────────
+    def test_disabled_by_default(self):
+        with pytest.raises(YuiError):
+            run("x = 1 + 2")
+
+    # ── 整数算術 ──────────────────────────────────────────────
+    def test_add_ints(self):
+        assert val(self.run_bin("x = 1 + 2"), 'x') == 3
+
+    def test_subtract_ints(self):
+        assert val(self.run_bin("x = 10 - 3"), 'x') == 7
+
+    def test_multiply_ints(self):
+        assert val(self.run_bin("x = 3 * 4"), 'x') == 12
+
+    def test_divide_int_floor(self):
+        assert val(self.run_bin("x = 10 / 3"), 'x') == 3
+
+    def test_modulo_ints(self):
+        assert val(self.run_bin("x = 10 % 3"), 'x') == 1
+
+    # ── 少数算術 ──────────────────────────────────────────────
+    def test_add_floats(self):
+        assert abs(val(self.run_bin("x = 1.5 + 2.5"), 'x') - 4.0) < 1e-6
+
+    def test_divide_float(self):
+        assert abs(val(self.run_bin("x = 10.0 / 4"), 'x') - 2.5) < 1e-6
+
+    def test_modulo_float(self):
+        assert abs(val(self.run_bin("x = 5.5 % 2.0"), 'x') - 1.5) < 1e-6
+
+    # ── 型昇格: 整数 OP 少数 → 少数 ──────────────────────────
+    def test_int_plus_float_is_float(self):
+        env = self.run_bin("x = 1 + 2.0")
+        assert YuiType.is_float(env['x'])
+        assert abs(val(env, 'x') - 3.0) < 1e-6
+
+    def test_int_minus_float_is_float(self):
+        env = self.run_bin("x = 5 - 1.5")
+        assert YuiType.is_float(env['x'])
+        assert abs(val(env, 'x') - 3.5) < 1e-6
+
+    def test_int_multiply_float_is_float(self):
+        env = self.run_bin("x = 3 * 2.0")
+        assert YuiType.is_float(env['x'])
+        assert abs(val(env, 'x') - 6.0) < 1e-6
+
+    def test_int_divide_float_is_float(self):
+        env = self.run_bin("x = 7 / 2.0")
+        assert YuiType.is_float(env['x'])
+        assert abs(val(env, 'x') - 3.5) < 1e-6
+
+    # ── 文字列連結 ────────────────────────────────────────────
+    def test_string_concat(self):
+        assert val(self.run_bin('x = "hello" + " world"'), 'x') == "hello world"
+
+    def test_string_concat_empty(self):
+        assert val(self.run_bin('x = "" + "abc"'), 'x') == "abc"
+
+    # ── 配列連結 ──────────────────────────────────────────────
+    def test_array_concat(self):
+        assert val(self.run_bin("x = [1, 2] + [3, 4]"), 'x') == [1, 2, 3, 4]
+
+    def test_array_concat_empty(self):
+        assert val(self.run_bin("x = [] + [1, 2]"), 'x') == [1, 2]
+
+    # ── ゼロ除算 ──────────────────────────────────────────────
+    def test_divide_by_zero(self):
+        with pytest.raises(YuiError):
+            self.run_bin("x = 5 / 0")
+
+    def test_modulo_by_zero(self):
+        with pytest.raises(YuiError):
+            self.run_bin("x = 5 % 0")
+
+
+class TestBinaryOpsUnlock:
+    """関数定義 + アサート通過でアンロックされることのテスト"""
+
+    FUNC_AND_ASSERT = (
+        STDLIB +
+        "double = 入力 n に対して {\n"
+        "  積(n, 2) が答え\n"
+        "}\n"
+        ">>> double(3)\n"
+        "6\n"
+    )
+
+    def run_unlocked(self, extra: str) -> dict:
+        rt = YuiRuntime()
+        rt.exec(self.FUNC_AND_ASSERT, 'yui', eval_mode=False)
+        rt.exec(extra, 'yui', eval_mode=False)
+        return rt.environments[-1]
+
+    # ── アンロック条件 ────────────────────────────────────────
+    def test_function_defined_flag(self):
+        """visitFuncDefNode が function_defined を True にする"""
+        rt = YuiRuntime()
+        rt.exec("f = 入力 n に対して { nが答え }", 'yui', eval_mode=False)
+        assert rt.function_defined is True
+
+    def test_function_defined_false_initially(self):
+        """初期状態は False"""
+        rt = YuiRuntime()
+        assert rt.function_defined is False
+
+    def test_locked_without_assert(self):
+        """関数定義のみ（アサートなし）ではロックのまま"""
+        rt = YuiRuntime()
+        rt.exec("f = 入力 n に対して { nが答え }", 'yui', eval_mode=False)
+        with pytest.raises(YuiError):
+            rt.exec("x = 1 + 2", 'yui', eval_mode=False)
+
+    def test_locked_without_function(self):
+        """アサート通過のみ（関数定義なし）ではロックのまま"""
+        rt = YuiRuntime()
+        rt.exec(STDLIB + ">>> 和(1, 2)\n3", 'yui', eval_mode=False)
+        with pytest.raises(YuiError):
+            rt.exec("x = 1 + 2", 'yui', eval_mode=False)
+
+    def test_unlocked_after_func_and_assert(self):
+        """関数定義 + アサート通過後は二項演算子が使える"""
+        env = self.run_unlocked("x = 1 + 2")
+        assert val(env, 'x') == 3
+
+    def test_unlocked_add(self):
+        assert val(self.run_unlocked("x = 10 + 5"), 'x') == 15
+
+    def test_unlocked_subtract(self):
+        assert val(self.run_unlocked("x = 10 - 3"), 'x') == 7
+
+    def test_unlocked_multiply(self):
+        assert val(self.run_unlocked("x = 3 * 4"), 'x') == 12
+
+    def test_unlocked_divide(self):
+        assert val(self.run_unlocked("x = 10 / 4"), 'x') == 2
+
+    def test_unlocked_modulo(self):
+        assert val(self.run_unlocked("x = 10 % 3"), 'x') == 1

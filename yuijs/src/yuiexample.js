@@ -5,23 +5,48 @@ import {
     MinusNode, ArrayLenNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode, PassNode,
-    FuncDefNode, FuncAppNode, ReturnNode,
+    FuncDefNode, FuncAppNode, ReturnNode, ImportNode,
     PrintExpressionNode,
     GetIndexNode, AssertNode,
 } from './yuiast.js';
 
 import { CodingVisitor } from './yuicoding.js';
 
+/** BlockNode から AssertNode を取り除いた新しい BlockNode を返す。
+ *  直前の "Test ..." PassNode もあわせて除去する。
+ */
+function _stripAsserts(block) {
+    const filtered = [];
+    for (const stmt of block.statements) {
+        if (stmt instanceof AssertNode) {
+            if (filtered.length > 0) {
+                const prev = filtered[filtered.length - 1];
+                if (prev instanceof PassNode
+                        && prev.comment
+                        && prev.comment.toLowerCase().startsWith('test')) {
+                    filtered.pop();
+                }
+            }
+        } else {
+            filtered.push(stmt);
+        }
+    }
+    return new BlockNode(filtered, block.topLevel);
+}
+
 export class YuiExample {
-    constructor(name, description, astNode) {
+    /** kind: 'sample' | 'test' | 'both' */
+    constructor(name, description, astNode, kind = 'both') {
         this.name = name;
         this.description = description;
         this.astNode = astNode;
+        this.kind = kind;
     }
 
-    generate(syntax = 'yui') {
+    generate(syntax = 'yui', includeAsserts = true) {
+        const node = includeAsserts ? this.astNode : _stripAsserts(this.astNode);
         const visitor = new CodingVisitor(syntax);
-        return visitor.emit(this.astNode);
+        return visitor.emit(node);
     }
 }
 
@@ -33,7 +58,8 @@ export function exampleHelloWorld() {
     return new YuiExample(
         'hello_world',
         "Print 'Hello, world!'",
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'sample',
     );
 }
 
@@ -53,7 +79,8 @@ export function exampleVariables() {
     return new YuiExample(
         'variables',
         'Basic variable definition and increment/decrement',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -76,7 +103,54 @@ export function exampleLoop() {
     return new YuiExample(
         'loop',
         'Loop 10 times and break at 5',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
+    );
+}
+
+export function exampleFizzBuzz() {
+    const statements = [
+        new PassNode('FizzBuzz from 1 to 100, collected into a list'),
+        new AssignmentNode(new NameNode('result'), new ArrayNode([])),
+        new AssignmentNode(new NameNode('i'),    new NumberNode(0)),
+        new AssignmentNode(new NameNode('fizz'), new NumberNode(0)),
+        new AssignmentNode(new NameNode('buzz'), new NumberNode(0)),
+        new RepeatNode(new NumberNode(100), new BlockNode([
+            new IncrementNode(new NameNode('i')),
+            new IncrementNode(new NameNode('fizz')),
+            new IncrementNode(new NameNode('buzz')),
+            new IfNode(new NameNode('fizz'), '==', new NumberNode(3),
+                new BlockNode(new AssignmentNode(new NameNode('fizz'), new NumberNode(0)))),
+            new IfNode(new NameNode('buzz'), '==', new NumberNode(5),
+                new BlockNode(new AssignmentNode(new NameNode('buzz'), new NumberNode(0)))),
+            new IfNode(new NameNode('fizz'), '==', new NumberNode(0),
+                new BlockNode(
+                    new IfNode(new NameNode('buzz'), '==', new NumberNode(0),
+                        new BlockNode(new AppendNode(new NameNode('result'), new StringNode('FizzBuzz'))),
+                        new BlockNode(new AppendNode(new NameNode('result'), new StringNode('Fizz'))),
+                    )
+                ),
+                new BlockNode(
+                    new IfNode(new NameNode('buzz'), '==', new NumberNode(0),
+                        new BlockNode(new AppendNode(new NameNode('result'), new StringNode('Buzz'))),
+                        new BlockNode(new AppendNode(new NameNode('result'), new NameNode('i'))),
+                    )
+                ),
+            ),
+        ])),
+        new PrintExpressionNode(new NameNode('result')),
+        new PassNode('Test: length is 100'),
+        new AssertNode(new ArrayLenNode(new NameNode('result')), new NumberNode(100)),
+        new PassNode('Test: spot-check Fizz, Buzz, FizzBuzz positions'),
+        new AssertNode(new GetIndexNode(new NameNode('result'), new NumberNode(2)),  new StringNode('Fizz')),
+        new AssertNode(new GetIndexNode(new NameNode('result'), new NumberNode(4)),  new StringNode('Buzz')),
+        new AssertNode(new GetIndexNode(new NameNode('result'), new NumberNode(14)), new StringNode('FizzBuzz')),
+    ];
+    return new YuiExample(
+        'fizzbuzz',
+        'FizzBuzz from 1 to 100, collected into a list',
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -99,7 +173,8 @@ export function exampleNestedConditionalBranches() {
     return new YuiExample(
         'nested_conditional_branches',
         'Nested conditional branching',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -130,7 +205,8 @@ export function exampleComparisons() {
     return new YuiExample(
         'comparisons',
         'Comparison operations',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -157,7 +233,8 @@ export function exampleArray() {
     return new YuiExample(
         'array',
         'Array creation and element manipulation',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -184,7 +261,8 @@ export function exampleStrings() {
     return new YuiExample(
         'strings',
         'String creation and manipulation',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -212,7 +290,8 @@ export function exampleObjects() {
     return new YuiExample(
         'objects',
         'Object creation and property manipulation',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -234,7 +313,8 @@ export function exampleFunction() {
     return new YuiExample(
         'function',
         'Function definition and call (increment function)',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -250,7 +330,8 @@ export function exampleFunctionNoArgument() {
     return new YuiExample(
         'function_no_argument',
         'Function definition and call (zero-argument function)',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -271,7 +352,8 @@ export function exampleFunctionWithoutReturn() {
     return new YuiExample(
         'function_without_return',
         'Function definition and call (function without return value)',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -324,7 +406,8 @@ export function exampleRecursiveFunction() {
     return new YuiExample(
         'recursive_function',
         'Recursive function definition and call (factorial function)',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -406,7 +489,110 @@ export function exampleFloatAdd() {
     return new YuiExample(
         'float_add',
         'Add two same-sign floats as digit arrays (no stdlib)',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
+    );
+}
+
+export function exampleArithmetic() {
+    const addFunc = new FuncDefNode(
+        new NameNode('add'), [new NameNode('a'), new NameNode('b')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('result'), new NameNode('a')),
+            new RepeatNode(new NameNode('b'), new BlockNode([
+                new IncrementNode(new NameNode('result')),
+            ])),
+            new ReturnNode(new NameNode('result')),
+        ])
+    );
+    const subtractFunc = new FuncDefNode(
+        new NameNode('subtract'), [new NameNode('a'), new NameNode('b')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('result'), new NameNode('a')),
+            new RepeatNode(new NameNode('b'), new BlockNode([
+                new DecrementNode(new NameNode('result')),
+            ])),
+            new ReturnNode(new NameNode('result')),
+        ])
+    );
+    const multiplyFunc = new FuncDefNode(
+        new NameNode('multiply'), [new NameNode('a'), new NameNode('b')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('result'), new NumberNode(0)),
+            new RepeatNode(new NameNode('b'), new BlockNode([
+                new AssignmentNode(new NameNode('result'),
+                    new FuncAppNode(new NameNode('add'), [new NameNode('result'), new NameNode('a')])),
+            ])),
+            new ReturnNode(new NameNode('result')),
+        ])
+    );
+    const divideFunc = new FuncDefNode(
+        new NameNode('divide'), [new NameNode('a'), new NameNode('b')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('q'), new NumberNode(0)),
+            new AssignmentNode(new NameNode('r'), new NameNode('a')),
+            new RepeatNode(new NameNode('a'), new BlockNode([
+                new IfNode(new NameNode('r'), '<', new NameNode('b'),
+                    new BlockNode(new BreakNode())),
+                new IncrementNode(new NameNode('q')),
+                new AssignmentNode(new NameNode('r'),
+                    new FuncAppNode(new NameNode('subtract'), [new NameNode('r'), new NameNode('b')])),
+            ])),
+            new ReturnNode(new NameNode('q')),
+        ])
+    );
+    const moduloFunc = new FuncDefNode(
+        new NameNode('modulo'), [new NameNode('a'), new NameNode('b')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('r'), new NameNode('a')),
+            new RepeatNode(new NameNode('a'), new BlockNode([
+                new IfNode(new NameNode('r'), '<', new NameNode('b'),
+                    new BlockNode(new BreakNode())),
+                new AssignmentNode(new NameNode('r'),
+                    new FuncAppNode(new NameNode('subtract'), [new NameNode('r'), new NameNode('b')])),
+            ])),
+            new ReturnNode(new NameNode('r')),
+        ])
+    );
+    const statements = [
+        new PassNode('Arithmetic functions for non-negative integers'),
+        new PassNode('add(a, b): a + b'),
+        addFunc,
+        new PassNode('subtract(a, b): a - b  (requires a >= b)'),
+        subtractFunc,
+        new PassNode('multiply(a, b): a * b'),
+        multiplyFunc,
+        new PassNode('divide(a, b): integer quotient a // b'),
+        divideFunc,
+        new PassNode('modulo(a, b): remainder a % b'),
+        moduloFunc,
+        new PassNode('Usage examples'),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('add'),      [new NumberNode(3),  new NumberNode(4)])),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('subtract'), [new NumberNode(10), new NumberNode(3)])),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('multiply'), [new NumberNode(3),  new NumberNode(4)])),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('divide'),   [new NumberNode(10), new NumberNode(3)])),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('modulo'),   [new NumberNode(10), new NumberNode(3)])),
+        new PassNode('Test add'),
+        new AssertNode(new FuncAppNode(new NameNode('add'), [new NumberNode(3), new NumberNode(4)]), new NumberNode(7)),
+        new AssertNode(new FuncAppNode(new NameNode('add'), [new NumberNode(0), new NumberNode(5)]), new NumberNode(5)),
+        new PassNode('Test subtract'),
+        new AssertNode(new FuncAppNode(new NameNode('subtract'), [new NumberNode(10), new NumberNode(3)]), new NumberNode(7)),
+        new AssertNode(new FuncAppNode(new NameNode('subtract'), [new NumberNode(5),  new NumberNode(5)]), new NumberNode(0)),
+        new PassNode('Test multiply'),
+        new AssertNode(new FuncAppNode(new NameNode('multiply'), [new NumberNode(3), new NumberNode(4)]), new NumberNode(12)),
+        new AssertNode(new FuncAppNode(new NameNode('multiply'), [new NumberNode(0), new NumberNode(5)]), new NumberNode(0)),
+        new PassNode('Test divide'),
+        new AssertNode(new FuncAppNode(new NameNode('divide'), [new NumberNode(10), new NumberNode(3)]), new NumberNode(3)),
+        new AssertNode(new FuncAppNode(new NameNode('divide'), [new NumberNode(9),  new NumberNode(3)]), new NumberNode(3)),
+        new PassNode('Test modulo'),
+        new AssertNode(new FuncAppNode(new NameNode('modulo'), [new NumberNode(10), new NumberNode(3)]), new NumberNode(1)),
+        new AssertNode(new FuncAppNode(new NameNode('modulo'), [new NumberNode(15), new NumberNode(5)]), new NumberNode(0)),
+    ];
+    return new YuiExample(
+        'arithmetic',
+        'Arithmetic functions (add, subtract, multiply, divide, modulo) for non-negative integers',
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -420,7 +606,8 @@ export function exampleNullAssignment() {
     return new YuiExample(
         'null_assignment',
         'Assign null to a variable and compare',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -436,7 +623,8 @@ export function exampleBooleanAssignment() {
     return new YuiExample(
         'boolean_assignment',
         'Assign true/false to variables and compare',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
     );
 }
 
@@ -455,7 +643,8 @@ export function exampleBooleanBranch() {
     return new YuiExample(
         'boolean_branch',
         'Conditional branch based on a boolean value',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'both',
     );
 }
 
@@ -479,7 +668,58 @@ export function exampleNullCheck() {
     return new YuiExample(
         'null_check',
         'Function that checks if a value is null',
-        new BlockNode(statements, true)
+        new BlockNode(statements, true),
+        'test',
+    );
+}
+
+export function exampleMonteCarlo() {
+    const monteCarloFunc = new FuncDefNode(
+        new NameNode('monte_carlo'), [new NameNode('n')],
+        new BlockNode([
+            new AssignmentNode(new NameNode('hits'), new NumberNode(0)),
+            new RepeatNode(new NameNode('n'), new BlockNode([
+                new AssignmentNode(new NameNode('x'), new FuncAppNode(new NameNode('乱数'), [])),
+                new AssignmentNode(new NameNode('y'), new FuncAppNode(new NameNode('乱数'), [])),
+                new AssignmentNode(new NameNode('dist'),
+                    new FuncAppNode(new NameNode('平方根'), [
+                        new FuncAppNode(new NameNode('和'), [
+                            new FuncAppNode(new NameNode('積'), [new NameNode('x'), new NameNode('x')]),
+                            new FuncAppNode(new NameNode('積'), [new NameNode('y'), new NameNode('y')]),
+                        ]),
+                    ])
+                ),
+                new IfNode(new NameNode('dist'), '<=', new NumberNode(1),
+                    new BlockNode(new IncrementNode(new NameNode('hits')))
+                ),
+            ])),
+            new ReturnNode(
+                new FuncAppNode(new NameNode('商'), [
+                    new FuncAppNode(new NameNode('積'), [
+                        new FuncAppNode(new NameNode('少数化'), [new NameNode('hits')]),
+                        new NumberNode(4),
+                    ]),
+                    new FuncAppNode(new NameNode('少数化'), [new NameNode('n')]),
+                ])
+            ),
+        ])
+    );
+    const statements = [
+        new ImportNode(),
+        new PassNode('Monte Carlo method: estimate π by random point sampling'),
+        new PassNode('Throw n random points at a unit square [0,1)×[0,1).'),
+        new PassNode('Points inside the unit circle (dist ≤ 1) are counted.'),
+        new PassNode('π ≈ 4 × (hits / n)'),
+        monteCarloFunc,
+        new PassNode('More samples → closer to π ≈ 3.14159...'),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('monte_carlo'), [new NumberNode(100)])),
+        new PrintExpressionNode(new FuncAppNode(new NameNode('monte_carlo'), [new NumberNode(1000)])),
+    ];
+    return new YuiExample(
+        'monte_carlo',
+        'Estimate π using the Monte Carlo method (stdlib: 乱数, 平方根)',
+        new BlockNode(statements, true),
+        'sample',
     );
 }
 
@@ -488,6 +728,7 @@ export function getAllExamples() {
         exampleHelloWorld(),
         exampleVariables(),
         exampleLoop(),
+        exampleFizzBuzz(),
         exampleNestedConditionalBranches(),
         exampleComparisons(),
         exampleArray(),
@@ -497,10 +738,22 @@ export function getAllExamples() {
         exampleFunctionNoArgument(),
         exampleFunctionWithoutReturn(),
         exampleRecursiveFunction(),
+        exampleArithmetic(),
         exampleFloatAdd(),
+        exampleMonteCarlo(),
         exampleNullAssignment(),
         exampleBooleanAssignment(),
         exampleBooleanBranch(),
         exampleNullCheck(),
     ];
+}
+
+/** 学習環境向けサンプルのみ返す（kind='sample' または 'both'） */
+export function getAllSamples() {
+    return getAllExamples().filter(e => e.kind === 'sample' || e.kind === 'both');
+}
+
+/** 実装テスト用の例のみ返す（kind='test' または 'both'） */
+export function getAllTestExamples() {
+    return getAllExamples().filter(e => e.kind === 'test' || e.kind === 'both');
 }

@@ -36,6 +36,24 @@ describe('abs', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 平方根 / sqrt
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('sqrt', () => {
+    test('perfect square int',   () => expect(n(stdlib.sqrt(v(4)))).toBeCloseTo(2.0));
+    test('perfect square large', () => expect(n(stdlib.sqrt(v(9)))).toBeCloseTo(3.0));
+    test('irrational',           () => expect(n(stdlib.sqrt(v(2)))).toBeCloseTo(Math.SQRT2));
+    test('from float',           () => expect(n(stdlib.sqrt(v(2.0)))).toBeCloseTo(Math.SQRT2));
+    test('zero',                 () => expect(n(stdlib.sqrt(v(0)))).toBeCloseTo(0.0));
+    test('returns float',        () => expect(YuiType.isFloat(stdlib.sqrt(v(4)))).toBe(true));
+
+    test('negative throws',      () => expect(() => stdlib.sqrt(v(-1))).toThrow(YuiError));
+    test('no args throws',       () => expect(() => stdlib.sqrt()).toThrow(YuiError));
+    test('too many args throws', () => expect(() => stdlib.sqrt(v(1), v(2))).toThrow(YuiError));
+    test('wrong type throws',    () => expect(() => stdlib.sqrt(v('hello'))).toThrow(YuiError));
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 和 / sum
 // ─────────────────────────────────────────────────────────────────────────────
 

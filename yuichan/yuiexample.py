@@ -6,30 +6,54 @@ ASTノードを使ってサンプルコードを構築し、
 CodeVisitorで異なる構文（Yui、Python風など）に変換して出力します。
 """
 
-from typing import List, Dict
+from typing import List
 from .yuiast import (
     ConstNode, NumberNode, StringNode, NameNode, ArrayNode, ObjectNode, MinusNode, ArrayLenNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode, PassNode,
-    FuncDefNode, FuncAppNode, ReturnNode,
+    FuncDefNode, FuncAppNode, ReturnNode, ImportNode,
     PrintExpressionNode,
     BinaryNode, GetIndexNode, AssertNode
 )
 from .yuicoding import CodingVisitor
-from .yuisyntax import load_syntax
+
+
+def _strip_asserts(block) -> 'BlockNode':
+    """BlockNode から AssertNode を取り除いた新しい BlockNode を返す。
+    直前の "Test ..." PassNode もあわせて除去する。
+    """
+    filtered = []
+    for stmt in block.statements:
+        if isinstance(stmt, AssertNode):
+            if (filtered
+                    and isinstance(filtered[-1], PassNode)
+                    and filtered[-1].comment
+                    and filtered[-1].comment.lower().startswith('test')):
+                filtered.pop()
+        else:
+            filtered.append(stmt)
+    return BlockNode(filtered, block.top_level)
 
 
 class YuiExample:
-    """Yui言語のサンプルコード生成クラス"""
+    """Yui言語のサンプルコード生成クラス
 
-    def __init__(self, name: str, description: str, ast_node):
+    kind:
+      'sample' — yui_editor など学習環境向けサンプル
+      'test'   — 実装テスト専用（学習環境には表示しない）
+      'both'   — 両方に使用
+    """
+
+    def __init__(self, name: str, description: str, ast_node, kind: str = 'both'):
         self.name = name
         self.description = description
         self.ast_node = ast_node
+        self.kind = kind
 
-    def generate(self, syntax: str = 'yui') -> str:
+    def generate(self, syntax: str = 'yui', include_asserts: bool = True) -> str:
+        node = self.ast_node if include_asserts else _strip_asserts(self.ast_node)
         visitor = CodingVisitor(syntax)
-        return visitor.emit(self.ast_node)
+        return visitor.emit(node)
 
 def example_hello_world():
     statements = [
@@ -39,7 +63,8 @@ def example_hello_world():
     return YuiExample(
         name="hello_world",
         description="Print 'Hello, world!'",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='sample',
     )
 
 def example_variables():
@@ -59,7 +84,8 @@ def example_variables():
     return YuiExample(
         name="variables",
         description="Basic variable definition and increment/decrement",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 def example_loop():
@@ -80,8 +106,56 @@ def example_loop():
     return YuiExample(
         name="loop",
         description="Loop 10 times and break at 5",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
+
+def example_fizzbuzz():
+    """1から100までのFizzBuzzをリストに追加する"""
+    statements = [
+        PassNode(comment="FizzBuzz from 1 to 100, collected into a list"),
+        AssignmentNode(NameNode("result"), ArrayNode([])),
+        AssignmentNode(NameNode("i"),    NumberNode(0)),
+        AssignmentNode(NameNode("fizz"), NumberNode(0)),
+        AssignmentNode(NameNode("buzz"), NumberNode(0)),
+        RepeatNode(NumberNode(100), BlockNode([
+            IncrementNode(NameNode("i")),
+            IncrementNode(NameNode("fizz")),
+            IncrementNode(NameNode("buzz")),
+            IfNode(NameNode("fizz"), "==", NumberNode(3),
+                BlockNode(AssignmentNode(NameNode("fizz"), NumberNode(0)))),
+            IfNode(NameNode("buzz"), "==", NumberNode(5),
+                BlockNode(AssignmentNode(NameNode("buzz"), NumberNode(0)))),
+            IfNode(NameNode("fizz"), "==", NumberNode(0),
+                BlockNode(
+                    IfNode(NameNode("buzz"), "==", NumberNode(0),
+                        BlockNode(AppendNode(NameNode("result"), StringNode("FizzBuzz"))),
+                        BlockNode(AppendNode(NameNode("result"), StringNode("Fizz"))),
+                    )
+                ),
+                BlockNode(
+                    IfNode(NameNode("buzz"), "==", NumberNode(0),
+                        BlockNode(AppendNode(NameNode("result"), StringNode("Buzz"))),
+                        BlockNode(AppendNode(NameNode("result"), NameNode("i"))),
+                    )
+                ),
+            ),
+        ])),
+        PrintExpressionNode(NameNode("result")),
+        PassNode(comment="Test: length is 100"),
+        AssertNode(ArrayLenNode(NameNode("result")), NumberNode(100)),
+        PassNode(comment="Test: spot-check Fizz, Buzz, FizzBuzz positions"),
+        AssertNode(GetIndexNode(NameNode("result"), NumberNode(2)),  StringNode("Fizz")),
+        AssertNode(GetIndexNode(NameNode("result"), NumberNode(4)),  StringNode("Buzz")),
+        AssertNode(GetIndexNode(NameNode("result"), NumberNode(14)), StringNode("FizzBuzz")),
+    ]
+    return YuiExample(
+        name="fizzbuzz",
+        description="FizzBuzz from 1 to 100, collected into a list",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
 
 def example_nested_conditional_branches():
     """ネストした条件分岐のサンプル"""
@@ -103,7 +177,8 @@ def example_nested_conditional_branches():
     return YuiExample(
         name="nested_conditional_branches",
         description="Nested conditional branching",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 def example_comparisons():
@@ -134,7 +209,8 @@ def example_comparisons():
     return YuiExample(
         name="comparisons",
         description="Comparison operations",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 def example_array():
@@ -156,7 +232,8 @@ def example_array():
     return YuiExample(
         name="array",
         description="Array creation and element manipulation",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 def example_strings():
@@ -180,7 +257,8 @@ def example_strings():
     return YuiExample(
         name="strings",
         description="String creation and manipulation",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 def example_objects():
@@ -202,7 +280,8 @@ def example_objects():
     return YuiExample(
         name="objects",
         description="Object creation and property manipulation",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 def example_function():
@@ -223,7 +302,8 @@ def example_function():
     return YuiExample(
         name="function",
         description="Function definition and call (increment function)",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 def example_function_no_argument():
@@ -237,7 +317,8 @@ def example_function_no_argument():
     return YuiExample(
         name="function_no_argument",
         description="Function definition and call (zero-argument function and multi-argument function)",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 def example_function_without_return():
@@ -254,7 +335,8 @@ def example_function_without_return():
     return YuiExample(
         name="function_without_return",
         description="Function definition and call (function without return value)",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 def example_recursive_function():
@@ -302,7 +384,8 @@ def example_recursive_function():
     return YuiExample(
         name="recursive_function",
         description="Recursive function definition and call (factorial function)",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 
@@ -400,7 +483,162 @@ def example_float_add():
     return YuiExample(
         name="float_add",
         description="Add two same-sign floats as digit arrays (no stdlib)",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
+    )
+
+
+def example_arithmetic():
+    """四則演算と余りを関数で定義するサンプル（0以上の整数を前提）"""
+    add_func = FuncDefNode(
+        NameNode("add"), [NameNode("a"), NameNode("b")],
+        BlockNode([
+            AssignmentNode(NameNode("result"), NameNode("a")),
+            RepeatNode(NameNode("b"), BlockNode([
+                IncrementNode(NameNode("result")),
+            ])),
+            ReturnNode(NameNode("result")),
+        ])
+    )
+    subtract_func = FuncDefNode(
+        NameNode("subtract"), [NameNode("a"), NameNode("b")],
+        BlockNode([
+            AssignmentNode(NameNode("result"), NameNode("a")),
+            RepeatNode(NameNode("b"), BlockNode([
+                DecrementNode(NameNode("result")),
+            ])),
+            ReturnNode(NameNode("result")),
+        ])
+    )
+    multiply_func = FuncDefNode(
+        NameNode("multiply"), [NameNode("a"), NameNode("b")],
+        BlockNode([
+            AssignmentNode(NameNode("result"), NumberNode(0)),
+            RepeatNode(NameNode("b"), BlockNode([
+                AssignmentNode(NameNode("result"),
+                    FuncAppNode(NameNode("add"), [NameNode("result"), NameNode("a")])),
+            ])),
+            ReturnNode(NameNode("result")),
+        ])
+    )
+    divide_func = FuncDefNode(
+        NameNode("divide"), [NameNode("a"), NameNode("b")],
+        BlockNode([
+            AssignmentNode(NameNode("q"), NumberNode(0)),
+            AssignmentNode(NameNode("r"), NameNode("a")),
+            RepeatNode(NameNode("a"), BlockNode([
+                IfNode(NameNode("r"), "<", NameNode("b"),
+                    BlockNode(BreakNode())),
+                IncrementNode(NameNode("q")),
+                AssignmentNode(NameNode("r"),
+                    FuncAppNode(NameNode("subtract"), [NameNode("r"), NameNode("b")])),
+            ])),
+            ReturnNode(NameNode("q")),
+        ])
+    )
+    modulo_func = FuncDefNode(
+        NameNode("modulo"), [NameNode("a"), NameNode("b")],
+        BlockNode([
+            AssignmentNode(NameNode("r"), NameNode("a")),
+            RepeatNode(NameNode("a"), BlockNode([
+                IfNode(NameNode("r"), "<", NameNode("b"),
+                    BlockNode(BreakNode())),
+                AssignmentNode(NameNode("r"),
+                    FuncAppNode(NameNode("subtract"), [NameNode("r"), NameNode("b")])),
+            ])),
+            ReturnNode(NameNode("r")),
+        ])
+    )
+    statements = [
+        PassNode(comment="Arithmetic functions for non-negative integers"),
+        PassNode(comment="add(a, b): a + b"),
+        add_func,
+        PassNode(comment="subtract(a, b): a - b  (requires a >= b)"),
+        subtract_func,
+        PassNode(comment="multiply(a, b): a * b"),
+        multiply_func,
+        PassNode(comment="divide(a, b): integer quotient a // b"),
+        divide_func,
+        PassNode(comment="modulo(a, b): remainder a % b"),
+        modulo_func,
+        PassNode(comment="Usage examples"),
+        PrintExpressionNode(FuncAppNode(NameNode("add"),      [NumberNode(3),  NumberNode(4)])),
+        PrintExpressionNode(FuncAppNode(NameNode("subtract"), [NumberNode(10), NumberNode(3)])),
+        PrintExpressionNode(FuncAppNode(NameNode("multiply"), [NumberNode(3),  NumberNode(4)])),
+        PrintExpressionNode(FuncAppNode(NameNode("divide"),   [NumberNode(10), NumberNode(3)])),
+        PrintExpressionNode(FuncAppNode(NameNode("modulo"),   [NumberNode(10), NumberNode(3)])),
+        PassNode(comment="Test add"),
+        AssertNode(FuncAppNode(NameNode("add"), [NumberNode(3), NumberNode(4)]), NumberNode(7)),
+        AssertNode(FuncAppNode(NameNode("add"), [NumberNode(0), NumberNode(5)]), NumberNode(5)),
+        PassNode(comment="Test subtract"),
+        AssertNode(FuncAppNode(NameNode("subtract"), [NumberNode(10), NumberNode(3)]), NumberNode(7)),
+        AssertNode(FuncAppNode(NameNode("subtract"), [NumberNode(5),  NumberNode(5)]), NumberNode(0)),
+        PassNode(comment="Test multiply"),
+        AssertNode(FuncAppNode(NameNode("multiply"), [NumberNode(3), NumberNode(4)]), NumberNode(12)),
+        AssertNode(FuncAppNode(NameNode("multiply"), [NumberNode(0), NumberNode(5)]), NumberNode(0)),
+        PassNode(comment="Test divide"),
+        AssertNode(FuncAppNode(NameNode("divide"), [NumberNode(10), NumberNode(3)]), NumberNode(3)),
+        AssertNode(FuncAppNode(NameNode("divide"), [NumberNode(9),  NumberNode(3)]), NumberNode(3)),
+        PassNode(comment="Test modulo"),
+        AssertNode(FuncAppNode(NameNode("modulo"), [NumberNode(10), NumberNode(3)]), NumberNode(1)),
+        AssertNode(FuncAppNode(NameNode("modulo"), [NumberNode(15), NumberNode(5)]), NumberNode(0)),
+    ]
+    return YuiExample(
+        name="arithmetic",
+        description="Arithmetic functions (add, subtract, multiply, divide, modulo) for non-negative integers",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_monte_carlo():
+    """モンテカルロ法で π を推定するサンプル（乱数・平方根を使用）"""
+    monte_carlo_func = FuncDefNode(
+        NameNode("monte_carlo"), [NameNode("n")],
+        BlockNode([
+            AssignmentNode(NameNode("hits"), NumberNode(0)),
+            RepeatNode(NameNode("n"), BlockNode([
+                AssignmentNode(NameNode("x"), FuncAppNode(NameNode("乱数"), [])),
+                AssignmentNode(NameNode("y"), FuncAppNode(NameNode("乱数"), [])),
+                AssignmentNode(NameNode("dist"),
+                    FuncAppNode(NameNode("平方根"), [
+                        FuncAppNode(NameNode("和"), [
+                            FuncAppNode(NameNode("積"), [NameNode("x"), NameNode("x")]),
+                            FuncAppNode(NameNode("積"), [NameNode("y"), NameNode("y")]),
+                        ])
+                    ])
+                ),
+                IfNode(NameNode("dist"), "<=", NumberNode(1),
+                    BlockNode(IncrementNode(NameNode("hits")))
+                ),
+            ])),
+            ReturnNode(
+                FuncAppNode(NameNode("商"), [
+                    FuncAppNode(NameNode("積"), [
+                        FuncAppNode(NameNode("少数化"), [NameNode("hits")]),
+                        NumberNode(4),
+                    ]),
+                    FuncAppNode(NameNode("少数化"), [NameNode("n")]),
+                ])
+            ),
+        ])
+    )
+    statements = [
+        ImportNode(),
+        PassNode(comment="Monte Carlo method: estimate π by random point sampling"),
+        PassNode(comment="Throw n random points at a unit square [0,1)×[0,1)."),
+        PassNode(comment="Points inside the unit circle (dist ≤ 1) are counted."),
+        PassNode(comment="π ≈ 4 × (hits / n)"),
+        monte_carlo_func,
+        PassNode(comment="More samples → closer to π ≈ 3.14159..."),
+        PrintExpressionNode(FuncAppNode(NameNode("monte_carlo"), [NumberNode(100)])),
+        PrintExpressionNode(FuncAppNode(NameNode("monte_carlo"), [NumberNode(1000)])),
+    ]
+    return YuiExample(
+        name="monte_carlo",
+        description="Estimate π using the Monte Carlo method (stdlib: 乱数, 平方根)",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='sample',
     )
 
 
@@ -415,7 +653,8 @@ def example_null_assignment():
     return YuiExample(
         name="null_assignment",
         description="Assign null to a variable and compare",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 
@@ -432,7 +671,8 @@ def example_boolean_assignment():
     return YuiExample(
         name="boolean_assignment",
         description="Assign true/false to variables and compare",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 
@@ -452,7 +692,8 @@ def example_boolean_branch():
     return YuiExample(
         name="boolean_branch",
         description="Conditional branch based on a boolean value",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
     )
 
 
@@ -477,26 +718,30 @@ def example_null_check():
     return YuiExample(
         name="null_check",
         description="Function that checks if a value is null",
-        ast_node=BlockNode(statements, top_level=True)
+        ast_node=BlockNode(statements, top_level=True),
+        kind='test',
     )
 
 
-# すべてのサンプルを取得
 def get_all_examples() -> List[YuiExample]:
-    """すべてのサンプルを返す"""
+    """すべての例を返す（kind に関わらず）"""
     return [
         example_hello_world(),
         example_variables(),
         example_loop(),
+        example_fizzbuzz(),
         example_nested_conditional_branches(),
         example_comparisons(),
         example_array(),
         example_strings(),
+        example_objects(),
         example_function(),
         example_function_no_argument(),
         example_function_without_return(),
         example_recursive_function(),
+        example_arithmetic(),
         example_float_add(),
+        example_monte_carlo(),
         example_null_assignment(),
         example_boolean_assignment(),
         example_boolean_branch(),
@@ -504,80 +749,11 @@ def get_all_examples() -> List[YuiExample]:
     ]
 
 
-# def print_example(example: YuiExample, syntaxes: List[str] = None):
-#     """サンプルを複数の構文で出力"""
-#     if syntaxes is None:
-#         syntaxes = ['yui']
-
-#     print(f"\n{'='*60}")
-#     print(f"サンプル名: {example.name}")
-#     print(f"説明: {example.description}")
-#     print(f"{'='*60}")
-
-#     for syntax in syntaxes:
-#         try:
-#             import os
-#             syntax_basename = os.path.basename(syntax)
-#             syntax_name = syntax_basename.replace('syntax-', '').replace('.json', '')
-#             code = example.generate(syntax)
-#             print(f"\n--- {syntax_name} 構文 ---")
-#             print(code)
-#         except Exception as e:
-#             print(f"\n--- {syntax_name} 構文 (エラー) ---")
-#             print(f"エラー: {e}")
+def get_samples() -> List[YuiExample]:
+    """学習環境向けサンプルを返す（kind='sample' または 'both'）"""
+    return [e for e in get_all_examples() if e.kind in ('sample', 'both')]
 
 
-# def main():
-#     """メイン関数 - すべてのサンプルを出力"""
-#     import argparse
-
-#     parser = argparse.ArgumentParser(
-#         description='Yui言語のサンプルコード生成ツール'
-#     )
-#     parser.add_argument(
-#         '--syntax',
-#         nargs='+',
-#         default=['yui', 'pylike'],
-#         help='使用する構文ファイル（複数指定可）'
-#     )
-#     parser.add_argument(
-#         '--example',
-#         type=str,
-#         help='特定のサンプルのみ生成（サンプル名を指定）'
-#     )
-#     parser.add_argument(
-#         '--list',
-#         action='store_true',
-#         help='利用可能なサンプルの一覧を表示'
-#     )
-
-#     args = parser.parse_args()
-
-#     examples = get_all_examples()
-
-#     # サンプル一覧を表示
-#     if args.list:
-#         print("\n利用可能なサンプル:")
-#         for ex in examples:
-#             print(f"  {ex.name:20s} - {ex.description}")
-#         return
-
-#     # 特定のサンプルのみ生成
-#     if args.example:
-#         example = next((ex for ex in examples if ex.name == args.example), None)
-#         if example:
-#             print_example(example, args.syntax)
-#         else:
-#             print(f"エラー: サンプル '{args.example}' が見つかりません")
-#             print("\n利用可能なサンプル:")
-#             for ex in examples:
-#                 print(f"  - {ex.name}")
-#         return
-
-#     # すべてのサンプルを生成
-#     for example in examples:
-#         print_example(example, args.syntax)
-
-
-# if __name__ == '__main__':
-#     main()
+def get_test_examples() -> List[YuiExample]:
+    """実装テスト用の例を返す（kind='test' または 'both'）"""
+    return [e for e in get_all_examples() if e.kind in ('test', 'both')]

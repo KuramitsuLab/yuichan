@@ -29,23 +29,30 @@ class YuiRuntime(object):
     environments: List[dict]
     filesystems: Dict[str, str]  # 仮想ファイルシステム
     call_frames: List[tuple]  # (func_name, args, pos, end_pos)
+    shouldStop: bool
+    timeout: int
+    interactive_mode: bool
+    source: str
+    allow_binary_ops: bool
+    function_defined: bool
     increment_count: int
     decrement_count: int
     compare_count: int
     test_passed: List[str]
     test_failed: List[tuple]
-    source: str
 
     def __init__(self):
         """YuiRuntimeを初期化する"""
         self.environments = [{}]
         self.call_frames = []
         self.filesystems = {}
-        
+
         self.shouldStop = False
         self.timeout = 0
         self.interactive_mode = False
         self.source = ""
+        self.allow_binary_ops = False
+        self.function_defined = False
         self.reset_stats()
 
     def reset_stats(self):
@@ -259,10 +266,48 @@ class YuiRuntime(object):
         return YuiValue(-YuiType.matched_native(value))
 
     def visitBinaryNode(self, node: BinaryNode):
-        raise YuiError(
-            ("error", "internal", f"🔍{node.operator} operator is not implemented"),
-            node,
-        )
+        if not (self.allow_binary_ops or (self.function_defined and self.test_passed)):
+            raise YuiError(
+                ("error", "binary operator not enabled", f"🔍{node.operator}"),
+                node,
+            )
+        left = node.left_node.visit(self)
+        right = node.right_node.visit(self)
+        op = node.operator
+
+        # 文字列連結: + のみ
+        if op == '+' and YuiType.is_string(left) and YuiType.is_string(right):
+            return YuiValue(YuiType.matched_native(left) + YuiType.matched_native(right))
+
+        # 配列連結: + のみ
+        if op == '+' and YuiType.is_array(left) and YuiType.is_array(right):
+            return YuiValue(left.native + right.native)
+
+        # 数値演算
+        YuiType.NumberType.match_or_raise(left)
+        YuiType.NumberType.match_or_raise(right)
+        l = YuiType.matched_native(left)
+        r = YuiType.matched_native(right)
+        is_float = YuiType.is_float(left) or YuiType.is_float(right)
+
+        if op == '+':
+            result = l + r
+        elif op == '-':
+            result = l - r
+        elif op == '*':
+            result = l * r
+        elif op == '/':
+            if r == 0:
+                raise YuiError(("error", "division by zero", f"❌{r}"), node)
+            result = l / r if is_float else l // r
+        elif op == '%':
+            if r == 0:
+                raise YuiError(("error", "division by zero", f"❌{r}"), node)
+            result = l % r  # Python: 正の除数に対して常に非負
+        else:
+            raise YuiError(("error", "unsupported operator", f"🔍{op}"), node)
+
+        return YuiValue(float(result) if is_float else result)
 
     def visitFuncAppNode(self, node: FuncAppNode):
         name = f'@{node.name_node.name}'
@@ -352,6 +397,7 @@ class YuiRuntime(object):
         params = [p.name for p in node.parameters]
         function = LocalFunctionV(node.name_node.name, params, node.body)
         self.setenv(f'@{node.name_node.name}', function)
+        self.function_defined = True
         return function
 
     # ──────────────────────────────────────────────────────────

@@ -294,7 +294,9 @@ export class CodingVisitor extends YuiSyntax {
     visitAssignmentNode(node) {
         this.terminal('assignment-begin');
         this.expression(node.variable);
+        this.string(' ');
         this.terminal('assignment-infix');
+        this.string(' ');
         this.expression(node.expression);
         this.terminal('assignment-end');
     }

@@ -253,7 +253,9 @@ class CodingVisitor(YuiSyntax):
     def visitAssignmentNode(self, node: AssignmentNode):
         self.terminal('assignment-begin')
         self.expression(node.variable)
+        self.string(' ')
         self.terminal('assignment-infix')
+        self.string(' ')
         self.expression(node.expression)
         self.terminal('assignment-end')
     
@@ -359,6 +361,9 @@ class CodingVisitor(YuiSyntax):
         self.terminal('funcdef-block')
         self.block(node.body)
         self.terminal('funcdef-end', linefeed_before=True)
+
+    def visitImportNode(self, node: ImportNode):
+        self.terminal('import-standard')
 
     def visitAssertNode(self, node: AssertNode):
         self.terminal('assert-begin')

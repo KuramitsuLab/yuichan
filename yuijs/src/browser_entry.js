@@ -4,4 +4,4 @@
 
 export { YuiRuntime } from './yuiruntime.js';
 export { YuiError, YuiType, YuiValue } from './yuitypes.js';
-export { getAllExamples } from './yuiexample.js';
+export { getAllExamples, getAllSamples, getAllTestExamples } from './yuiexample.js';

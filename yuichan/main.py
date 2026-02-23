@@ -401,10 +401,10 @@ def list_examples():
     """List available examples"""
     examples = yuiexample.get_all_examples()
     print("\nAvailable examples:")
-    print(f"{'Name':<20} Description")
-    print("-" * 60)
+    print(f"{'Name':<30} {'Kind':<8} Description")
+    print("-" * 70)
     for ex in examples:
-        print(f"{ex.name:<20} {ex.description}")
+        print(f"{ex.name:<30} {ex.kind:<8} {ex.description}")
 
 
 def list_syntax(syntax_dir: str = None):
@@ -465,7 +465,7 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
         example_name: Specific example name (all examples if None)
         syntax: Syntax file to use
     """
-    examples = yuiexample.get_all_examples()
+    examples = yuiexample.get_samples()
 
     # Derive syntax short name for directory (strip path and .json if given)
     syntax_name = os.path.basename(syntax)
@@ -510,7 +510,7 @@ def test_examples(syntax: str = 'yui'):
     Args:
         syntax: Syntax file to use for parsing
     """
-    examples = yuiexample.get_all_examples()
+    examples = yuiexample.get_test_examples()
 
     print(f"\nTesting examples with syntax: {syntax}")
     print("=" * 60)

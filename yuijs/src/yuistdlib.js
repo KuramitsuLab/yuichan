@@ -44,6 +44,17 @@ export function standardLib(modules) {
     }
     modules.push(['📏|絶対値|abs', yuiAbs]);
 
+    // ── 平方根 / sqrt ─────────────────────────────────────────
+
+    function yuiSqrt(...nodeargs) {
+        checkNumberOfArgs(nodeargs, 1);
+        YuiType.NumberType.matchOrRaise(nodeargs[0]);
+        const value = YuiType.matchedNative(nodeargs[0]);
+        if (value < 0) throw new YuiError(['error', 'negative sqrt', `❌${value}`, '✅>=0']);
+        return new YuiValue(Math.sqrt(value), YuiType.FloatType);
+    }
+    modules.push(['√|平方根|sqrt', yuiSqrt]);
+
     // ── 乱数 / random ─────────────────────────────────────────
 
     function yuiRandom(...nodeargs) {

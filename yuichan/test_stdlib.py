@@ -40,6 +40,24 @@ class TestAbs:
         with pytest.raises(YuiError): stdlib['abs'](v("hello"))
 
 
+class TestSqrt:
+    def test_perfect_square_int(self, stdlib):    assert abs(n(stdlib['sqrt'](v(4))) - 2.0) < 1e-6
+    def test_perfect_square_large(self, stdlib):  assert abs(n(stdlib['sqrt'](v(9))) - 3.0) < 1e-6
+    def test_irrational(self, stdlib):            assert abs(n(stdlib['sqrt'](v(2))) - 1.41421356) < 1e-6
+    def test_from_float(self, stdlib):            assert abs(n(stdlib['sqrt'](v(2.0))) - 1.41421356) < 1e-6
+    def test_zero(self, stdlib):                  assert abs(n(stdlib['sqrt'](v(0)))) < 1e-6
+    def test_returns_float(self, stdlib):         assert YuiType.is_float(stdlib['sqrt'](v(4)))
+
+    def test_negative_raises(self, stdlib):
+        with pytest.raises(YuiError): stdlib['sqrt'](v(-1))
+    def test_no_args(self, stdlib):
+        with pytest.raises(YuiError): stdlib['sqrt']()
+    def test_too_many_args(self, stdlib):
+        with pytest.raises(YuiError): stdlib['sqrt'](v(1), v(2))
+    def test_wrong_type(self, stdlib):
+        with pytest.raises(YuiError): stdlib['sqrt'](v("hello"))
+
+
 class TestSum:
     def test_two_ints(self, stdlib):    assert n(stdlib['sum'](v(3), v(4))) == 7
     def test_three_ints(self, stdlib):  assert n(stdlib['sum'](v(1), v(2), v(3))) == 6

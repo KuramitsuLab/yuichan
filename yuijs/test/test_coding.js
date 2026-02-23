@@ -96,14 +96,13 @@ describe('roundtrip (parse → generate → execute)', () => {
     });
 
     test('stdlib usage', () => {
-        // Roundtrip generates code; verify the function name is preserved.
-        // Re-executing the generated code has a known re-parsing limitation: the generated
-        // assignment `x=和(...)` (no spaces) causes the parser's special-name extractor to
-        // treat `x=和` as a compound identifier. So we only check code generation here.
+        // Roundtrip generates `x = 和(3, 4)` (spaces around =), which re-parses correctly.
         const source = STDLIB + 'x = 和(3, 4)';
         const generated = roundtrip(source);
         expect(generated).toContain('標準ライブラリを使う');
         expect(generated).toContain('和');
+        const env = execGenerated(generated);
+        expect(env['x']?.native ?? env['x']).toBe(7);
     });
 });
 

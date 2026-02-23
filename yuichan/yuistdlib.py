@@ -1,3 +1,4 @@
+import math
 import random
 import json
 from typing import List, Any
@@ -14,6 +15,7 @@ def standard_lib(modules: list):
 
     以下の関数が使用可能になります：
     - 絶対値(x): 絶対値
+    - 平方根(x): 平方根（少数を返す）
     - 乱数(): ランダムな少数
     - 乱整数(x): 0以上x未満のランダムな整数
     - 和(x, y, ...): 要素の合計
@@ -68,6 +70,16 @@ def standard_lib(modules: list):
         value = YuiType.matched_native(nodeargs[0])
         return YuiValue(abs(value))
     modules.append(('📏|絶対値|abs', yui_abs))
+
+    def yui_sqrt(*nodeargs: Any) -> Any:
+        """平方根を返す（少数）"""
+        check_number_of_args(nodeargs, 1)
+        YuiType.NumberType.match_or_raise(nodeargs[0])
+        value = YuiType.matched_native(nodeargs[0])
+        if value < 0:
+            raise YuiError(("error", "negative sqrt", f"❌{value}", f"✅>=0"))
+        return YuiValue(math.sqrt(value))
+    modules.append(('√|平方根|sqrt', yui_sqrt))
 
     def yui_random(*nodeargs: Any) -> Any:
         """ランダムな整数を返す"""

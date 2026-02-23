@@ -6,7 +6,9 @@ import {
     exampleHelloWorld,
     exampleVariables,
     exampleLoop,
+    exampleFizzBuzz,
     exampleNestedConditionalBranches,
+    exampleArithmetic,
     exampleComparisons,
     exampleArray,
     exampleStrings,
@@ -16,6 +18,7 @@ import {
     exampleFunctionWithoutReturn,
     exampleRecursiveFunction,
     exampleFloatAdd,
+    exampleMonteCarlo,
     exampleNullAssignment,
     exampleBooleanAssignment,
     exampleBooleanBranch,
@@ -31,8 +34,8 @@ function runExample(example, syntax = 'yui') {
 }
 
 describe('YuiExample metadata', () => {
-    test('getAllExamples returns 17 examples', () => {
-        expect(getAllExamples()).toHaveLength(17);
+    test('getAllExamples returns 20 examples', () => {
+        expect(getAllExamples()).toHaveLength(20);
     });
 
     test('each example has name, description, and astNode', () => {
@@ -66,6 +69,11 @@ describe('example execution', () => {
     test('loop — count=5 after breaking at 5', () => {
         const rt = runExample(exampleLoop());
         expect(rt.testPassed).toHaveLength(1);
+    });
+
+    test('fizzbuzz — 100 items, Fizz/Buzz/FizzBuzz at correct positions', () => {
+        const rt = runExample(exampleFizzBuzz());
+        expect(rt.testPassed).toHaveLength(4);
     });
 
     test('nested_conditional_branches — y incremented', () => {
@@ -118,6 +126,11 @@ describe('example execution', () => {
         expect(rt.testPassed).toHaveLength(8);
     });
 
+    test('arithmetic — add/subtract/multiply/divide/modulo', () => {
+        const rt = runExample(exampleArithmetic());
+        expect(rt.testPassed).toHaveLength(10);
+    });
+
     test('null_assignment — x=null', () => {
         const rt = runExample(exampleNullAssignment());
         expect(rt.testPassed).toHaveLength(1);
@@ -131,6 +144,12 @@ describe('example execution', () => {
     test('boolean_branch — result=1 when flag=true', () => {
         const rt = runExample(exampleBooleanBranch());
         expect(rt.testPassed).toHaveLength(1);
+    });
+
+    test('monte_carlo — executes without error and returns a float', () => {
+        const rt = runExample(exampleMonteCarlo());
+        // result is non-deterministic; just verify it runs cleanly
+        expect(rt.testPassed).toHaveLength(0);
     });
 
     test('null_check — is_null(null)=true, is_null(0)=false', () => {

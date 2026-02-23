@@ -1,7 +1,7 @@
 // test_runtime.js — port of yuichan/test/test_runtime.py
 import { describe, test, expect } from 'vitest';
 import { YuiRuntime } from '../src/yuiruntime.js';
-import { YuiValue, YuiType } from '../src/yuitypes.js';
+import { YuiValue, YuiType, YuiError } from '../src/yuitypes.js';
 
 const STDLIB = '標準ライブラリを使う\n';
 
@@ -163,6 +163,12 @@ describe('standard library', () => {
         const env = runStd('x = 整数化(3.9)');
         expect(val(env, 'x')).toBe(3);
     });
+
+    test('平方根 (sqrt) — returns float', () => {
+        const env = runStd('x = 平方根(4)');
+        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(val(env, 'x')).toBeCloseTo(2.0);
+    });
 });
 
 // ─────────────────────────────────────────────
@@ -220,6 +226,123 @@ describe('assert (doctest)', () => {
         rt.exec(STDLIB + '>>> 和(1, 2)\n3', 'yui', 30, false);
         expect(rt.testPassed.length).toBe(1);
     });
+});
+
+// ─────────────────────────────────────────────
+// Binary operators (allowBinaryOps = true)
+// ─────────────────────────────────────────────
+
+describe('binary operators', () => {
+    function runBin(source) {
+        const rt = new YuiRuntime();
+        rt.allowBinaryOps = true;
+        rt.exec(source, 'yui', 30, false);
+        return rt.environments[rt.environments.length - 1];
+    }
+
+    // 無効時のエラー
+    test('disabled by default', () => {
+        const rt = new YuiRuntime();
+        expect(() => rt.exec('x = 1 + 2', 'yui', 30, false)).toThrow(YuiError);
+    });
+
+    // 整数算術
+    test('add ints',        () => expect(val(runBin('x = 1 + 2'),   'x')).toBe(3));
+    test('subtract ints',   () => expect(val(runBin('x = 10 - 3'),  'x')).toBe(7));
+    test('multiply ints',   () => expect(val(runBin('x = 3 * 4'),   'x')).toBe(12));
+    test('divide int floor',() => expect(val(runBin('x = 10 / 3'),  'x')).toBe(3));
+    test('modulo ints',     () => expect(val(runBin('x = 10 % 3'),  'x')).toBe(1));
+
+    // 少数算術
+    test('add floats',      () => expect(val(runBin('x = 1.5 + 2.5'), 'x')).toBeCloseTo(4.0));
+    test('divide float',    () => expect(val(runBin('x = 10.0 / 4'),  'x')).toBeCloseTo(2.5));
+    test('modulo float',    () => expect(val(runBin('x = 5.5 % 2.0'), 'x')).toBeCloseTo(1.5));
+
+    // 型昇格: int OP float → float
+    test('int + float is float', () => {
+        const env = runBin('x = 1 + 2.0');
+        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(val(env, 'x')).toBeCloseTo(3.0);
+    });
+    test('int - float is float', () => {
+        const env = runBin('x = 5 - 1.5');
+        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(val(env, 'x')).toBeCloseTo(3.5);
+    });
+    test('int * float is float', () => {
+        const env = runBin('x = 3 * 2.0');
+        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(val(env, 'x')).toBeCloseTo(6.0);
+    });
+    test('int / float is float', () => {
+        const env = runBin('x = 7 / 2.0');
+        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(val(env, 'x')).toBeCloseTo(3.5);
+    });
+
+    // 文字列連結
+    test('string concat',       () => expect(val(runBin('x = "hello" + " world"'), 'x')).toBe('hello world'));
+    test('string concat empty', () => expect(val(runBin('x = "" + "abc"'),          'x')).toBe('abc'));
+
+    // 配列連結
+    test('array concat',       () => expect(val(runBin('x = [1, 2] + [3, 4]'), 'x')).toEqual([1, 2, 3, 4]));
+    test('array concat empty', () => expect(val(runBin('x = [] + [1, 2]'),     'x')).toEqual([1, 2]));
+
+    // ゼロ除算
+    test('divide by zero throws',  () => expect(() => runBin('x = 5 / 0')).toThrow(YuiError));
+    test('modulo by zero throws',  () => expect(() => runBin('x = 5 % 0')).toThrow(YuiError));
+});
+
+// ─────────────────────────────────────────────
+// Binary ops auto-unlock (関数定義 + アサート通過)
+// ─────────────────────────────────────────────
+
+describe('binary ops auto-unlock', () => {
+    const FUNC_AND_ASSERT =
+        STDLIB +
+        'double = 入力 n に対し {\n' +
+        '  積(n, 2)が答え\n' +
+        '}\n' +
+        '>>> double(3)\n' +
+        '6\n';
+
+    function runUnlocked(extra) {
+        const rt = new YuiRuntime();
+        rt.exec(FUNC_AND_ASSERT, 'yui', 30, false);
+        rt.exec(extra, 'yui', 30, false);
+        return rt.environments[rt.environments.length - 1];
+    }
+
+    // アンロック条件
+    test('functionDefined starts false', () => {
+        const rt = new YuiRuntime();
+        expect(rt.functionDefined).toBe(false);
+    });
+
+    test('visitFuncDefNode sets functionDefined', () => {
+        const rt = new YuiRuntime();
+        rt.exec('f = 入力 n に対し { nが答え }', 'yui', 30, false);
+        expect(rt.functionDefined).toBe(true);
+    });
+
+    test('locked without assert (func only)', () => {
+        const rt = new YuiRuntime();
+        rt.exec('f = 入力 n に対し { nが答え }', 'yui', 30, false);
+        expect(() => rt.exec('x = 1 + 2', 'yui', 30, false)).toThrow(YuiError);
+    });
+
+    test('locked without function (assert only)', () => {
+        const rt = new YuiRuntime();
+        rt.exec(STDLIB + '>>> 和(1, 2)\n3', 'yui', 30, false);
+        expect(() => rt.exec('x = 1 + 2', 'yui', 30, false)).toThrow(YuiError);
+    });
+
+    test('unlocked after func + assert', () => expect(val(runUnlocked('x = 1 + 2'),   'x')).toBe(3));
+    test('unlocked add',                 () => expect(val(runUnlocked('x = 10 + 5'),  'x')).toBe(15));
+    test('unlocked subtract',            () => expect(val(runUnlocked('x = 10 - 3'),  'x')).toBe(7));
+    test('unlocked multiply',            () => expect(val(runUnlocked('x = 3 * 4'),   'x')).toBe(12));
+    test('unlocked divide',              () => expect(val(runUnlocked('x = 10 / 4'),  'x')).toBe(2));
+    test('unlocked modulo',              () => expect(val(runUnlocked('x = 10 % 3'),  'x')).toBe(1));
 });
 
 // ─────────────────────────────────────────────

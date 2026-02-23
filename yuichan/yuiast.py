@@ -233,6 +233,9 @@ class BinaryNode(ASTNode):
     # def evaluate(self, runtime):
     #     raise YuiError(("error", "internal", f"🔍{self.operator} operator is not implemented"), self, runtime)
 
+    def visit(self, visitor):
+        return visitor.visitBinaryNode(self)
+
 @dataclass
 class FuncAppNode(ExpressionNode):
     """関数呼び出し（関数名(引数, ...)）を表すノード"""
