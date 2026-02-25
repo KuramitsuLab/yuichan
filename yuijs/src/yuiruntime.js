@@ -256,7 +256,7 @@ export class YuiRuntime {
         try {
             this.start(timeout);
             const value = program.evaluate(this);
-            return evalMode ? YuiType.yuiToNative(value) : this.environments[this.environments.length - 1];
+            return evalMode ? YuiType.toNative(value) : this.environments[this.environments.length - 1];
         } catch (e) {
             if (e instanceof YuiError) {
                 e.runtime = this;
@@ -428,26 +428,38 @@ export class YuiRuntime {
         }
         const value = node.expression.visit(this);
         node.variable.update(value, this);
+        return value;
     }
 
     visitIncrementNode(node) {
+        if (typeof node.variable.update !== 'function') {
+            throw new YuiError(['expected-variable', `❌${node.variable}`], node.variable);
+        }
         const value = node.variable.visit(this);
         YuiType.IntType.matchOrRaise(value);
-        node.variable.update(new YuiValue(YuiType.matchedNative(value) + 1), this);
+        const result = new YuiValue(YuiType.matchedNative(value) + 1);
+        node.variable.update(result, this);
         this.countInc();
+        return result;
     }
 
     visitDecrementNode(node) {
+        if (typeof node.variable.update !== 'function') {
+            throw new YuiError(['expected-variable', `❌${node.variable}`], node.variable);
+        }
         const value = node.variable.visit(this);
         YuiType.IntType.matchOrRaise(value);
-        node.variable.update(new YuiValue(YuiType.matchedNative(value) - 1), this);
+        const result = new YuiValue(YuiType.matchedNative(value) - 1);
+        node.variable.update(result, this);
         this.countDec();
+        return result;
     }
 
     visitAppendNode(node) {
         const array = node.variable.visit(this);
         const value = node.expression.visit(this);
         array.append(value);
+        return array;
     }
 
     // ─────────────────────────────────────────────
@@ -455,9 +467,11 @@ export class YuiRuntime {
     // ─────────────────────────────────────────────
 
     visitBlockNode(node) {
+        let value = YuiValue.NullValue;
         for (const statement of node.statements) {
-            statement.visit(this);
+            value = statement.visit(this);
         }
+        return value;
     }
 
     visitIfNode(node) {
@@ -466,7 +480,7 @@ export class YuiRuntime {
         const result = node.operator.evaluate(left, right);
         this.countCompare();
         if (result) {
-            node.thenBlock.visit(this);
+            return node.thenBlock.visit(this);
         } else if (node.elseBlock) {
             node.elseBlock.visit(this);
         }
@@ -490,9 +504,10 @@ export class YuiRuntime {
                 node.blockNode.visit(this);
             }
         } catch (e) {
-            if (e instanceof YuiBreakException) return;
+            if (e instanceof YuiBreakException) return YuiValue.NullValue;
             throw e;
         }
+        return YuiValue.NullValue;
     }
 
     visitReturnNode(node) {
@@ -513,9 +528,6 @@ export class YuiRuntime {
     // ─────────────────────────────────────────────
 
     visitPrintExpressionNode(node) {
-        if (node.expression instanceof MinusNode) {
-            return node.expression.element.visit(this);
-        }
         if (node.expression instanceof FuncAppNode) {
             node.expression.snippet = '';
         }
@@ -532,7 +544,7 @@ export class YuiRuntime {
             referenceValue = node.reference.visit(this);
             if (tested.type.equals(tested, referenceValue)) {
                 this.testPassed.push(String(node.test));
-                return;
+                return YuiValue.TrueValue;
             }
         } catch (e) {
             if (e instanceof YuiError) throw e;
@@ -542,6 +554,7 @@ export class YuiRuntime {
             ['failed', 'test', `🔍${node.test}`, `❌${tested}`, `✅${referenceValue}`],
             node
         );
+        return YuiValue.FalseValue;
     }
 
     visitImportNode(node) {
@@ -554,5 +567,6 @@ export class YuiRuntime {
                 this.setenv(`@${name}`, new NativeFunction(fn));
             }
         }
+        return YuiValue.NullValue;
     }
 }

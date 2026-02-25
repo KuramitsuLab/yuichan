@@ -1,5 +1,5 @@
 {
-    "syntax": "yui",
+    "syntax": "python-like",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
@@ -8,6 +8,7 @@
     "line-comment-begin": "[#＃]",
     "comment-begin": "",
     "comment-end": "",
+    "indent": "  ",
 
     "null": "None",
     "boolean-true": "True",
@@ -41,11 +42,11 @@
     "length-begin": "len\\s*\\(",
     "length-end": "\\)  ",
 
-    "binary+": "\\+",
-    "binary-": "-",
-    "binary*": "\\*",
-    "binary/": "/",
-    "binary%": "%",
+    "binary-infix+": "\\+",
+    "binary-infix-": "-",
+    "binary-infix*": "\\*",
+    "binary-infix/": "/",
+    "binary-infix%": "%",
     "unary-minus": "-",
 
     "array-indexer-suffix": "\\[",
@@ -53,12 +54,13 @@
     "property-accessor": "\\.",
     "property-type": "__class__.__name__",
     "not-property-name": "append",
-    "funcapp-args-suffix": "\\(",
+    "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
-    "funcapp-args-separator": ",",
+    "funcapp-separator": ",",
 
     "block-begin": "\\:",
     "block-end": "",
+    "block-else": "else\\b|elif\\b|except\\b|finally\\b",
     "block-line": "",
 
     "assignment-begin": "",
@@ -66,26 +68,22 @@
     "assignment-end": "",
 
     "increment-begin": "",
-    "increment-infix": "\\+\\=",
-    "increment-end": "1",
+    "increment-end": "\\+\\=\\s*1",
 
     "decrement-begin": "",
-    "decrement-infix": "\\-\\=",
-    "decrement-end": "1",
+    "decrement-end": "\\-\\=\\s*1",
  
     "append-begin": "",
     "append-infix": ".append\\s*\\(",
-    "append-suffix": "\\)",
-    "append-end": "",
+    "append-end": "\\)",
 
     "print-begin": "",
     "print-end": "",
 
-    "break": "break\\s?",
-    "continue": "continue\\s?",
-    "pass": "pass\\s?",
+    "break": "break",
+    "pass": "pass",
 
-    "return-begin": "return\\s",
+    "return-begin": "return\\s+",
     "return-end": "",
 
     "repeat-begin": "for\\s+_\\s+in\\s+range\\s*\\(\\s*",
@@ -126,8 +124,6 @@
 
     "import-standard": "import\\s+stdlib",
     "import-begin": "import\\s",
-    "import-end": "",
+    "import-end": ""
 
-
-    "構文": "Yui-Classic"
 }

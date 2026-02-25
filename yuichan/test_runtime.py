@@ -9,14 +9,8 @@ import pytest
 from .yuiruntime import YuiRuntime
 from .yuitypes import YuiValue, YuiType, YuiError
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ヘルパー
-# ─────────────────────────────────────────────────────────────────────────────
-
 # 標準ライブラリを使う宣言 (yui 構文の import-standard キーワード)
 STDLIB = "標準ライブラリを使う\n"
-
 
 def run(source: str, syntax: str = 'yui') -> dict:
     """source を exec() で実行し、最終環境 dict を返す"""

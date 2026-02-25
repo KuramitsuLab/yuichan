@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 from .yuiast import (
     ASTNode, ConstNode, NameNode,
@@ -15,7 +15,9 @@ from .yuisyntax import load_syntax, YuiSyntax
 
 class CodingVisitor(YuiSyntax):
 
-    def __init__(self, syntax_json: Dict[str, str]):
+    def __init__(self, syntax_json: Union[str, Dict[str, str]]):
+        if isinstance(syntax_json, str):
+            syntax_json = load_syntax(syntax_json)
         super().__init__(syntax_json)
         self.buffer = []
         self.indent = 0
@@ -101,6 +103,7 @@ class CodingVisitor(YuiSyntax):
             BlockNode([node]).visit(self)
         else:
             node.visit(self)
+        self.word_segment()
 
     def escape(self, text: str) -> str:
         return text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
@@ -214,11 +217,19 @@ class CodingVisitor(YuiSyntax):
             self.visitASTNode(node)
 
     def visitBinaryNode(self, node: BinaryNode):
-        self.expression(node.left_node)
-        self.word_segment()
-        self.terminal(f"binary{node.operator}")
-        self.word_segment()
-        self.expression(node.right_node)
+        if self.is_defined('binary-infix-prefix-begin'):
+            self.terminal(f'binary-infix-prefix{node.operator}')
+            self.word_segment()
+            self.expression(node.left_node)
+            self.word_segment()
+            self.expression(node.right_node)
+            self.terminal(f'binary-infix-prefix-end')
+        else:
+            self.expression(node.left_node)
+            self.word_segment()
+            self.terminal(f"binary{node.operator}")
+            self.word_segment()
+            self.expression(node.right_node)
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         if self.is_defined('property-length'):
@@ -243,32 +254,29 @@ class CodingVisitor(YuiSyntax):
     def visitFuncAppNode(self, node: FuncAppNode):
         self.terminal('funcapp-begin')
         self.expression(node.name_node)
-        self.terminal('funcapp-args-suffix')
+        self.terminal('funcapp-args-begin')
         for i, arg in enumerate(node.arguments):
             if i > 0:
-                self.terminal('funcapp-args-separator')
+                self.terminal('funcapp-separator')
             self.expression(arg)
         self.terminal('funcapp-args-end')
+        self.terminal('funcapp-end')
 
     def visitAssignmentNode(self, node: AssignmentNode):
         self.terminal('assignment-begin')
         self.expression(node.variable)
-        self.string(' ')
         self.terminal('assignment-infix')
-        self.string(' ')
         self.expression(node.expression)
         self.terminal('assignment-end')
     
     def visitIncrementNode(self, node: IncrementNode):
         self.terminal('increment-begin')
         self.expression(node.variable)
-        self.terminal('increment-infix')
         self.terminal('increment-end')
 
     def visitDecrementNode(self, node: DecrementNode):
         self.terminal('decrement-begin')
         self.expression(node.variable)
-        self.terminal('decrement-infix')
         self.terminal('decrement-end')
 
     def visitAppendNode(self, node: AppendNode):
@@ -276,7 +284,6 @@ class CodingVisitor(YuiSyntax):
         self.expression(node.variable)
         self.terminal('append-infix')
         self.expression(node.expression)
-        self.terminal('append-suffix')
         self.terminal('append-end')
 
     def visitBreakNode(self, node: BreakNode):
@@ -396,3 +403,4 @@ class CodingVisitor(YuiSyntax):
             self.indent -= 1
             self.just_linefeeded = False  # indent 変化後に正しいインデントで linefeed させる
             self.terminal('block-end', linefeed_before=True)
+

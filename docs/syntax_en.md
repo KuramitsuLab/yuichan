@@ -290,11 +290,11 @@ Unary ::= unary-minus @Primary
 
 | Token | Operator | Precedence |
 |-------|----------|------------|
-| `binary*` | multiplication | Multiplicative |
-| `binary/` | division | Multiplicative |
-| `binary%` | modulo | Multiplicative |
-| `binary+` | addition | Additive |
-| `binary-` | subtraction | Additive |
+| `binary-infix*` | multiplication | Multiplicative |
+| `binary-infix/` | division | Multiplicative |
+| `binary-infix%` | modulo | Multiplicative |
+| `binary-infix+` | addition | Additive |
+| `binary-infix-` | subtraction | Additive |
 | `binary==` | equal | Comparative |
 | `binary!=` | not equal | Comparative |
 | `binary<` | less than | Comparative |
@@ -307,8 +307,8 @@ Unary ::= unary-minus @Primary
 ```
 @Expression    ::= @Comparative
 @Comparative   ::= @Additive [ binary== @Additive | binary!= @Additive | ... ]
-@Additive      ::= @Multiplicative [ binary+ @Additive | binary- @Additive ]
-@Multiplicative::= @Primary [ binary* @Multiplicative | binary/ @Multiplicative | binary% @Multiplicative ]
+@Additive      ::= @Multiplicative [ binary-infix+ @Additive | binary-infix- @Additive ]
+@Multiplicative::= @Primary [ binary-infix* @Multiplicative | binary-infix/ @Multiplicative | binary-infix% @Multiplicative ]
 @Primary       ::= @Term { @Postfix }
 @Term          ::= Grouping | Length | @Number | @String | @Array | @Object | @Boolean | @Name
 ```
@@ -346,13 +346,13 @@ PropertyAccess ::= @Expression property-accessor ( property-length | property-ty
 
 | Token | Description |
 |-------|-------------|
-| `funcapp-args-suffix` | Opens the argument list (e.g., `(`) — immediately after the function name |
-| `funcapp-args-separator` | Separates arguments (e.g., `,`) |
+| `funcapp-args-begin` | Opens the argument list (e.g., `(`) — immediately after the function name |
+| `funcapp-separator` | Separates arguments (e.g., `,`) |
 | `funcapp-args-end` | Closes the argument list (e.g., `)`) |
 
 ```
-FuncApp ::= @Expression funcapp-args-suffix
-              [ @Expression { funcapp-args-separator @Expression } ]
+FuncApp ::= @Expression funcapp-args-begin
+              [ @Expression { funcapp-separator @Expression } ]
             funcapp-args-end
 ```
 
@@ -673,7 +673,7 @@ Parses to `PrintExpressionNode(expression)`.
 | `string-interpolation-begin` | `StringParser` | Start of `${...}` interpolation |
 | `string-interpolation-end` | `StringParser` | End of interpolation |
 | `string-content-end` | `StringParser` | Lookahead: end of raw string segment |
-| `!string-begin` | `Source.is_match` | Wrong-token detector for strings |
+| `!string-begin` | `source.is_` | Wrong-token detector for strings |
 | `array-begin` | `ArrayParser` | `[` |
 | `array-end` | `ArrayParser` | `]` |
 | `array-separator` | `ArrayParser` | `,` between elements |
@@ -688,11 +688,11 @@ Parses to `PrintExpressionNode(expression)`.
 | `unary-minus` | `PrimaryParser` | Negation prefix |
 | `unary-length` | `PrimaryParser` | Length prefix (e.g., `📐`) |
 | `unary-inspection` | `PrimaryParser` | Debug-print prefix |
-| `binary+` | `AdditiveParser` | Addition |
-| `binary-` | `AdditiveParser` | Subtraction |
-| `binary*` | `MultiplicativeParser` | Multiplication |
-| `binary/` | `MultiplicativeParser` | Division |
-| `binary%` | `MultiplicativeParser` | Modulo |
+| `binary-infix+` | `AdditiveParser` | Addition |
+| `binary-infix-` | `AdditiveParser` | Subtraction |
+| `binary-infix*` | `MultiplicativeParser` | Multiplication |
+| `binary-infix/` | `MultiplicativeParser` | Division |
+| `binary-infix%` | `MultiplicativeParser` | Modulo |
 | `binary==` | `ComparativeParser` | Equal |
 | `binary!=` | `ComparativeParser` | Not equal |
 | `binary<` | `ComparativeParser` | Less than |
@@ -707,8 +707,8 @@ Parses to `PrintExpressionNode(expression)`.
 | `property-length` | `PrimaryParser` | Property name for length |
 | `property-type` | `PrimaryParser` | Property name for type |
 | `not-property-name` | `PrimaryParser` | Name excluded from property access |
-| `funcapp-args-suffix` | `PrimaryParser` | `(` opening args |
-| `funcapp-args-separator` | `PrimaryParser` | `,` between args |
+| `funcapp-args-begin` | `PrimaryParser` | `(` opening args |
+| `funcapp-separator` | `PrimaryParser` | `,` between args |
 | `funcapp-args-end` | `PrimaryParser` | `)` closing args |
 | `import-standard` | `ImportParser` | Full standard-library import token |
 | `import-operator` | *(emitter only)* | Full operator-library import token |

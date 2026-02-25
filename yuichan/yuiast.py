@@ -223,15 +223,12 @@ class BinaryNode(ASTNode):
     operator: str
     comparative: bool
 
-    def __init__(self, left: ExpressionNode, operator: str, right: ExpressionNode, comparative: bool = False):
+    def __init__(self, operator: str, left: ExpressionNode, right: ExpressionNode, comparative: bool = False):
         super().__init__()
-        self.left_node = _node(left)
         self.operator = operator
+        self.left_node = _node(left)
         self.right_node = _node(right)
         self.comparative = comparative
-
-    # def evaluate(self, runtime):
-    #     raise YuiError(("internal-error", f"🔍{self.operator} operator is not implemented"), self, runtime)
 
     def visit(self, visitor):
         return visitor.visitBinaryNode(self)

@@ -144,19 +144,19 @@ describe('arrayview round-trip', () => {
     });
 
     test('int negative', () => {
-        const bits = YuiType.IntType.toArrayview(-1);
-        expect(YuiType.IntType.toNative(bits)).toBe(-1);
+        const v = new YuiValue(-1);
+        expect(YuiType.IntType.toNative(v.arrayview, v.sign)).toBe(-1);
     });
 
     test('float round-trip', () => {
-        const digits = YuiType.FloatType.toArrayview(3.14);
-        const result = YuiType.FloatType.toNative(digits);
+        const v = new YuiValue(3.14);
+        const result = YuiType.FloatType.toNative(v.arrayview, v.sign);
         expect(result).toBeCloseTo(3.14, 5);
     });
 
     test('float negative', () => {
-        const digits = YuiType.FloatType.toArrayview(-2.5);
-        const result = YuiType.FloatType.toNative(digits);
+        const v = new YuiValue(-2.5);
+        const result = YuiType.FloatType.toNative(v.arrayview, v.sign);
         expect(result).toBeCloseTo(-2.5, 5);
     });
 

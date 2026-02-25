@@ -78,12 +78,14 @@ Error message languages (--lang):
                         help='Save environment variables to JSON file after execution')
     parser.add_argument('--make-examples', action='store_true',
                         help='Generate sample code files (.yui)')
+    parser.add_argument('--show-examples', action='store_true',
+                        help='Print sample code to stdout')
     parser.add_argument('--test-examples', action='store_true',
                         help='Test all examples with YuiRuntime')
     parser.add_argument('--pass@1', dest='pass_at_1', action='store_true',
                         help='Execute multiple scripts and show pass rate')
     parser.add_argument('--example', type=str, metavar='NAME',
-                        help='Generate specific example only (use with --make-examples)')
+                        help='Target specific example (use with --make-examples or --show-examples)')
     parser.add_argument('--list-examples', action='store_true',
                         help='List available examples')
     parser.add_argument('--list-syntax', action='store_true',
@@ -148,6 +150,15 @@ Error message languages (--lang):
                 print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
             test_examples(args.syntax)
+            return
+
+        # Show examples mode (stdout)
+        if args.show_examples:
+            if not args.syntax:
+                print("Error: --syntax option is required", file=sys.stderr)
+                print("Example: yui --syntax yui --show-examples", file=sys.stderr)
+                sys.exit(1)
+            show_examples(args.example, args.syntax)
             return
 
         # Example generation mode
@@ -455,6 +466,28 @@ def find_syntax(files: list, syntax_dir: str = None):
         print(f"Matching syntax: {', '.join(matched)}")
     else:
         print("No syntax matched all files.")
+
+
+def show_examples(example_name: str = None, syntax: str = 'yui'):
+    """サンプルコードを標準出力に表示する。
+
+    Args:
+        example_name: 特定のサンプル名（None の場合は全サンプル）
+        syntax: 使用する構文ファイル
+    """
+    examples = yuiexample.get_samples()
+
+    if example_name:
+        examples = [ex for ex in examples if ex.name == example_name]
+        if not examples:
+            print(f"Error: Example '{example_name}' not found", file=sys.stderr)
+            sys.exit(1)
+
+    for i, example in enumerate(examples):
+        if i > 0:
+            print()
+        print(f"# {example.name}: {example.description}")
+        print(example.generate(syntax, include_asserts=False))
 
 
 def make_examples(example_name: str = None, syntax: str = 'yui'):

@@ -7,10 +7,15 @@ from typing import Union, Any, List
 import re
 import json
 import os
+import random
 
-def get_example_from_pattern(pattern: str) -> str:
+def get_example_from_pattern(pattern: str, random_seed=None) -> str:
     """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
     # エスケープされた文字を一時的に置換
+    global _random_seed
+    if random_seed is not None:
+        _random_seed = random_seed
+    
     original_pattern = pattern
     ESC = [
         (r'\|', '▁｜'), (r'\[', '▁［'), (r'\]', '▁］'),
@@ -32,6 +37,8 @@ def get_example_from_pattern(pattern: str) -> str:
         pattern = pattern[e_pos+1:]
         if pattern.startswith('?'):
             pattern = pattern[1:]
+            if _random(2) != 0:
+                processed += get_example_from_pattern_inner(inner)
         else:
             processed += get_example_from_pattern_inner(inner)
     #print(f"@processed: `{pattern}` -> `{processed}`")  # デバッグ用
@@ -44,6 +51,16 @@ def get_example_from_pattern(pattern: str) -> str:
         processed = processed.replace(a, b)
     assert '▁' not in processed, f"Unprocessed escape sequences remain in `{original_pattern}`: `{processed}`"
     return processed
+
+_random_seed = None
+
+def _random(n):
+    global _random_seed
+    if _random_seed is None:
+        return 0
+    random.seed(_random_seed)
+    _random_seed += 1
+    return random.randint(0, n - 1)
 
 def split_heading_char(s: str):
     if s.startswith("\\"):
@@ -76,7 +93,9 @@ def split_heading_char(s: str):
         heading_char = s[0]
         remaining = s[1:]
     if remaining.startswith("?"):
-        return '', remaining[1:]
+        if _random(2) == 0:
+            return '', remaining[1:]
+        return heading_char, remaining[1:]
     return heading_char, remaining
 
 def get_example_from_pattern_inner(pattern: str)-> str:
@@ -84,7 +103,9 @@ def get_example_from_pattern_inner(pattern: str)-> str:
         return ""
     # 選択肢（|）の処理：最初の選択肢を使用
     if "|" in pattern:
-        pattern = pattern.split("|")[0]
+        choice = pattern.split("|")
+        pattern = choice[_random(len(choice))]
+
     # 文字クラス [abc] の処理 
     if pattern.startswith("["):
         end_pos = pattern.find("]")
@@ -161,9 +182,11 @@ DEFAULT_SYNTAX_JSON = {
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
     
-    "funcapp-args-suffix": "\\(",
+    "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
-    "funcapp-args-separator": ",",
+    "funcapp-separator": ",",
+
+    "unary-inspect": "👀",
 }
 
 def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
@@ -334,8 +357,8 @@ def generate_bnf(terminals: dict) -> str:
     if ex('unary-minus'):
         r('Minus', ex('unary-minus') + E)
 
-    fa_b, fa_e = ex('funcapp-args-suffix'), ex('funcapp-args-end')
-    fa_sep = ex('funcapp-args-separator') or ','
+    fa_b, fa_e = ex('funcapp-args-begin'), ex('funcapp-args-end')
+    fa_sep = ex('funcapp-separator') or ','
     if fa_b:
         r('FuncApp', f'{E}{fa_b}{E} {{{fa_sep} {E}}}{fa_e}')
 

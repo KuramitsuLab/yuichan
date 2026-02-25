@@ -154,8 +154,12 @@ class YuiType(ABC):
     def to_arrayview(self, n: int) -> List[int]:
         pass
 
+    def to_sign(self, native_value: Any) -> int:
+        """符号を返す（デフォルトは常に 1）"""
+        return 1
+
     @abstractmethod
-    def to_native(self, elements: List[int], node=None) -> Any:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> Any:
         pass
 
     @abstractmethod
@@ -325,7 +329,7 @@ class YuiNullType(YuiType):
     def to_arrayview(self, n: None) -> List[int]:
         return []
 
-    def to_native(self, elements: List[int], node=None) -> None:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> None:
         return None
     
     def stringfy(self, native_value: None, indent_prefix: str = "", width=80) -> str:
@@ -346,7 +350,7 @@ class YuiBooleanType(YuiType):
     def to_arrayview(self, n: bool) -> List[int]:
         return [1] if n else []
 
-    def to_native(self, elements: List[int], node=None) -> bool:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> bool:
         return len(elements) > 0
 
     def stringfy(self, native_value: bool, indent_prefix: str = "", width=80) -> str:
@@ -381,33 +385,25 @@ class YuiIntType(YuiType):
         if value != 0 and value != 1:
             raise YuiError(("error", "value", f"✅0/1", f"❌{value}"), node_or_value)
 
+    def to_sign(self, n: int) -> int:
+        return -1 if n < 0 else 1
+
     def to_arrayview(self, n: int) -> List[int]:
-        """整数を32ビットの2の補数表現の整数配列に変換"""
-        # 32ビットにマスク（符号なし整数として扱う）
-        n_unsigned = n & 0xFFFFFFFF    
-        # 各ビットを抽出（MSBからLSBへ）
+        """整数の絶対値を32ビットLSBファースト配列に変換"""
+        n_abs = abs(n)
         bits = []
-        for i in range(31, -1, -1):
-            value = (n_unsigned >> i) & 1
-            bits.append(value) # int はそのまま
+        for i in range(32):
+            bits.append((n_abs >> i) & 1)
         return bits
 
-    def to_native(self, bits: List[int], node=None) -> int:
-        """32ビットの2の補数表現の整数配列を整数に変換"""
+    def to_native(self, bits: List[int], sign: int = 1, node=None) -> int:
+        """32ビットLSBファースト配列を整数に変換"""
         if len(bits) != 32:
             raise YuiError(("array", "format", f"❌{len(bits)}", "✅32"), node)
-        
-        # ビット列を符号なし整数に変換
-        n_unsigned = 0
-        for bit in bits:
-            n_unsigned = (n_unsigned << 1) | bit
-        
-        # 32ビット符号付き整数に変換（2の補数）
-        if n_unsigned >= 0x80000000:  # MSBが1（負数）
-            n = n_unsigned - 0x100000000
-        else:
-            n = n_unsigned        
-        return n
+        n = 0
+        for i, bit in enumerate(bits):
+            n |= bit << i
+        return sign * n
     
     def stringfy(self, native_value: int, indent_prefix: str = "", width=80) -> str:
         return f"{native_value}"
@@ -442,39 +438,36 @@ class YuiFloatType(YuiType):
     def check_element(self, node_or_value: Any) -> None:
         YuiType.IntType.match_or_raise(node_or_value)
         value = self.matched_native(node_or_value)
-        if value < -1 or value > 9:
-            raise YuiError(("error", "value", f"✅-1,0-9", f"❌{value}"), node_or_value)
+        if value < 0 or value > 9:
+            raise YuiError(("error", "value", f"✅0-9", f"❌{value}"), node_or_value)
+
+    def to_sign(self, x: float) -> int:
+        return -1 if x < 0 else 1
 
     def to_arrayview(self, x: float) -> List[int]:
-        """浮動小数点数を符号付き一桁整数配列に変換
+        """浮動小数点数の絶対値をLSB（小さい桁）ファーストの一桁整数配列に変換
         Example:
-            [1, 3, 1, 4, 0, 0, 0, 0]  # 3.140000
-            [-1, 2, 5, 0, 0, 0, 0, 0]  # -2.500000
+            3.14  → [0, 0, 0, 0, 4, 1, 3]  (sign=1)
+            -3.14 → [0, 0, 0, 0, 4, 1, 3]  (sign=-1)
         """
-        sign = -1 if x < 0 else 1
         s = f"{abs(x):.6f}"  # 小数点以下6桁に丸める
         s = s.replace('.', '')  # 小数点を削除
-        digits = [sign] + [int(ch) for ch in s]
-        return digits
+        digits = [int(ch) for ch in s]
+        return list(reversed(digits))
 
-    def to_native(self, digits: List[int], node=None) -> float:
-        """符号付き一桁整数配列を浮動小数点数に変換
+    def to_native(self, digits: List[int], sign: int = 1, node=None) -> float:
+        """LSBファーストの一桁整数配列を浮動小数点数に変換
         Example:
-            >>> array_to_float([1, 3, 1, 4, 0, 0, 0, 0])
-            3.140000
-            >>> array_to_float([-1, 2, 5, 0, 0, 0, 0, 0])
-            -2.500000
+            to_native([0, 0, 0, 0, 4, 1, 3], sign=1)  → 3.14
+            to_native([0, 0, 0, 0, 4, 1, 3], sign=-1) → -3.14
         """
-        sign = digits[0]
-        if not(isinstance(sign, int) and sign in (1, -1)):
-            raise YuiError(f"conversion", "tofloat", f"❌[0]{digits[0]}", f"✅1/-1", f"🔍{digits}", node)
-        num_digits = digits[1:]
-        for i, d in enumerate(num_digits, start=1):
+        num_digits = list(reversed(digits))  # MSBファーストに戻す
+        for i, d in enumerate(num_digits):
             if not (isinstance(d, int) and 0 <= d <= 9):
-                raise YuiError(f"conversion", "tofloat", f"❌[{i}]{d}", f"✅0-9", f"🔍{digits}", node)
+                raise YuiError(("conversion", "tofloat", f"❌[{i}]{d}", f"✅0-9", f"🔍{digits}"), node)
         s = ''.join(str(d) for d in num_digits)
         if len(s) <= 6:
-            # 小数部のみの場合（整数部なし）
+            # 整数部なし（小数点以下のみ）
             value = int(s)
         else:
             # 小数点を6桁前に挿入
@@ -514,11 +507,17 @@ class YuiNumberType(YuiType):
         else:
             return YuiType.IntType.to_arrayview(n)
     
-    def to_native(self, bits: List[int], node=None) -> int:
-        if len(bits) == 32:
-            return YuiType.IntType.to_native(bits, node=node)
+    def to_sign(self, n: Union[int, float]) -> int:
+        if isinstance(n, float):
+            return YuiType.FloatType.to_sign(n)
         else:
-            return YuiType.FloatType.to_native(bits, node=node)
+            return YuiType.IntType.to_sign(n)
+
+    def to_native(self, bits: List[int], sign: int = 1, node=None) -> int:
+        if len(bits) == 32:
+            return YuiType.IntType.to_native(bits, sign=sign, node=node)
+        else:
+            return YuiType.FloatType.to_native(bits, sign=sign, node=node)
     
     def stringfy(self, native_value: int, indent_prefix: str = "", width=80) -> str:
         if isinstance(native_value, float):
@@ -541,7 +540,7 @@ class YuiStringType(YuiType):
         """文字コード"""
         return [ord(ch) for ch in x]
 
-    def to_native(self, elements: List[int], node=None) -> str:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> str:
         return ''.join(chr(d) for d in elements)
 
     def stringfy(self, native_value: str, indent_prefix: str = "", width=80) -> str:
@@ -593,7 +592,7 @@ class YuiArrayType(YuiType):
         """配列の要素をエンコード"""
         return [YuiType.into_arrayview(value) for value in array_value]
 
-    def to_native(self, elements: List[int], node=None) -> str:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> str:
         array = []
         for element in elements:
             if isinstance(element, YuiValue):
@@ -654,7 +653,7 @@ class YuiObjectType(YuiType):
             elements.append(YuiValue([str(key), YuiType.into_arrayview(value)]))
         return elements
 
-    def to_native(self, elements: List[int], node=None) -> str:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> str:
         obj = {}
         for key_value in elements:
             if not isinstance(key_value, YuiValue):
@@ -734,17 +733,19 @@ class YuiValue(object):
         """YuiValueを初期化する"""
         self.native_value = YuiType.to_native(native_value)
         self.elements = None
+        self.sign = 1
         self.type = _typing(native_value) if type is None else type
     
     @property
     def native(self) -> Any:
         if self.native_value is None:
-            self.native_value = self.type.to_native(self.elements)
+            self.native_value = self.type.to_native(self.elements, sign=self.sign)
         return self.native_value
 
     @property
     def arrayview(self):
         if self.elements is None:
+            self.sign = self.type.to_sign(self.native_value)
             self.elements = self.type.to_arrayview(self.native_value)
         return self.elements
 

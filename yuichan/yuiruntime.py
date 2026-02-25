@@ -204,7 +204,7 @@ class YuiRuntime(object):
             raise e
 
         # 結果を返す
-        return YuiType.yui_to_native(value) if eval_mode else self.environments[-1]
+        return YuiType.to_native(value) if eval_mode else self.environments[-1]
 
 
     ## visitor
@@ -344,31 +344,43 @@ class YuiRuntime(object):
             raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.expression.visit(self)
         node.variable.update(value, self)
+        return value
 
     def visitIncrementNode(self, node: IncrementNode):
+        if not hasattr(node.variable, 'update'):
+            raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.variable.visit(self)
         YuiType.IntType.match_or_raise(value)
-        node.variable.update(YuiValue(YuiType.matched_native(value) + 1), self)
+        result = YuiValue(YuiType.matched_native(value) + 1)
+        node.variable.update(result, self)
         self.count_inc()
+        return result
 
     def visitDecrementNode(self, node: DecrementNode):
+        if not hasattr(node.variable, 'update'):
+            raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.variable.visit(self)
         YuiType.IntType.match_or_raise(value)
-        node.variable.update(YuiValue(YuiType.matched_native(value) - 1), self)
+        result = YuiValue(YuiType.matched_native(value) - 1)
+        node.variable.update(result, self)
         self.count_dec()
+        return result
 
     def visitAppendNode(self, node: AppendNode):
         array = node.variable.visit(self)
         value = node.expression.visit(self)
         array.append(value)
+        return array
 
     # ──────────────────────────────────────────────────────────
     # 制御構造ノード
     # ──────────────────────────────────────────────────────────
 
     def visitBlockNode(self, node: BlockNode):
+        value = YuiValue.NullValue
         for statement in node.statements:
-            statement.visit(self)
+            value =statement.visit(self)
+        return value
 
     def visitIfNode(self, node: IfNode):
         left = node.left.visit(self)
@@ -376,7 +388,7 @@ class YuiRuntime(object):
         result = node.operator.evaluate(left, right)
         self.count_compare()
         if result:
-            node.then_block.visit(self)
+            return node.then_block.visit(self)
         elif node.else_block:
             node.else_block.visit(self)
 
@@ -390,12 +402,14 @@ class YuiRuntime(object):
         count_value = node.count_node.visit(self)
         YuiType.IntType.match_or_raise(count_value)
         count = YuiType.matched_native(count_value)
+        result = YuiValue.NullValue
         try:
             for _ in range(abs(count)):
                 self.check_execution(node)
                 node.block_node.visit(self)
         except YuiBreakException:
             pass
+        return result
 
     def visitReturnNode(self, node: ReturnNode):
         value = node.expression.visit(self)
@@ -414,8 +428,6 @@ class YuiRuntime(object):
     # ──────────────────────────────────────────────────────────
 
     def visitPrintExpressionNode(self, node: PrintExpressionNode):
-        if isinstance(node.expression, MinusNode):
-            return node.expression.element.visit(self)
         if isinstance(node.expression, FuncAppNode):
             node.expression.snippet = ''
         value = node.expression.visit(self)
@@ -429,7 +441,7 @@ class YuiRuntime(object):
             reference_value = node.reference.visit(self)
             if tested.type.equals(tested, reference_value):
                 self.test_passed.append(str(node.test))
-                return
+                return YuiValue.TrueValue
         except YuiError:
             raise
         except Exception:
@@ -438,6 +450,7 @@ class YuiRuntime(object):
             ("failed", f"🔍{node.test}", f"❌{tested}", f"✅{reference_value}"),
             node,
         )
+        return YuiValue.FalseValue
 
     def visitImportNode(self, node: ImportNode):
         """ライブラリを環境に追加する"""
@@ -447,6 +460,7 @@ class YuiRuntime(object):
         for names, func in modules:
             for name in names.split('|'): # 多言語関数名
                 self.setenv(f'@{name}', NativeFunction(func))
+        return YuiValue.NullValue
 
     # # ──────────────────────────────────────────────────────────
     # # フォールバック

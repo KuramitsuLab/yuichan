@@ -66,7 +66,7 @@ describe('CodingVisitor', () => {
         const node = new ArrayNode([new NumberNode(1), new NumberNode(2), new NumberNode(3)]);
         const visitor = new CodingVisitor('yui');
         const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('[1,2,3]');
+        expect(result).toContain('[1, 2, 3]');
     });
 
     test('function definition', () => {

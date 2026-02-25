@@ -118,6 +118,7 @@ export class CodingVisitor extends YuiSyntax {
         } else {
             node.visit(this);
         }
+        this.wordSegment();
     }
 
     escape(text) {
@@ -250,11 +251,20 @@ export class CodingVisitor extends YuiSyntax {
     }
 
     visitBinaryNode(node) {
-        this.expression(node.leftNode);
-        this.wordSegment();
-        this.terminal(`binary${node.operator}`);
-        this.wordSegment();
-        this.expression(node.rightNode);
+        if (this.isDefined('binary-infix-prefix-begin')) {
+            this.terminal(`binary-infix-prefix${node.operator}`);
+            this.wordSegment();
+            this.expression(node.leftNode);
+            this.wordSegment();
+            this.expression(node.rightNode);
+            this.terminal('binary-infix-prefix-end');
+        } else {
+            this.expression(node.leftNode);
+            this.wordSegment();
+            this.terminal(`binary-infix${node.operator}`);
+            this.wordSegment();
+            this.expression(node.rightNode);
+        }
     }
 
     visitArrayLenNode(node) {
@@ -283,20 +293,19 @@ export class CodingVisitor extends YuiSyntax {
     visitFuncAppNode(node) {
         this.terminal('funcapp-begin');
         this.expression(node.nameNode);
-        this.terminal('funcapp-args-suffix');
+        this.terminal('funcapp-args-begin');
         node.arguments.forEach((arg, i) => {
-            if (i > 0) this.terminal('funcapp-args-separator');
+            if (i > 0) this.terminal('funcapp-separator');
             this.expression(arg);
         });
         this.terminal('funcapp-args-end');
+        this.terminal('funcapp-end');
     }
 
     visitAssignmentNode(node) {
         this.terminal('assignment-begin');
         this.expression(node.variable);
-        this.string(' ');
         this.terminal('assignment-infix');
-        this.string(' ');
         this.expression(node.expression);
         this.terminal('assignment-end');
     }
@@ -304,14 +313,12 @@ export class CodingVisitor extends YuiSyntax {
     visitIncrementNode(node) {
         this.terminal('increment-begin');
         this.expression(node.variable);
-        this.terminal('increment-infix');
         this.terminal('increment-end');
     }
 
     visitDecrementNode(node) {
         this.terminal('decrement-begin');
         this.expression(node.variable);
-        this.terminal('decrement-infix');
         this.terminal('decrement-end');
     }
 
@@ -320,7 +327,6 @@ export class CodingVisitor extends YuiSyntax {
         this.expression(node.variable);
         this.terminal('append-infix');
         this.expression(node.expression);
-        this.terminal('append-suffix');
         this.terminal('append-end');
     }
 

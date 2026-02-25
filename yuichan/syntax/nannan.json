@@ -38,11 +38,11 @@
     "length-begin": "\\|",
     "length-end": "\\|",
 
-    "binary+": "\\+",
-    "binary-": "-",
-    "binary*": "\\*",
-    "binary/": "/",
-    "binary%": "%",
+    "binary-infix+": "\\+",
+    "binary-infix-": "-",
+    "binary-infix*": "\\*",
+    "binary-infix/": "/",
+    "binary-infix%": "%",
     "unary-minus": "-",
 
     "array-indexer-suffix": "\\[",
@@ -50,9 +50,9 @@
     "property-accessor": "の",
     "property-length": "大きさ",
     
-    "funcapp-args-suffix": "\\(",
+    "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
-    "funcapp-args-separator": ",",
+    "funcapp-separator": ",",
 
     "import-standard": "標準のやつ使う",
     "import-operator": "四則演算子[、]?使う",

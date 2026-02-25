@@ -531,11 +531,11 @@ class PrimaryParser extends ParserCombinator {
         let node = parse('@Term', source, pc, { BK: true });
         while (source.hasNext()) {
             const openingPos = source.pos;
-            if (source.isMatch('funcapp-args-suffix')) {
+            if (source.isMatch('funcapp-args-begin')) {
                 const args = [];
                 while (!source.isMatch('funcapp-args-end', { unconsumed: true })) {
                     args.push(parse('@Expression', source, pc, { lskipLf: true }));
-                    if (source.isMatch('funcapp-args-separator')) continue;
+                    if (source.isMatch('funcapp-separator')) continue;
                 }
                 source.tryMatch('funcapp-args-end', { openingPos });
                 node = source.p({ node: new FuncAppNode(node, args), startPos });
@@ -570,15 +570,15 @@ class MultiplicativeParser extends ParserCombinator {
         const startPos = source.pos;
         const leftNode = parse('@Primary', source, pc, { BK: true });
         try {
-            if (source.isMatch('binary*', { ifUndefined: false })) {
+            if (source.isMatch('binary-infix*', { ifUndefined: false })) {
                 const rightNode = parse('@Multiplicative', source, pc);
                 return source.p({ node: new BinaryNode(leftNode, '*', rightNode), startPos });
             }
-            if (source.isMatch('binary/', { ifUndefined: false })) {
+            if (source.isMatch('binary-infix/', { ifUndefined: false })) {
                 const rightNode = parse('@Multiplicative', source, pc);
                 return source.p({ node: new BinaryNode(leftNode, '/', rightNode), startPos });
             }
-            if (source.isMatch('binary%', { ifUndefined: false })) {
+            if (source.isMatch('binary-infix%', { ifUndefined: false })) {
                 const rightNode = parse('@Multiplicative', source, pc);
                 return source.p({ node: new BinaryNode(leftNode, '%', rightNode), startPos });
             }
@@ -594,11 +594,11 @@ class AdditiveParser extends ParserCombinator {
         const startPos = source.pos;
         const leftNode = parse('@Multiplicative', source, pc, { BK: true });
         try {
-            if (source.isMatch('binary+', { ifUndefined: false })) {
+            if (source.isMatch('binary-infix+', { ifUndefined: false })) {
                 const rightNode = parse('@Additive', source, pc);
                 return source.p({ node: new BinaryNode(leftNode, '+', rightNode), startPos });
             }
-            if (source.isMatch('binary-', { ifUndefined: false })) {
+            if (source.isMatch('binary-infix-', { ifUndefined: false })) {
                 const rightNode = parse('@Additive', source, pc);
                 return source.p({ node: new BinaryNode(leftNode, '-', rightNode), startPos });
             }

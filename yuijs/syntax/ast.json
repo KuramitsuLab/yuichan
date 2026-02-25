@@ -48,9 +48,9 @@
     "array-indexer-end": "\\)",
 
     "funcapp-begin": "FuncApp\\(",
-    "funcapp-args-suffix": "",
+    "funcapp-args-begin": "",
     "funcapp-args-end": "\\)",
-    "funcapp-args-separator": ",",
+    "funcapp-separator": ",",
 
     "block-begin": "BlockNode\\(\\[",
     "block-end": "\\]\\)",

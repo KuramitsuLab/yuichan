@@ -160,11 +160,15 @@ export class YuiType {
         }
     }
 
+    toSign(nativeValue) {
+        return 1;
+    }
+
     toArrayview(n) {
         throw new Error('Abstract method: toArrayview');
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         throw new Error('Abstract method: toNative');
     }
 
@@ -366,7 +370,7 @@ export class YuiNullType extends YuiType {
         return [];
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         return null;
     }
 
@@ -394,7 +398,7 @@ export class YuiBooleanType extends YuiType {
         return n ? [1] : [];
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         return elements.length > 0;
     }
 
@@ -440,30 +444,29 @@ export class YuiIntType extends YuiType {
         }
     }
 
+    toSign(n) {
+        return n < 0 ? -1 : 1;
+    }
+
     toArrayview(n) {
-        // 32-bit two's complement
-        const nUnsigned = ((n >>> 0)); // treat as unsigned 32-bit
+        // 32ビット符号なし絶対値 LSBファースト
+        const nAbs = Math.abs(n);
         const bits = [];
-        for (let i = 31; i >= 0; i--) {
-            bits.push((nUnsigned >>> i) & 1);
+        for (let i = 0; i < 32; i++) {
+            bits.push((nAbs >>> i) & 1);
         }
         return bits;
     }
 
-    toNative(bits, node = null) {
+    toNative(bits, sign = 1, node = null) {
         if (bits.length !== 32) {
             throw new YuiError(['array', 'format', `❌${bits.length}`, '✅32'], node);
         }
-        let nUnsigned = 0;
-        for (const bit of bits) {
-            nUnsigned = (nUnsigned * 2 + bit) | 0; // keep 32-bit
+        let n = 0;
+        for (let i = 0; i < 32; i++) {
+            if (bits[i]) n += Math.pow(2, i);
         }
-        // Interpret as unsigned then convert to signed
-        nUnsigned = nUnsigned >>> 0;
-        if (nUnsigned >= 0x80000000) {
-            return nUnsigned - 0x100000000;
-        }
-        return nUnsigned;
+        return sign * n;
     }
 
     stringfy(nativeValue, indentPrefix = '', width = 80) {
@@ -506,28 +509,29 @@ export class YuiFloatType extends YuiType {
     checkElement(nodeOrValue) {
         YuiType.IntType.matchOrRaise(nodeOrValue);
         const value = YuiType.matchedNative(nodeOrValue);
-        if (value < -1 || value > 9) {
-            throw new YuiError(['error', 'value', '✅-1,0-9', `❌${value}`], null);
+        if (value < 0 || value > 9) {
+            throw new YuiError(['error', 'value', '✅0-9', `❌${value}`], null);
         }
+    }
+
+    toSign(x) {
+        return x < 0 ? -1 : 1;
     }
 
     toArrayview(x) {
-        const sign = x < 0 ? -1 : 1;
+        // 絶対値をLSB（小さい桁）ファーストの一桁整数配列に変換
         const s = Math.abs(x).toFixed(6).replace('.', '');
-        const digits = [sign, ...s.split('').map(Number)];
-        return digits;
+        const digits = s.split('').map(Number);
+        return digits.reverse();
     }
 
-    toNative(digits, node = null) {
-        const sign = digits[0];
-        if (sign !== 1 && sign !== -1) {
-            throw new YuiError(['conversion', 'tofloat', `❌[0]${digits[0]}`, '✅1/-1', `🔍${digits}`], node);
-        }
-        const numDigits = digits.slice(1);
+    toNative(digits, sign = 1, node = null) {
+        // LSBファーストをMSBファーストに戻して数値に変換
+        const numDigits = [...digits].reverse();
         for (let i = 0; i < numDigits.length; i++) {
             const d = numDigits[i];
             if (!Number.isInteger(d) || d < 0 || d > 9) {
-                throw new YuiError(['conversion', 'tofloat', `❌[${i + 1}]${d}`, '✅0-9', `🔍${digits}`], node);
+                throw new YuiError(['conversion', 'tofloat', `❌[${i}]${d}`, '✅0-9', `🔍${digits}`], node);
             }
         }
         const s = numDigits.join('');
@@ -581,11 +585,16 @@ export class YuiNumberType extends YuiType {
         return YuiType.IntType.toArrayview(n);
     }
 
-    toNative(bits, node = null) {
+    toSign(n) {
+        if (!Number.isInteger(n)) return YuiType.FloatType.toSign(n);
+        return YuiType.IntType.toSign(n);
+    }
+
+    toNative(bits, sign = 1, node = null) {
         if (bits.length === 32) {
-            return YuiType.IntType.toNative(bits, node);
+            return YuiType.IntType.toNative(bits, sign, node);
         }
-        return YuiType.FloatType.toNative(bits, node);
+        return YuiType.FloatType.toNative(bits, sign, node);
     }
 
     stringfy(nativeValue, indentPrefix = '', width = 80) {
@@ -618,7 +627,7 @@ export class YuiStringType extends YuiType {
         return codes;
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         return elements.map(d => String.fromCodePoint(d)).join('');
     }
 
@@ -680,7 +689,7 @@ export class YuiArrayType extends YuiType {
         return arrayValue.map(value => YuiType.intoArrayview(value));
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         return elements.map(element => {
             if (element instanceof YuiValue) return element.native;
             return element;
@@ -733,7 +742,7 @@ export class YuiObjectType extends YuiType {
         });
     }
 
-    toNative(elements, node = null) {
+    toNative(elements, sign = 1, node = null) {
         const obj = {};
         for (const keyValue of elements) {
             if (!(keyValue instanceof YuiValue)) {
@@ -821,18 +830,24 @@ export class YuiValue {
     constructor(nativeValue, type = null) {
         this._nativeValue = YuiType.toNative(nativeValue);
         this._elements = null;
+        this._sign = 1;
         this.type = type !== null ? type : _typing(nativeValue);
+    }
+
+    get sign() {
+        return this._sign;
     }
 
     get native() {
         if (this._nativeValue === null && this._elements !== null) {
-            this._nativeValue = this.type.toNative(this._elements);
+            this._nativeValue = this.type.toNative(this._elements, this._sign);
         }
         return this._nativeValue;
     }
 
     get arrayview() {
         if (this._elements === null) {
+            this._sign = this.type.toSign(this._nativeValue);
             this._elements = this.type.toArrayview(this._nativeValue);
         }
         return this._elements;

@@ -30,7 +30,7 @@ def check_roundtrip(syntax_name: str, example_name: str, verbose=True) -> bool:
         print()
     source = Source(code, syntax=syntax)
     try:
-        parse('@TopLevel', source, pc={})
+        parse('@TopLevel')
         if verbose:
             print("  → OK")
         return True
@@ -62,7 +62,7 @@ def show_funcapp_tokens(syntax_name: str):
 def emit_funcapp_example(syntax_name: str):
     """
     FuncAppNode(f, [x, 1]) を指定 syntax で emit した結果を表示する。
-    Bug 2: funcapp-suffix vs funcapp-args-suffix の差異確認に使う。
+    Bug 2: funcapp-suffix vs funcapp-args-begin の差異確認に使う。
     """
     from yuichan.yuicoding import CodingVisitor
     from yuichan.yuiast import FuncAppNode, NameNode, NumberNode

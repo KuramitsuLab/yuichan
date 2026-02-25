@@ -35,11 +35,11 @@
     "grouping-begin!": "\\(",
     "grouping-end!": "\\)",
 
-    "binary+": "\\+",
-    "binary-": "-",
-    "binary*": "\\*",
-    "binary/": "/",
-    "binary%": "%",
+    "binary-infix+": "\\+",
+    "binary-infix-": "-",
+    "binary-infix*": "\\*",
+    "binary-infix/": "/",
+    "binary-infix%": "%",
     "unary-minus": "-",
 
     "array-indexer-suffix": "\\[",
@@ -47,9 +47,9 @@
     "property-accessor": "\\.",
     "property-length": "length",
     "not-property-name": "push",
-    "funcapp-args-suffix": "\\(",
+    "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
-    "funcapp-args-separator": ",",
+    "funcapp-separator": ",",
 
     "block-begin": "\\:",
     "block-end": "",

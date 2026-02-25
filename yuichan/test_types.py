@@ -15,21 +15,23 @@ class TestValue:
     def test_int(self):
         value = YuiValue(0)
         assert len(value.arrayview) == 32
-        assert value.get_item(30).native == 0
-        value.set_item(30, YuiValue(1))
-        assert value.get_item(30).native == 1
-        value.set_item(31, YuiValue(1))
+        assert value.get_item(0).native == 0
+        value.set_item(0, YuiValue(1))
+        assert value.get_item(0).native == 1
+        value.set_item(1, YuiValue(1))
         assert value.native == 3
-        assert value.stringfy(arrayview=True, indent_prefix=None) == '[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1]'
+        assert value.stringfy(arrayview=True, indent_prefix=None) == '[1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]'
 
     def test_float(self):
         value = YuiValue(3.14)
         assert value.native == 3.14
-        assert value.arrayview == [1, 3, 1, 4, 0, 0, 0, 0]
+        assert value.arrayview == [0, 0, 0, 0, 4, 1, 3]
+        assert value.sign == 1
 
         value = YuiValue(-3.14)
         assert value.native == -3.14
-        assert value.arrayview == [-1, 3, 1, 4, 0, 0, 0, 0]
+        assert value.arrayview == [0, 0, 0, 0, 4, 1, 3]
+        assert value.sign == -1
 
     def test_string(self):
         value = YuiValue("ABC")
@@ -249,17 +251,20 @@ class TestInt:
 
     def test_arrayview_one(self):
         bits = YuiValue(1).arrayview
-        assert bits[-1] == 1
-        assert all(b == 0 for b in bits[:-1])
+        assert bits[0] == 1
+        assert all(b == 0 for b in bits[1:])
 
     def test_arrayview_negative_one(self):
-        """-1 はすべてのビットが 1（2の補数）"""
-        assert YuiValue(-1).arrayview == [1] * 32
+        """-1 は絶対値1のLSBファースト（符号は sign=-1）"""
+        v = YuiValue(-1)
+        assert v.arrayview[0] == 1
+        assert all(b == 0 for b in v.arrayview[1:])
+        assert v.sign == -1
 
     def test_roundtrip(self):
         for n in [0, 1, -1, 42, -42, 2**31 - 1, -(2**31)]:
             v = YuiValue(n)
-            assert YuiType.IntType.to_native(v.arrayview) == n
+            assert YuiType.IntType.to_native(v.arrayview, sign=v.sign) == n
 
     # ── stringfy ────────────────────────────────────────────────────────────
 
@@ -276,8 +281,8 @@ class TestInt:
 
     def test_set_get_item(self):
         v = YuiValue(0)
-        v.set_item(YuiValue(30), YuiValue(1))
-        v.set_item(YuiValue(31), YuiValue(1))
+        v.set_item(YuiValue(0), YuiValue(1))
+        v.set_item(YuiValue(1), YuiValue(1))
         assert v.native == 3
 
     def test_set_item_invalid_raises(self):
@@ -351,18 +356,20 @@ class TestFloat:
     # ── arrayview ───────────────────────────────────────────────────────────
 
     def test_arrayview_positive(self):
-        assert YuiValue(3.14).arrayview == [1, 3, 1, 4, 0, 0, 0, 0]
+        assert YuiValue(3.14).arrayview == [0, 0, 0, 0, 4, 1, 3]
 
     def test_arrayview_negative(self):
-        assert YuiValue(-3.14).arrayview == [-1, 3, 1, 4, 0, 0, 0, 0]
+        v = YuiValue(-3.14)
+        assert v.arrayview == [0, 0, 0, 0, 4, 1, 3]
+        assert v.sign == -1
 
     def test_arrayview_zero(self):
-        assert YuiValue(0.0).arrayview == [1, 0, 0, 0, 0, 0, 0, 0]
+        assert YuiValue(0.0).arrayview == [0, 0, 0, 0, 0, 0, 0]
 
     def test_roundtrip(self):
         for x in [3.14, -2.5, 1.0, 0.0]:
             v = YuiValue(x)
-            assert abs(YuiType.FloatType.to_native(v.arrayview) - x) < 1e-6
+            assert abs(YuiType.FloatType.to_native(v.arrayview, sign=v.sign) - x) < 1e-6
 
     # ── stringfy ────────────────────────────────────────────────────────────
 

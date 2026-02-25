@@ -83,7 +83,7 @@ describe('yui syntax', () => {
     });
 
     test('array append', () => {
-        const env = run('a = []\naの末尾に 99 を 追加する');
+        const env = run('a = []\naの末尾に 99 を追加する');
         expect(val(env, 'a')).toEqual([99]);
     });
 
