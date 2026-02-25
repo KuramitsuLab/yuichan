@@ -7,7 +7,7 @@ YuiRuntime.exec() を通じた実行テスト
 
 import pytest
 from .yuiruntime import YuiRuntime
-from .yuitypes import YuiValue, YuiType, YuiError
+from .yuitypes import YuiValue, YuiType, YuiError, types
 
 # 標準ライブラリを使う宣言 (yui 構文の import-standard キーワード)
 STDLIB = "標準ライブラリを使う\n"
@@ -26,7 +26,7 @@ def run_std(source: str, syntax: str = 'yui') -> dict:
 
 def val(env: dict, name: str):
     """環境から変数の Python native 値を取得する"""
-    return YuiType.to_native(env[name])
+    return types.unbox(env[name])
 
 
 def run_rt(source: str, syntax: str = 'yui') -> YuiRuntime:
@@ -110,7 +110,7 @@ class TestNativeFunctionWrapping:
     def test_sqrt_stores_yuivalue(self):
         env = run_std("x = 平方根(4)")
         assert isinstance(env['x'], YuiValue)
-        assert YuiType.is_float(env['x'])
+        assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 2.0) < 1e-6
 
 
@@ -246,7 +246,7 @@ class TestBasicExec:
         rt.exec("x = 10", 'yui', eval_mode=False)
         # BinaryNode (+) は未実装のため、インクリメントで +5 を表現
         rt.exec("y = x\nyを増やす\nyを増やす\nyを増やす\nyを増やす\nyを増やす", 'yui', eval_mode=False)
-        assert YuiType.to_native(rt.environments[-1]['y']) == 15
+        assert types.unbox(rt.environments[-1]['y']) == 15
 
     def test_syntax_error_raises_yuierror(self):
         with pytest.raises(YuiError):
@@ -300,22 +300,22 @@ class TestBinaryOps:
     # ── 型昇格: 整数 OP 少数 → 少数 ──────────────────────────
     def test_int_plus_float_is_float(self):
         env = self.run_bin("x = 1 + 2.0")
-        assert YuiType.is_float(env['x'])
+        assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 3.0) < 1e-6
 
     def test_int_minus_float_is_float(self):
         env = self.run_bin("x = 5 - 1.5")
-        assert YuiType.is_float(env['x'])
+        assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 3.5) < 1e-6
 
     def test_int_multiply_float_is_float(self):
         env = self.run_bin("x = 3 * 2.0")
-        assert YuiType.is_float(env['x'])
+        assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 6.0) < 1e-6
 
     def test_int_divide_float_is_float(self):
         env = self.run_bin("x = 7 / 2.0")
-        assert YuiType.is_float(env['x'])
+        assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 3.5) < 1e-6
 
     # ── 文字列連結 ────────────────────────────────────────────

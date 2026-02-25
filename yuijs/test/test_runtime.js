@@ -1,7 +1,7 @@
 // test_runtime.js — port of yuichan/test/test_runtime.py
 import { describe, test, expect } from 'vitest';
 import { YuiRuntime } from '../src/yuiruntime.js';
-import { YuiValue, YuiType, YuiError } from '../src/yuitypes.js';
+import { YuiValue, YuiType, YuiError, types } from '../src/yuitypes.js';
 
 const STDLIB = '標準ライブラリを使う\n';
 
@@ -166,7 +166,7 @@ describe('standard library', () => {
 
     test('平方根 (sqrt) — returns float', () => {
         const env = runStd('x = 平方根(4)');
-        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(types.isFloat(env['x'])).toBe(true);
         expect(val(env, 'x')).toBeCloseTo(2.0);
     });
 });
@@ -261,22 +261,22 @@ describe('binary operators', () => {
     // 型昇格: int OP float → float
     test('int + float is float', () => {
         const env = runBin('x = 1 + 2.0');
-        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(types.isFloat(env['x'])).toBe(true);
         expect(val(env, 'x')).toBeCloseTo(3.0);
     });
     test('int - float is float', () => {
         const env = runBin('x = 5 - 1.5');
-        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(types.isFloat(env['x'])).toBe(true);
         expect(val(env, 'x')).toBeCloseTo(3.5);
     });
     test('int * float is float', () => {
         const env = runBin('x = 3 * 2.0');
-        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(types.isFloat(env['x'])).toBe(true);
         expect(val(env, 'x')).toBeCloseTo(6.0);
     });
     test('int / float is float', () => {
         const env = runBin('x = 7 / 2.0');
-        expect(YuiType.isFloat(env['x'])).toBe(true);
+        expect(types.isFloat(env['x'])).toBe(true);
         expect(val(env, 'x')).toBeCloseTo(3.5);
     });
 

@@ -12,7 +12,8 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, ImportNode,
 )
-from .yuitypes import YuiValue, YuiType, YuiError, _format_messages
+from .yuitypes import YuiValue, YuiType, YuiError, types, IntType, NumberType, FloatType
+from .yuierror import _format_messages
 from .yuistdlib import standard_lib
 from .yuiparser import YuiParser
 
@@ -204,7 +205,7 @@ class YuiRuntime(object):
             raise e
 
         # 結果を返す
-        return YuiType.to_native(value) if eval_mode else self.environments[-1]
+        return types.unbox(value) if eval_mode else self.environments[-1]
 
 
     ## visitor
@@ -236,7 +237,7 @@ class YuiRuntime(object):
                 parts.append(content)
             else:
                 value = content.visit(self)
-                parts.append(f'{YuiType.yui_to_native(value)}')
+                parts.append(f'{types.unbox(value)}')
         return YuiValue(''.join(parts))
 
     def visitArrayNode(self, node: ArrayNode):
@@ -270,12 +271,12 @@ class YuiRuntime(object):
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         value = node.element.visit(self)
-        return YuiValue(len(value.arrayview))
+        return YuiValue(len(value.array))
 
     def visitMinusNode(self, node: MinusNode):
         value = node.element.visit(self)
-        YuiType.NumberType.match_or_raise(value)
-        return YuiValue(-YuiType.matched_native(value))
+        NumberType.match_or_raise(value)
+        return YuiValue(-types.unbox(value))
 
     def visitBinaryNode(self, node: BinaryNode):
         if not (self.allow_binary_ops or (self.function_defined and self.test_passed)):
@@ -285,19 +286,19 @@ class YuiRuntime(object):
         op = node.operator
 
         # 文字列連結: + のみ
-        if op == '+' and YuiType.is_string(left) and YuiType.is_string(right):
-            return YuiValue(YuiType.matched_native(left) + YuiType.matched_native(right))
+        if op == '+' and types.is_string(left) and types.is_string(right):
+            return YuiValue(types.unbox(left) + types.unbox(right))
 
         # 配列連結: + のみ
-        if op == '+' and YuiType.is_array(left) and YuiType.is_array(right):
+        if op == '+' and types.is_array(left) and types.is_array(right):
             return YuiValue(left.native + right.native)
 
         # 数値演算
-        YuiType.NumberType.match_or_raise(left)
-        YuiType.NumberType.match_or_raise(right)
-        l = YuiType.matched_native(left)
-        r = YuiType.matched_native(right)
-        is_float = YuiType.is_float(left) or YuiType.is_float(right)
+        NumberType.match_or_raise(left)
+        NumberType.match_or_raise(right)
+        l = types.unbox(left)
+        r = types.unbox(right)
+        is_float = types.is_float(left) or types.is_float(right)
 
         if op == '+':
             result = l + r
@@ -350,8 +351,8 @@ class YuiRuntime(object):
         if not hasattr(node.variable, 'update'):
             raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.variable.visit(self)
-        YuiType.IntType.match_or_raise(value)
-        result = YuiValue(YuiType.matched_native(value) + 1)
+        IntType.match_or_raise(value)
+        result = YuiValue(types.unbox(value) + 1)
         node.variable.update(result, self)
         self.count_inc()
         return result
@@ -360,8 +361,8 @@ class YuiRuntime(object):
         if not hasattr(node.variable, 'update'):
             raise YuiError(("expected-variable", f"❌{node.variable}"), node.variable)
         value = node.variable.visit(self)
-        YuiType.IntType.match_or_raise(value)
-        result = YuiValue(YuiType.matched_native(value) - 1)
+        IntType.match_or_raise(value)
+        result = YuiValue(types.unbox(value) - 1)
         node.variable.update(result, self)
         self.count_dec()
         return result
@@ -400,8 +401,8 @@ class YuiRuntime(object):
 
     def visitRepeatNode(self, node: RepeatNode):
         count_value = node.count_node.visit(self)
-        YuiType.IntType.match_or_raise(count_value)
-        count = YuiType.matched_native(count_value)
+        IntType.match_or_raise(count_value)
+        count = types.unbox(count_value)
         result = YuiValue.NullValue
         try:
             for _ in range(abs(count)):

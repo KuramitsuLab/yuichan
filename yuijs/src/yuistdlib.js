@@ -1,6 +1,6 @@
 // yuistdlib.js — standard library (port of yuichan/yuistdlib.py)
 
-import { YuiValue, YuiType, YuiError } from './yuitypes.js';
+import { YuiValue, YuiType, YuiError, IntType, NumberType, FloatType, types } from './yuitypes.js';
 
 export function standardLib(modules) {
     function checkNumberOfArgs(nodeargs, expected) {
@@ -28,8 +28,8 @@ export function standardLib(modules) {
 
     function hasFloatOrRaise(nodeargs) {
         for (const nodearg of nodeargs) {
-            YuiType.NumberType.matchOrRaise(nodearg);
-            if (YuiType.isFloat(nodearg)) return true;
+            NumberType.matchOrRaise(nodearg);
+            if (types.isFloat(nodearg)) return true;
         }
         return false;
     }
@@ -38,7 +38,7 @@ export function standardLib(modules) {
 
     function yuiAbs(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        YuiType.NumberType.matchOrRaise(nodeargs[0]);
+        NumberType.matchOrRaise(nodeargs[0]);
         const value = YuiType.matchedNative(nodeargs[0]);
         return new YuiValue(Math.abs(value));
     }
@@ -48,10 +48,10 @@ export function standardLib(modules) {
 
     function yuiSqrt(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        YuiType.NumberType.matchOrRaise(nodeargs[0]);
+        NumberType.matchOrRaise(nodeargs[0]);
         const value = YuiType.matchedNative(nodeargs[0]);
         if (value < 0) throw new YuiError(['error', 'negative sqrt', `❌${value}`, '✅>=0']);
-        return new YuiValue(Math.sqrt(value), YuiType.FloatType);
+        return new YuiValue(Math.sqrt(value), FloatType);
     }
     modules.push(['√|平方根|sqrt', yuiSqrt]);
 
@@ -65,7 +65,7 @@ export function standardLib(modules) {
 
     function yuiRandint(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        YuiType.IntType.matchOrRaise(nodeargs[0]);
+        IntType.matchOrRaise(nodeargs[0]);
         const x = YuiType.matchedNative(nodeargs[0]);
         if (x <= 0) throw new YuiError(['error', 'invalid argument', `❌${x}`, '✅>0']);
         return new YuiValue(Math.floor(Math.random() * x));
@@ -251,7 +251,7 @@ export function standardLib(modules) {
 
     function yuiIsint(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        return YuiType.isInt(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return types.isInt(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
     modules.push(['💯❓|整数判定|isint', yuiIsint]);
 
@@ -263,34 +263,34 @@ export function standardLib(modules) {
 
     function yuiIsfloat(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        return YuiType.isFloat(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return types.isFloat(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
     modules.push(['📊❓|少数判定|isfloat', yuiIsfloat]);
 
     function yuiTofloat(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
         const value = nodeargs[0];
-        if (YuiType.isString(value)) {
+        if (types.isString(value)) {
             const str = YuiType.matchedNative(value);
             const f = parseFloat(str);
             if (isNaN(f)) throw new YuiError(['error', 'conversion', `❌${str}`]);
-            return new YuiValue(f, YuiType.FloatType);
+            return new YuiValue(f, FloatType);
         }
         // Explicitly set FloatType: in JS, parseFloat(3) === 3 (integer),
         // so we must force the type to distinguish float from int.
-        return new YuiValue(parseFloat(YuiType.matchedNative(nodeargs[0])), YuiType.FloatType);
+        return new YuiValue(parseFloat(YuiType.matchedNative(nodeargs[0])), FloatType);
     }
     modules.push(['📊|少数化|tofloat', yuiTofloat]);
 
     function yuiIsstring(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        return YuiType.isString(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return types.isString(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
     modules.push(['💬❓|文字列判定|isstring', yuiIsstring]);
 
     function yuiTostring(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        if (YuiType.isFloat(nodeargs[0])) {
+        if (types.isFloat(nodeargs[0])) {
             const v = YuiType.matchedNative(nodeargs[0]);
             return new YuiValue(v.toFixed(6));
         }
@@ -300,14 +300,14 @@ export function standardLib(modules) {
 
     function yuiIsobject(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        return YuiType.isObject(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return types.isObject(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
     modules.push(['🗂️❓|オブジェクト判定|isobject', yuiIsobject]);
 
     function yuiToobject(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        if (YuiType.isObject(nodeargs[0])) return nodeargs[0];
-        if (YuiType.isString(nodeargs[0])) {
+        if (types.isObject(nodeargs[0])) return nodeargs[0];
+        if (types.isString(nodeargs[0])) {
             const s = YuiType.matchedNative(nodeargs[0]);
             if (s.startsWith('{')) {
                 try {
@@ -321,7 +321,7 @@ export function standardLib(modules) {
 
     function yuiIsarray(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
-        return YuiType.isArray(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return types.isArray(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
     modules.push(['🍡❓|配列判定|isarray', yuiIsarray]);
 

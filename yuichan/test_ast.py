@@ -1,6 +1,6 @@
 import pytest
 
-from .yuitypes import YuiError, YuiValue, YuiType
+from .yuitypes import YuiError, YuiValue, YuiType, types
 from .yuiruntime import YuiRuntime
 from .yuiast import (
     ConstNode, NumberNode, StringNode,
@@ -28,42 +28,42 @@ class TestLiteral:
         runtime = self.init_runtime()
         expression = NumberNode(42)
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 42
 
     def test_float(self):
         runtime = self.init_runtime()
         expression = NumberNode(42.0)
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 42.0
 
     def test_string(self):
         runtime = self.init_runtime()
         expression = StringNode("A")
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == "A"
 
     def test_string_interpolation(self):
         runtime = self.init_runtime()
         expression = StringNode(["A", NumberNode(1), "B"])
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == "A1B"
 
     def test_array(self):
         runtime = self.init_runtime()
         expression = ArrayNode([1, 2, 3])
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == [1, 2, 3]
 
     def test_object(self):
         runtime = self.init_runtime()
         expression = ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2), StringNode("z"), NumberNode(3)])
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == {"x": 1, "y": 2, "z": 3}
 
 class TestVariable:
@@ -79,7 +79,7 @@ class TestVariable:
         runtime = self.init_runtime()
         expression = NameNode("x")
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 1
 
     def test_undefined_variable(self):
@@ -87,7 +87,7 @@ class TestVariable:
         expression = NameNode("y")
         with pytest.raises(YuiError) as excinfo:    
             result = expression.evaluate(runtime)
-            result = YuiType.to_native(result)
+            result = types.unbox(result)
             assert result == 1
         assert "undefined" in str(excinfo.value.args[0])
         assert "variable" in str(excinfo.value.args[0])
@@ -103,14 +103,14 @@ class TestUnaryOperator:
         runtime = self.init_runtime()
         expression = MinusNode(NumberNode(1))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == -1
 
     def test_minus_float(self):
         runtime = self.init_runtime()
         expression = MinusNode(NumberNode(1.0))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == -1.0
 
     def test_minus_string(self):
@@ -118,7 +118,7 @@ class TestUnaryOperator:
         expression = MinusNode(StringNode("A"))
         with pytest.raises(YuiError) as excinfo:    
             result = expression.evaluate(runtime)
-            result = YuiType.to_native(result)
+            result = types.unbox(result)
             assert result == "A"
         assert "type" in str(excinfo.value)
 
@@ -126,21 +126,21 @@ class TestUnaryOperator:
         runtime = self.init_runtime()
         expression = ArrayLenNode(NameNode("A"))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 3
 
     def test_length_string(self):
         runtime = self.init_runtime()
         expression = ArrayLenNode(StringNode("abc"))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 3
 
     def test_length_int(self):
         runtime = self.init_runtime()
         expression = ArrayLenNode(NumberNode(1))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 1  # 可変長: 1 は [1] (1ビット)
 
 class TestGetIndex:
@@ -156,28 +156,28 @@ class TestGetIndex:
         runtime = self.init_runtime()
         expression = GetIndexNode(NameNode("A"), NumberNode(1))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 2
 
     def test_get_string(self):
         runtime = self.init_runtime()
         expression = GetIndexNode(NameNode("s"), NumberNode(1))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 98 # 'b'のASCIIコード
 
     def test_get_charcode(self):
         runtime = self.init_runtime()
         expression = GetIndexNode(StringNode("b"), NumberNode(0))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 98 # 'b'のASCIIコード
 
     def test_object_string(self):
         runtime = self.init_runtime()
         expression = GetIndexNode(NameNode("O"), StringNode("y"))
         result = expression.evaluate(runtime)
-        result = YuiType.to_native(result)
+        result = types.unbox(result)
         assert result == 2
 
     def test_get_array_out_of_index(self):
@@ -201,7 +201,7 @@ class TestAssignment:
         runtime = self.init_runtime()
         statement = AssignmentNode(NameNode("A"), NumberNode(3))
         statement.evaluate(runtime)
-        assert YuiType.compare(runtime.getenv("A"), 3) == 0
+        assert types.unbox(runtime.getenv("A")) == 3
 
     def test_string_assignment(self):
         runtime = self.init_runtime()
@@ -215,37 +215,37 @@ class TestAssignment:
         runtime = self.init_runtime()
         statement = IncrementNode(NameNode("x"))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 2
+        assert types.unbox(runtime.getenv("x")) == 2
 
     def test_variable_decrement(self):
         runtime = self.init_runtime()
         statement = DecrementNode(NameNode("x"))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 0
+        assert types.unbox(runtime.getenv("x")) == 0
 
     def test_array_assignment(self):
         runtime = self.init_runtime()
         statement = AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)), NumberNode(3))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("A").get_item(0)) == 3
+        assert types.unbox(runtime.getenv("A").get_item(0)) == 3
 
     def test_array_increment(self):
         runtime = self.init_runtime()
         statement = IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0)))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("A").get_item(0)) == 2
+        assert types.unbox(runtime.getenv("A").get_item(0)) == 2
 
     def test_array_decrement(self):
         runtime = self.init_runtime()
         statement = DecrementNode(GetIndexNode(NameNode("A"), NumberNode(1)))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("A").get_item(1)) == 1
+        assert types.unbox(runtime.getenv("A").get_item(1)) == 1
 
     def test_object_assignment(self):
         runtime = self.init_runtime()
         statement = AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(3))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("O").get_item("x")) == 3
+        assert types.unbox(runtime.getenv("O").get_item("x")) == 3
 
 class TestAppend:
 
@@ -261,20 +261,20 @@ class TestAppend:
         runtime = self.init_runtime()
         statement = AppendNode(NameNode("A"), NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("A").get_item(3)) == 0
+        assert types.unbox(runtime.getenv("A").get_item(3)) == 0
 
     def test_append_string(self):
         runtime = self.init_runtime()
         statement = AppendNode(NameNode("s"), NumberNode(ord("d")))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("s").get_item(3)) == ord("d")
+        assert types.unbox(runtime.getenv("s").get_item(3)) == ord("d")
 
     def test_append_int(self):
         # 可変長: x=YuiValue(1)=[1]、ビット1を追加すると[1,1]=3
         runtime = self.init_runtime()
         statement = AppendNode(NameNode("x"), NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 3
+        assert types.unbox(runtime.getenv("x")) == 3
 
 class TestIfCondition:
 
@@ -296,108 +296,108 @@ class TestIfCondition:
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "==", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "==", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
     def test_if_ne(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
     def test_if_lt(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<", NumberNode(2))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
     def test_if_le(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(2))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
     def test_if_gt(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">", NumberNode(2))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
     def test_if_ge(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(0))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 1
+        assert types.unbox(runtime.getenv("x")) == 1
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(1))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
 
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(2))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
     def test_if_eq_string(self):
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("s"), "==", StringNode("abc"))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
         runtime = self.init_runtime()
         statement = self.make_if_statement(NameNode("s"), "==", StringNode("ABC"))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
     def test_if_eq_float(self):
         runtime = self.init_runtime()
         runtime.setenv("f", YuiValue(3.14))
         statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.14))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 1
+        assert types.unbox(runtime.getenv("result")) == 1
         runtime = self.init_runtime()
         runtime.setenv("f", YuiValue(3.1))
         statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.145))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("result")) == 0
+        assert types.unbox(runtime.getenv("result")) == 0
 
 
 class TestStatement:
@@ -418,13 +418,13 @@ class TestStatement:
             IncrementNode(NameNode("x")),
         ])
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 12
+        assert types.unbox(runtime.getenv("x")) == 12
     
     def test_repeat(self):
         runtime = self.init_runtime()
         statement = RepeatNode(3,IncrementNode(NameNode("x")))
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 4
+        assert types.unbox(runtime.getenv("x")) == 4
 
     def test_repeat_break(self):
         runtime = self.init_runtime()
@@ -441,7 +441,7 @@ class TestStatement:
             ])
         )
         statement.evaluate(runtime)
-        assert YuiType.to_native(runtime.getenv("x")) == 4
+        assert types.unbox(runtime.getenv("x")) == 4
 
     def test_print_expression(self, capsys):
         runtime = self.init_runtime()
@@ -641,7 +641,7 @@ class TestFunction:
             arguments=[NumberNode(10), NumberNode(20)]
         )
         result = func_app.evaluate(runtime)
-        assert YuiType.to_native(result) == 10
+        assert types.unbox(result) == 10
 
     def test_function_return_none(self):
         runtime = self.init_runtime()
@@ -658,8 +658,8 @@ class TestFunction:
             arguments=[NumberNode(0), NumberNode(1)]
         )
         result = func_app.evaluate(runtime)
-        assert YuiType.is_object(result)
-        result = YuiType.to_native(result)
+        assert types.is_object(result)
+        result = types.unbox(result)
         assert result["a"] == 1
         assert result["b"] == 1
         assert result["c"] == 3

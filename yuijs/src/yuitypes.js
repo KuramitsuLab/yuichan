@@ -80,31 +80,31 @@ export class YuiType {
     }
 
     static isBool(nodeOrValue) {
-        return YuiType.BooleanType.match(nodeOrValue);
+        return BoolType.match(nodeOrValue);
     }
 
     static isInt(nodeOrValue) {
-        return YuiType.IntType.match(nodeOrValue);
+        return IntType.match(nodeOrValue);
     }
 
     static isFloat(nodeOrValue) {
-        return YuiType.FloatType.match(nodeOrValue);
+        return FloatType.match(nodeOrValue);
     }
 
     static isNumber(nodeOrValue) {
-        return YuiType.NumberType.match(nodeOrValue);
+        return NumberType.match(nodeOrValue);
     }
 
     static isString(nodeOrValue) {
-        return YuiType.StringType.match(nodeOrValue);
+        return StringType.match(nodeOrValue);
     }
 
     static isArray(nodeOrValue) {
-        return YuiType.ArrayType.match(nodeOrValue);
+        return ArrayType.match(nodeOrValue);
     }
 
     static isObject(nodeOrValue) {
-        return YuiType.ObjectType.match(nodeOrValue);
+        return ObjectType.match(nodeOrValue);
     }
 
     static matchedNative(nodeOrValue) {
@@ -143,10 +143,10 @@ export class YuiType {
         return String(value);
     }
 
-    // Convert YuiValue (or nested) to native JS value
+    // Convert YuiValue (or nested) to native JS value (recursive)
     static toNative(nodeOrValue) {
         if (nodeOrValue instanceof YuiValue) {
-            return nodeOrValue.native;
+            return YuiType.toNative(nodeOrValue.native);
         }
         if (Array.isArray(nodeOrValue)) {
             return nodeOrValue.map(v => YuiType.toNative(v));
@@ -176,7 +176,7 @@ export class YuiType {
 
     static yuiToNative(value) {
         if (value instanceof YuiValue) {
-            return value.native;
+            return YuiType.yuiToNative(value.native);
         }
         if (Array.isArray(value)) {
             return value.map(e => YuiType.yuiToNative(e));
@@ -192,12 +192,12 @@ export class YuiType {
     }
 
     static compare(leftNodeOrValue, rightNodeOrValue) {
-        if (YuiType.isNumber(leftNodeOrValue) && YuiType.isNumber(rightNodeOrValue)) {
+        if (types.isNumber(leftNodeOrValue) && types.isNumber(rightNodeOrValue)) {
             const lv = _round(YuiType.matchedNative(leftNodeOrValue), 6);
             const rv = _round(YuiType.matchedNative(rightNodeOrValue), 6);
             return _compare(lv, rv);
         }
-        if (YuiType.isString(leftNodeOrValue) && YuiType.isString(rightNodeOrValue)) {
+        if (types.isString(leftNodeOrValue) && types.isString(rightNodeOrValue)) {
             const lv = YuiType.matchedNative(leftNodeOrValue);
             const rv = YuiType.matchedNative(rightNodeOrValue);
             return _compare(lv, rv);
@@ -212,14 +212,14 @@ export class YuiType {
 }
 
 // Static type instances (set after class definitions)
-YuiType.NullType = null;
-YuiType.BooleanType = null;
-YuiType.IntType = null;
-YuiType.FloatType = null;
-YuiType.NumberType = null;
-YuiType.StringType = null;
-YuiType.ArrayType = null;
-YuiType.ObjectType = null;
+export let NullType = null;
+export let BoolType = null;
+export let IntType = null;
+export let FloatType = null;
+export let NumberType = null;
+export let StringType = null;
+export let ArrayType = null;
+export let ObjectType = null;
 
 function _round(n, decimals) {
     const factor = 10 ** decimals;
@@ -321,7 +321,7 @@ export class YuiIntType extends YuiType {
     }
 
     checkElement(nodeOrValue) {
-        YuiType.IntType.matchOrRaise(nodeOrValue);
+        IntType.matchOrRaise(nodeOrValue);
         const value = YuiType.matchedNative(nodeOrValue);
         if (value !== 0 && value !== 1) {
             throw new YuiError(['error', 'value', '✅0/1', `❌${value}`], null);
@@ -390,7 +390,7 @@ export class YuiFloatType extends YuiType {
     }
 
     checkElement(nodeOrValue) {
-        YuiType.IntType.matchOrRaise(nodeOrValue);
+        IntType.matchOrRaise(nodeOrValue);
         const value = YuiType.matchedNative(nodeOrValue);
         if (value < 0 || value > 9) {
             throw new YuiError(['error', 'value', '✅0-9', `❌${value}`], null);
@@ -456,35 +456,35 @@ export class YuiNumberType extends YuiType {
     }
 
     match(nodeOrValue) {
-        return YuiType.IntType.match(nodeOrValue) || YuiType.FloatType.match(nodeOrValue);
+        return IntType.match(nodeOrValue) || FloatType.match(nodeOrValue);
     }
 
     checkElement(nodeOrValue) {}
 
     toArrayview(n) {
         if (!Number.isInteger(n)) {
-            return YuiType.FloatType.toArrayview(n);
+            return FloatType.toArrayview(n);
         }
-        return YuiType.IntType.toArrayview(n);
+        return IntType.toArrayview(n);
     }
 
     toSign(n) {
-        if (!Number.isInteger(n)) return YuiType.FloatType.toSign(n);
-        return YuiType.IntType.toSign(n);
+        if (!Number.isInteger(n)) return FloatType.toSign(n);
+        return IntType.toSign(n);
     }
 
     toNative(bits, sign = 1, node = null) {
         if (bits.length === 32) {
-            return YuiType.IntType.toNative(bits, sign, node);
+            return IntType.toNative(bits, sign, node);
         }
-        return YuiType.FloatType.toNative(bits, sign, node);
+        return FloatType.toNative(bits, sign, node);
     }
 
     stringfy(nativeValue, indentPrefix = '', width = 80) {
         if (!Number.isInteger(nativeValue)) {
-            return YuiType.FloatType.stringfy(nativeValue, indentPrefix, width);
+            return FloatType.stringfy(nativeValue, indentPrefix, width);
         }
-        return YuiType.IntType.stringfy(nativeValue, indentPrefix, width);
+        return IntType.stringfy(nativeValue, indentPrefix, width);
     }
 }
 
@@ -499,7 +499,7 @@ export class YuiStringType extends YuiType {
     }
 
     checkElement(nodeOrValue) {
-        YuiType.IntType.matchOrRaise(nodeOrValue);
+        IntType.matchOrRaise(nodeOrValue);
     }
 
     toArrayview(x) {
@@ -521,7 +521,7 @@ export class YuiStringType extends YuiType {
 
     equals(leftNode, rightNode) {
         const leftValue = YuiType.toNative(leftNode);
-        if (YuiType.isString(rightNode)) {
+        if (types.isString(rightNode)) {
             const rightValue = YuiType.matchedNative(rightNode);
             return leftValue === rightValue;
         }
@@ -530,7 +530,7 @@ export class YuiStringType extends YuiType {
 
     lessThan(leftNode, rightNode, op = '<') {
         const leftValue = YuiType.toNative(leftNode);
-        if (YuiType.isString(rightNode)) {
+        if (types.isString(rightNode)) {
             const rightValue = YuiType.matchedNative(rightNode);
             return leftValue < rightValue;
         }
@@ -612,9 +612,9 @@ export class YuiObjectType extends YuiType {
     }
 
     checkElement(nodeOrValue) {
-        YuiType.ArrayType.matchOrRaise(nodeOrValue);
+        ArrayType.matchOrRaise(nodeOrValue);
         const array = YuiType.matchedNative(nodeOrValue);
-        if (!Array.isArray(array) || array.length !== 2 || !YuiType.StringType.match(array[0])) {
+        if (!Array.isArray(array) || array.length !== 2 || !StringType.match(array[0])) {
             throw new YuiError(['error', 'value', '✅[key, value]', `❌${array}`], null);
         }
     }
@@ -677,25 +677,25 @@ export class YuiObjectType extends YuiType {
 // Instantiate type singletons
 // ─────────────────────────────────────────────
 
-YuiType.NullType    = new YuiNullType();
-YuiType.BooleanType = new YuiBooleanType();
-YuiType.IntType     = new YuiIntType();
-YuiType.FloatType   = new YuiFloatType();
-YuiType.NumberType  = new YuiNumberType();
-YuiType.StringType  = new YuiStringType();
-YuiType.ObjectType  = new YuiObjectType();
-YuiType.ArrayType   = new YuiArrayType();
+NullType    = new YuiNullType();
+BoolType = new YuiBooleanType();
+IntType     = new YuiIntType();
+FloatType   = new YuiFloatType();
+NumberType  = new YuiNumberType();
+StringType  = new YuiStringType();
+ObjectType  = new YuiObjectType();
+ArrayType   = new YuiArrayType();
 
 // bool must come before int (in Python, bool is subclass of int; in JS they're distinct)
 export const TYPES = [
-    YuiType.NullType,
-    YuiType.BooleanType,
-    YuiType.IntType,
-    YuiType.FloatType,
-    YuiType.NumberType,
-    YuiType.StringType,
-    YuiType.ArrayType,
-    YuiType.ObjectType,
+    NullType,
+    BoolType,
+    IntType,
+    FloatType,
+    NumberType,
+    StringType,
+    ArrayType,
+    ObjectType,
 ];
 
 function _typing(value) {
@@ -742,15 +742,15 @@ export class YuiValue {
     }
 
     getItem(nodeOrIndex) {
-        if (YuiType.isString(nodeOrIndex)) {
+        if (types.isString(nodeOrIndex)) {
             const key = YuiType.matchedNative(nodeOrIndex);
-            if (YuiType.isObject(this)) {
+            if (types.isObject(this)) {
                 const obj = YuiType.matchedNative(this);
                 const val = obj[key];
                 return YuiType.fromArrayview(val !== undefined ? val : YuiValue.NullValue);
             }
         }
-        YuiType.IntType.matchOrRaise(nodeOrIndex);
+        IntType.matchOrRaise(nodeOrIndex);
         const index = YuiType.matchedNative(nodeOrIndex);
         const elements = this.arrayview;
         if (index < 0) {
@@ -770,16 +770,16 @@ export class YuiValue {
 
     setItem(nodeOrIndex, nodeOrValue) {
         const value = YuiType.intoArrayview(nodeOrValue);
-        if (YuiType.isString(nodeOrIndex)) {
+        if (types.isString(nodeOrIndex)) {
             const key = YuiType.matchedNative(nodeOrIndex);
-            if (YuiType.isObject(this)) {
+            if (types.isObject(this)) {
                 const obj = YuiType.matchedNative(this);
                 obj[key] = value;
                 this._elements = null;
                 return;
             }
         }
-        YuiType.IntType.matchOrRaise(nodeOrIndex);
+        IntType.matchOrRaise(nodeOrIndex);
         const index = YuiType.matchedNative(nodeOrIndex);
         const elements = this.arrayview;
         if (index < 0) {
@@ -824,7 +824,7 @@ export class YuiValue {
     stringfy(indentPrefix = '', arrayview = false, width = 80) {
         if (arrayview) {
             const elements = this.arrayview;
-            return YuiType.ArrayType.stringfy(elements, indentPrefix, width);
+            return ArrayType.stringfy(elements, indentPrefix, width);
         }
         return this.type.stringfy(this.native, indentPrefix, width);
     }
@@ -843,9 +843,9 @@ export class YuiValue {
 }
 
 // Special constant values
-YuiValue.NullValue  = new YuiValue(null,  YuiType.NullType);
-YuiValue.TrueValue  = new YuiValue(true,  YuiType.BooleanType);
-YuiValue.FalseValue = new YuiValue(false, YuiType.BooleanType);
+YuiValue.NullValue  = new YuiValue(null,  NullType);
+YuiValue.TrueValue  = new YuiValue(true,  BoolType);
+YuiValue.FalseValue = new YuiValue(false, BoolType);
 
 // ─────────────────────────────────────────────
 // Operators
@@ -967,6 +967,31 @@ export const OPERATORS = {
     '>=': new GreaterThanEquals(),
     'in': new In(),
     'notin': new NotIn(),
+};
+
+// ─────────────────────────────────────────────
+// types utility object (mirrors Python's `types` class in yuitypes.py)
+// ─────────────────────────────────────────────
+
+export const types = {
+    box(value) {
+        if (value instanceof YuiValue) return value;
+        if (value === null || value === undefined) return YuiValue.NullValue;
+        if (typeof value === 'boolean') return value ? YuiValue.TrueValue : YuiValue.FalseValue;
+        return new YuiValue(value);
+    },
+    unbox(value) { return YuiType.toNative(value); },
+    arrayUnbox(value) { return YuiType.intoArrayview(value); },
+    isBool(v)   { return BoolType.match(v); },
+    isInt(v)    { return IntType.match(v); },
+    isFloat(v)  { return FloatType.match(v); },
+    isNumber(v) { return NumberType.match(v); },
+    isString(v) { return StringType.match(v); },
+    isArray(v)  { return ArrayType.match(v); },
+    isObject(v) { return ObjectType.match(v); },
+    formatJson(v) { return YuiType.arrayviewS(v); },
+    arrayviewS(v) { return YuiType.arrayviewS(v); },
+    compare(l, r) { return YuiType.compare(l, r); },
 };
 
 // Wire operators into yuiast

@@ -1,6 +1,6 @@
 // test_stdlib.js — tests for yuistdlib.js
 import { describe, test, expect, beforeAll } from 'vitest';
-import { YuiValue, YuiType, YuiError } from '../src/yuitypes.js';
+import { YuiValue, YuiType, YuiError, types } from '../src/yuitypes.js';
 import { standardLib } from '../src/yuistdlib.js';
 
 // Build stdlib map: English name → function (mirrors Python fixture)
@@ -45,7 +45,7 @@ describe('sqrt', () => {
     test('irrational',           () => expect(n(stdlib.sqrt(v(2)))).toBeCloseTo(Math.SQRT2));
     test('from float',           () => expect(n(stdlib.sqrt(v(2.0)))).toBeCloseTo(Math.SQRT2));
     test('zero',                 () => expect(n(stdlib.sqrt(v(0)))).toBeCloseTo(0.0));
-    test('returns float',        () => expect(YuiType.isFloat(stdlib.sqrt(v(4)))).toBe(true));
+    test('returns float',        () => expect(types.isFloat(stdlib.sqrt(v(4)))).toBe(true));
 
     test('negative throws',      () => expect(() => stdlib.sqrt(v(-1))).toThrow(YuiError));
     test('no args throws',       () => expect(() => stdlib.sqrt()).toThrow(YuiError));
@@ -135,7 +135,7 @@ describe('max and min', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('random', () => {
-    test('random returns float', () => expect(YuiType.isFloat(stdlib.random())).toBe(true));
+    test('random returns float', () => expect(types.isFloat(stdlib.random())).toBe(true));
 
     test('random is in [0, 1)', () => {
         for (let i = 0; i < 20; i++) {
@@ -145,7 +145,7 @@ describe('random', () => {
         }
     });
 
-    test('randint returns int', () => expect(YuiType.isInt(stdlib.randint(v(10)))).toBe(true));
+    test('randint returns int', () => expect(types.isInt(stdlib.randint(v(10)))).toBe(true));
 
     test('randint is in [0, n)', () => {
         for (let i = 0; i < 20; i++) {
@@ -232,7 +232,7 @@ describe('type conversions', () => {
     // tofloat
     test('tofloat from int returns float', () => {
         const result = stdlib.tofloat(v(3));
-        expect(YuiType.isFloat(result)).toBe(true);
+        expect(types.isFloat(result)).toBe(true);
         expect(n(result)).toBeCloseTo(3.0);
     });
     test('tofloat from float', () => expect(n(stdlib.tofloat(v(3.14)))).toBeCloseTo(3.14));
@@ -246,13 +246,13 @@ describe('type conversions', () => {
     // toarray
     test('toarray from array returns array', () => {
         const result = stdlib.toarray(v([1, 2, 3]));
-        expect(YuiType.isArray(result)).toBe(true);
+        expect(types.isArray(result)).toBe(true);
         expect(n(result)).toEqual([1, 2, 3]);
     });
 
     // toobject
     test('toobject from object returns object', () => {
         const result = stdlib.toobject(v({ x: 1 }));
-        expect(YuiType.isObject(result)).toBe(true);
+        expect(types.isObject(result)).toBe(true);
     });
 });

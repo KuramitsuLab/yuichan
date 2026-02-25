@@ -1,7 +1,5 @@
-from typing import Optional
-
-from .yuiast import ASTNode
-
+from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 
 ERROR_MESSAGES = {
     # パーサーエラー
@@ -78,7 +76,8 @@ class YuiError(RuntimeError):
         """YuiErrorを初期化する"""
         self.messages = _normalize_messages(messages)
         super().__init__(' '.join(self.messages))
-        self.error_node = error_node if isinstance(error_node, ASTNode) else None
+        from .yuiast import ASTNode as _ASTNode
+        self.error_node = error_node if isinstance(error_node, _ASTNode) else None
         self.BK = BK
 
     @property

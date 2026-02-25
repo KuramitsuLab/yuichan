@@ -18,7 +18,7 @@ from .yuiparser import Source
 from .yuisyntax import load_syntax
 from .yuicoding import CodingVisitor
 from .yuiruntime import YuiRuntime
-from .yuitypes import YuiType
+from .yuitypes import types
 
 SYNTAXES = ['yui', 'pylike', 'emoji']
 
@@ -31,8 +31,10 @@ _examples_by_name = {
     "int":   NumberNode(42),
     "float": NumberNode(3.5),
     # StringNode
+    "empty_string": StringNode(""),
     "string": StringNode("hello"),
     # ArrayNode
+    "empty_array": ArrayNode([]),
     "array": ArrayNode([NumberNode(1), NumberNode(2), NumberNode(3)]),
     # Assignment + read
     "assign": BlockNode([
@@ -79,12 +81,12 @@ def test_generate_then_parse(syntax_name, example_name):
     
     node = _examples_by_name[example_name]
     rumtime = YuiRuntime()
-    value = YuiType.to_native(node.evaluate(rumtime))
+    value = types.unbox(node.evaluate(rumtime))
 
     visitor = CodingVisitor(syntax)
     code = visitor.emit(node)
 
     source = Source(code, syntax=syntax)
     node2 = source.parse("@TopLevel")
-    value2 = YuiType.to_native(node2.evaluate(rumtime))
+    value2 = types.unbox(node2.evaluate(rumtime))
     assert value == value2

@@ -10,7 +10,7 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, ImportNode,
 )
-from .yuitypes import YuiType
+from .yuitypes import YuiType, types
 from .yuisyntax import load_syntax, YuiSyntax
 
 class CodingVisitor(YuiSyntax):
@@ -123,7 +123,10 @@ class CodingVisitor(YuiSyntax):
 
     def visitNumberNode(self, node: NumberNode):
         self.terminal("number-begin")
-        self.string(YuiType.arrayview_s(node.native_value))
+        if isinstance(node.native_value, float):
+            self.string(f"{node.native_value:.6f}")
+        else:
+            self.string(str(node.native_value))
         self.terminal("number-end")
 
     def visitStringNode(self, node: StringNode):

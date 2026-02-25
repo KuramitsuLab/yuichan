@@ -1,12 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Union
 from abc import ABC, abstractmethod
-
-OPERATORS = None
-
-def set_operators(operators: dict):
-    global OPERATORS
-    OPERATORS = operators
+from .yuitypes import OPERATORS
 
 @dataclass
 class ASTNode(ABC):

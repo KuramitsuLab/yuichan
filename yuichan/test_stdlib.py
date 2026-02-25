@@ -1,5 +1,5 @@
 import pytest
-from .yuitypes import YuiValue, YuiType, YuiError
+from .yuitypes import YuiValue, types, YuiError
 from .yuistdlib import standard_lib
 
 
@@ -18,7 +18,7 @@ def v(x):
 
 def n(result):
     """YuiValue/native → Python値"""
-    return YuiType.to_native(result)
+    return types.unbox(result)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ class TestSqrt:
     def test_irrational(self, stdlib):            assert abs(n(stdlib['sqrt'](v(2))) - 1.41421356) < 1e-6
     def test_from_float(self, stdlib):            assert abs(n(stdlib['sqrt'](v(2.0))) - 1.41421356) < 1e-6
     def test_zero(self, stdlib):                  assert abs(n(stdlib['sqrt'](v(0)))) < 1e-6
-    def test_returns_float(self, stdlib):         assert YuiType.is_float(stdlib['sqrt'](v(4)))
+    def test_returns_float(self, stdlib):         assert types.is_float(stdlib['sqrt'](v(4)))
 
     def test_negative_raises(self, stdlib):
         with pytest.raises(YuiError): stdlib['sqrt'](v(-1))
@@ -122,7 +122,7 @@ class TestMaxMin:
 
 class TestRandom:
     def test_is_float(self, stdlib):
-        assert YuiType.is_float(stdlib['random']())
+        assert types.is_float(stdlib['random']())
 
     def test_range(self, stdlib):
         for _ in range(20):
@@ -130,7 +130,7 @@ class TestRandom:
             assert 0.0 <= val < 1.0
 
     def test_randint_is_int(self, stdlib):
-        assert YuiType.is_int(stdlib['randint'](v(10)))
+        assert types.is_int(stdlib['randint'](v(10)))
 
     def test_randint_range(self, stdlib):
         for _ in range(20):
@@ -215,7 +215,7 @@ class TestTypeConversions:
     # tofloat
     def test_tofloat_from_int(self, stdlib):
         result = stdlib['tofloat'](v(3))
-        assert YuiType.is_float(result)
+        assert types.is_float(result)
         assert abs(n(result) - 3.0) < 1e-6
     def test_tofloat_from_float(self, stdlib):
         assert abs(n(stdlib['tofloat'](v(3.14))) - 3.14) < 1e-6
@@ -232,10 +232,10 @@ class TestTypeConversions:
     # toarray
     def test_toarray_from_array(self, stdlib):
         result = stdlib['toarray'](v([1, 2, 3]))
-        assert YuiType.is_array(result)
+        assert types.is_array(result)
         assert n(result) == [1, 2, 3]
 
     # toobject
     def test_toobject_from_object(self, stdlib):
         result = stdlib['toobject'](v({"x": 1}))
-        assert YuiType.is_object(result)
+        assert types.is_object(result)

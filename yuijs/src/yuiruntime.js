@@ -10,7 +10,7 @@ import {
     AssertNode, ImportNode,
 } from './yuiast.js';
 
-import { YuiValue, YuiType, YuiError, formatMessages } from './yuitypes.js';
+import { YuiValue, YuiType, YuiError, formatMessages, IntType, NumberType, FloatType, types } from './yuitypes.js';
 import { standardLib } from './yuistdlib.js';
 import { YuiParser } from './yuiparser.js';
 
@@ -283,7 +283,7 @@ export class YuiRuntime {
     visitNumberNode(node) {
         // If the source had a decimal point, force FloatType even if value is whole (e.g. 10.0)
         if (node.isFloat) {
-            return new YuiValue(node.nativeValue, YuiType.FloatType);
+            return new YuiValue(node.nativeValue, FloatType);
         }
         return new YuiValue(node.nativeValue);
     }
@@ -347,7 +347,7 @@ export class YuiRuntime {
 
     visitMinusNode(node) {
         const value = node.element.visit(this);
-        YuiType.NumberType.matchOrRaise(value);
+        NumberType.matchOrRaise(value);
         return new YuiValue(-YuiType.matchedNative(value));
     }
 
@@ -363,21 +363,21 @@ export class YuiRuntime {
         const op = node.operator;
 
         // 文字列連結: + のみ
-        if (op === '+' && YuiType.isString(left) && YuiType.isString(right)) {
+        if (op === '+' && types.isString(left) && types.isString(right)) {
             return new YuiValue(YuiType.matchedNative(left) + YuiType.matchedNative(right));
         }
 
         // 配列連結: + のみ
-        if (op === '+' && YuiType.isArray(left) && YuiType.isArray(right)) {
+        if (op === '+' && types.isArray(left) && types.isArray(right)) {
             return new YuiValue([...left.array, ...right.array]);
         }
 
         // 数値演算
-        YuiType.NumberType.matchOrRaise(left);
-        YuiType.NumberType.matchOrRaise(right);
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
         const l = YuiType.matchedNative(left);
         const r = YuiType.matchedNative(right);
-        const isFloat = YuiType.isFloat(left) || YuiType.isFloat(right);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
 
         let result;
         if (op === '+') {
@@ -398,7 +398,7 @@ export class YuiRuntime {
             throw new YuiError(['error', 'unsupported operator', `🔍${op}`], node);
         }
 
-        return isFloat ? new YuiValue(result, YuiType.FloatType) : new YuiValue(result);
+        return isFloat ? new YuiValue(result, FloatType) : new YuiValue(result);
     }
 
     visitFuncAppNode(node) {
@@ -436,7 +436,7 @@ export class YuiRuntime {
             throw new YuiError(['expected-variable', `❌${node.variable}`], node.variable);
         }
         const value = node.variable.visit(this);
-        YuiType.IntType.matchOrRaise(value);
+        IntType.matchOrRaise(value);
         const result = new YuiValue(YuiType.matchedNative(value) + 1);
         node.variable.update(result, this);
         this.countInc();
@@ -448,7 +448,7 @@ export class YuiRuntime {
             throw new YuiError(['expected-variable', `❌${node.variable}`], node.variable);
         }
         const value = node.variable.visit(this);
-        YuiType.IntType.matchOrRaise(value);
+        IntType.matchOrRaise(value);
         const result = new YuiValue(YuiType.matchedNative(value) - 1);
         node.variable.update(result, this);
         this.countDec();
@@ -496,7 +496,7 @@ export class YuiRuntime {
 
     visitRepeatNode(node) {
         const countValue = node.countNode.visit(this);
-        YuiType.IntType.matchOrRaise(countValue);
+        IntType.matchOrRaise(countValue);
         const count = YuiType.matchedNative(countValue);
         try {
             for (let i = 0; i < Math.abs(count); i++) {

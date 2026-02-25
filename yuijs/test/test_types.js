@@ -4,7 +4,9 @@ import {
     YuiValue, YuiType, YuiError,
     YuiNullType, YuiBooleanType, YuiIntType, YuiFloatType,
     YuiStringType, YuiArrayType, YuiObjectType,
-    OPERATORS,
+    NullType, BoolType, IntType, FloatType, NumberType,
+    StringType, ArrayType, ObjectType,
+    OPERATORS, types,
 } from '../src/yuitypes.js';
 
 // ─────────────────────────────────────────────
@@ -82,48 +84,48 @@ describe('YuiValue construction', () => {
 
 describe('YuiType.match', () => {
     test('NullType matches null', () => {
-        expect(YuiType.NullType.match(null)).toBe(true);
-        expect(YuiType.NullType.match(YuiValue.NullValue)).toBe(true);
-        expect(YuiType.NullType.match(0)).toBe(false);
+        expect(NullType.match(null)).toBe(true);
+        expect(NullType.match(YuiValue.NullValue)).toBe(true);
+        expect(NullType.match(0)).toBe(false);
     });
 
     test('BooleanType matches booleans', () => {
-        expect(YuiType.BooleanType.match(true)).toBe(true);
-        expect(YuiType.BooleanType.match(false)).toBe(true);
-        expect(YuiType.BooleanType.match(YuiValue.TrueValue)).toBe(true);
+        expect(BoolType.match(true)).toBe(true);
+        expect(BoolType.match(false)).toBe(true);
+        expect(BoolType.match(YuiValue.TrueValue)).toBe(true);
         // integer 1 should NOT match BooleanType (JS has distinct types)
-        expect(YuiType.BooleanType.match(1)).toBe(false);
+        expect(BoolType.match(1)).toBe(false);
     });
 
     test('IntType matches integers but not floats or booleans', () => {
-        expect(YuiType.IntType.match(42)).toBe(true);
-        expect(YuiType.IntType.match(0)).toBe(true);
-        expect(YuiType.IntType.match(3.14)).toBe(false);
-        expect(YuiType.IntType.match(true)).toBe(false);
-        expect(YuiType.IntType.match(false)).toBe(false);
+        expect(IntType.match(42)).toBe(true);
+        expect(IntType.match(0)).toBe(true);
+        expect(IntType.match(3.14)).toBe(false);
+        expect(IntType.match(true)).toBe(false);
+        expect(IntType.match(false)).toBe(false);
     });
 
     test('FloatType matches floats', () => {
-        expect(YuiType.FloatType.match(3.14)).toBe(true);
-        expect(YuiType.FloatType.match(42)).toBe(false);
-        expect(YuiType.FloatType.match(new YuiValue(1.5))).toBe(true);
+        expect(FloatType.match(3.14)).toBe(true);
+        expect(FloatType.match(42)).toBe(false);
+        expect(FloatType.match(new YuiValue(1.5))).toBe(true);
     });
 
     test('StringType matches strings', () => {
-        expect(YuiType.StringType.match('hello')).toBe(true);
-        expect(YuiType.StringType.match(42)).toBe(false);
+        expect(StringType.match('hello')).toBe(true);
+        expect(StringType.match(42)).toBe(false);
     });
 
     test('ArrayType matches arrays', () => {
-        expect(YuiType.ArrayType.match([1, 2])).toBe(true);
-        expect(YuiType.ArrayType.match(new YuiValue([]))).toBe(true);
-        expect(YuiType.ArrayType.match('hello')).toBe(false);
+        expect(ArrayType.match([1, 2])).toBe(true);
+        expect(ArrayType.match(new YuiValue([]))).toBe(true);
+        expect(ArrayType.match('hello')).toBe(false);
     });
 
     test('ObjectType matches objects', () => {
-        expect(YuiType.ObjectType.match({ a: 1 })).toBe(true);
-        expect(YuiType.ObjectType.match(new YuiValue({ a: 1 }))).toBe(true);
-        expect(YuiType.ObjectType.match([1, 2])).toBe(false);
+        expect(ObjectType.match({ a: 1 })).toBe(true);
+        expect(ObjectType.match(new YuiValue({ a: 1 }))).toBe(true);
+        expect(ObjectType.match([1, 2])).toBe(false);
     });
 });
 
@@ -133,37 +135,37 @@ describe('YuiType.match', () => {
 
 describe('arrayview round-trip', () => {
     test('int 0', () => {
-        const bits = YuiType.IntType.toArrayview(0);
+        const bits = IntType.toArrayview(0);
         expect(bits).toHaveLength(0);  // 0 は空配列
-        expect(YuiType.IntType.toNative(bits)).toBe(0);
+        expect(IntType.toNative(bits)).toBe(0);
     });
 
     test('int positive', () => {
-        const bits = YuiType.IntType.toArrayview(42);
-        expect(YuiType.IntType.toNative(bits)).toBe(42);
+        const bits = IntType.toArrayview(42);
+        expect(IntType.toNative(bits)).toBe(42);
     });
 
     test('int negative', () => {
         const v = new YuiValue(-1);
-        expect(YuiType.IntType.toNative(v.arrayview, v.sign)).toBe(-1);
+        expect(IntType.toNative(v.arrayview, v.sign)).toBe(-1);
     });
 
     test('float round-trip', () => {
         const v = new YuiValue(3.14);
-        const result = YuiType.FloatType.toNative(v.arrayview, v.sign);
+        const result = FloatType.toNative(v.arrayview, v.sign);
         expect(result).toBeCloseTo(3.14, 5);
     });
 
     test('float negative', () => {
         const v = new YuiValue(-2.5);
-        const result = YuiType.FloatType.toNative(v.arrayview, v.sign);
+        const result = FloatType.toNative(v.arrayview, v.sign);
         expect(result).toBeCloseTo(-2.5, 5);
     });
 
     test('string char codes', () => {
-        const codes = YuiType.StringType.toArrayview('abc');
+        const codes = StringType.toArrayview('abc');
         expect(codes).toEqual([97, 98, 99]);
-        expect(YuiType.StringType.toNative(codes)).toBe('abc');
+        expect(StringType.toNative(codes)).toBe('abc');
     });
 });
 
