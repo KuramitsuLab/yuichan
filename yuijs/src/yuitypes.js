@@ -449,21 +449,20 @@ export class YuiIntType extends YuiType {
     }
 
     toArrayview(n) {
-        // 32ビット符号なし絶対値 LSBファースト
-        const nAbs = Math.abs(n);
+        // 可変長符号なし絶対値 LSBファースト（0は空配列）
+        let nAbs = Math.abs(n);
         const bits = [];
-        for (let i = 0; i < 32; i++) {
-            bits.push((nAbs >>> i) & 1);
+        while (nAbs) {
+            bits.push(nAbs & 1);
+            nAbs = Math.floor(nAbs / 2);
         }
         return bits;
     }
 
     toNative(bits, sign = 1, node = null) {
-        if (bits.length !== 32) {
-            throw new YuiError(['array', 'format', `❌${bits.length}`, '✅32'], node);
-        }
+        // 可変長LSBファースト配列を整数に変換
         let n = 0;
-        for (let i = 0; i < 32; i++) {
+        for (let i = 0; i < bits.length; i++) {
             if (bits[i]) n += Math.pow(2, i);
         }
         return sign * n;
@@ -870,7 +869,13 @@ export class YuiValue {
         YuiType.IntType.matchOrRaise(nodeOrIndex);
         const index = YuiType.matchedNative(nodeOrIndex);
         const elements = this.arrayview;
-        if (index < 0 || index >= elements.length) {
+        if (index < 0) {
+            throw new YuiError(['error', 'index', '✅>=0', `❌${index}`], null);
+        }
+        if (this.type instanceof YuiIntType && index >= elements.length) {
+            return YuiType.fromArrayview(0);  // int は上位ビットが暗黙的に 0
+        }
+        if (index >= elements.length) {
             throw new YuiError(
                 ['error', 'index', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
                 null
@@ -893,7 +898,13 @@ export class YuiValue {
         YuiType.IntType.matchOrRaise(nodeOrIndex);
         const index = YuiType.matchedNative(nodeOrIndex);
         const elements = this.arrayview;
-        if (index < 0 || index >= elements.length) {
+        if (index < 0) {
+            throw new YuiError(['error', 'index', '✅>=0', `❌${index}`], null);
+        }
+        if (this.type instanceof YuiIntType && index >= elements.length) {
+            // int は上位ビットを 0 で自動拡張
+            while (elements.length <= index) elements.push(0);
+        } else if (index >= elements.length) {
             throw new YuiError(
                 ['error', 'index', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
                 null

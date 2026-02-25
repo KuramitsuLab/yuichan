@@ -389,17 +389,16 @@ class YuiIntType(YuiType):
         return -1 if n < 0 else 1
 
     def to_arrayview(self, n: int) -> List[int]:
-        """整数の絶対値を32ビットLSBファースト配列に変換"""
+        """整数の絶対値を可変長LSBファースト配列に変換（0は空リスト）"""
         n_abs = abs(n)
         bits = []
-        for i in range(32):
-            bits.append((n_abs >> i) & 1)
+        while n_abs:
+            bits.append(n_abs & 1)
+            n_abs >>= 1
         return bits
 
     def to_native(self, bits: List[int], sign: int = 1, node=None) -> int:
-        """32ビットLSBファースト配列を整数に変換"""
-        if len(bits) != 32:
-            raise YuiError(("array", "format", f"❌{len(bits)}", "✅32"), node)
+        """可変長LSBファースト配列を整数に変換"""
         n = 0
         for i, bit in enumerate(bits):
             n |= bit << i
@@ -759,7 +758,11 @@ class YuiValue(object):
         YuiType.IntType.match_or_raise(node_or_index)
         index = YuiType.matched_native(node_or_index)
         elements = self.arrayview
-        if index < 0 or index >= len(elements):
+        if index < 0:
+            raise YuiError(("error", "index", f"✅>=0", f"❌{index}"), node_or_index)
+        if isinstance(self.type, YuiIntType) and index >= len(elements):
+            return YuiType.from_arrayview(0)  # int は上位ビットが暗黙的に 0
+        if index >= len(elements):
             raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index)
         return YuiType.from_arrayview(elements[index])
     
@@ -775,7 +778,11 @@ class YuiValue(object):
         YuiType.IntType.match_or_raise(node_or_index)
         index = YuiType.matched_native(node_or_index)
         elements = self.arrayview
-        if index < 0 or index >= len(elements):
+        if index < 0:
+            raise YuiError(("error", "index", f"✅>=0", f"❌{index}"), node_or_index)
+        if isinstance(self.type, YuiIntType) and index >= len(elements):
+            elements.extend([0] * (index - len(elements) + 1))  # int は上位ビットを0で自動拡張
+        elif index >= len(elements):
             raise YuiError(("error", "index", f"✅<{(len(elements))}", f"❌{index}", f"🔍{elements}"), node_or_index)
         self.type.check_element(node_or_value)
         elements[index] = value

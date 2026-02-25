@@ -141,7 +141,7 @@ class TestUnaryOperator:
         expression = ArrayLenNode(NumberNode(1))
         result = expression.evaluate(runtime)
         result = YuiType.to_native(result)
-        assert result == 32
+        assert result == 1  # 可変長: 1 は [1] (1ビット)
 
 class TestGetIndex:
     def init_runtime(self):
@@ -270,12 +270,11 @@ class TestAppend:
         assert YuiType.to_native(runtime.getenv("s").get_item(3)) == ord("d")
 
     def test_append_int(self):
+        # 可変長: x=YuiValue(1)=[1]、ビット1を追加すると[1,1]=3
         runtime = self.init_runtime()
         statement = AppendNode(NameNode("x"), NumberNode(1))
-        with pytest.raises(YuiError) as excinfo:
-            statement.evaluate(runtime)
-            assert YuiType.to_native(runtime.getenv("x")) == 2
-        assert "array" in str(excinfo.value)
+        statement.evaluate(runtime)
+        assert YuiType.to_native(runtime.getenv("x")) == 3
 
 class TestIfCondition:
 

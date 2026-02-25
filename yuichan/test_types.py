@@ -14,13 +14,13 @@ class TestValue:
 
     def test_int(self):
         value = YuiValue(0)
-        assert len(value.arrayview) == 32
-        assert value.get_item(0).native == 0
+        assert len(value.arrayview) == 0
+        assert value.get_item(0).native == 0  # 暗黙的なゼロ
         value.set_item(0, YuiValue(1))
         assert value.get_item(0).native == 1
         value.set_item(1, YuiValue(1))
         assert value.native == 3
-        assert value.stringfy(arrayview=True, indent_prefix=None) == '[1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]'
+        assert value.stringfy(arrayview=True, indent_prefix=None) == '[1, 1]'
 
     def test_float(self):
         value = YuiValue(3.14)
@@ -244,10 +244,10 @@ class TestInt:
     # ── arrayview (32ビット2の補数) ─────────────────────────────────────────
 
     def test_arrayview_length(self):
-        assert len(YuiValue(0).arrayview) == 32
+        assert len(YuiValue(0).arrayview) == 0
 
     def test_arrayview_zero(self):
-        assert YuiValue(0).arrayview == [0] * 32
+        assert YuiValue(0).arrayview == []
 
     def test_arrayview_one(self):
         bits = YuiValue(1).arrayview
@@ -291,8 +291,10 @@ class TestInt:
             YuiValue(0).set_item(YuiValue(0), YuiValue(5))
 
     def test_get_item_out_of_range_raises(self):
+        # int は上位ビットが暗黙的に 0 なので範囲外アクセスはエラーにならない
+        # 負のインデックスはエラー
         with pytest.raises(YuiError):
-            YuiValue(0).get_item(YuiValue(32))
+            YuiValue(0).get_item(YuiValue(-1))
 
     # ── equals ──────────────────────────────────────────────────────────────
 

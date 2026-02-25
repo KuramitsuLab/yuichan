@@ -134,7 +134,7 @@ describe('YuiType.match', () => {
 describe('arrayview round-trip', () => {
     test('int 0', () => {
         const bits = YuiType.IntType.toArrayview(0);
-        expect(bits).toHaveLength(32);
+        expect(bits).toHaveLength(0);  // 0 は空配列
         expect(YuiType.IntType.toNative(bits)).toBe(0);
     });
 
