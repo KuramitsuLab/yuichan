@@ -405,6 +405,7 @@ class CodingVisitor(YuiSyntax):
 
     def visitBlockNode(self, node: BlockNode):
         if not node.top_level:
+            self.terminal('block-begin-prefix')
             self.terminal('block-begin')
             self.indent += 1
             self.linefeed()

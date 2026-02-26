@@ -444,7 +444,7 @@ export class YuiRuntime {
         if (result) {
             return node.thenBlock.visit(this);
         } else if (node.elseBlock) {
-            node.elseBlock.visit(this);
+            return node.elseBlock.visit(this);
         }
     }
 
@@ -517,6 +517,23 @@ export class YuiRuntime {
             node
         );
         return YuiValue.FalseValue;
+    }
+
+    visitCatchNode(node) {
+        try {
+            return node.expression.visit(this);
+        } catch (e) {
+            if (e instanceof YuiError) {
+                return `💣${e.messages[0]}`;
+            }
+            if (e instanceof YuiBreakException) {
+                return '💣unexpected-break';
+            }
+            if (e instanceof YuiReturnException) {
+                return '💣unexpected-return';
+            }
+            throw e;
+        }
     }
 
     visitImportNode(node) {

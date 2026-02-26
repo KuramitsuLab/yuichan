@@ -449,6 +449,7 @@ export class CodingVisitor extends YuiSyntax {
 
     visitBlockNode(node) {
         if (!node.topLevel) {
+            this.terminal('block-begin-prefix');
             this.terminal('block-begin');
             this.indent++;
             this.linefeed();

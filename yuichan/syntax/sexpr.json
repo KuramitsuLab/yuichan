@@ -73,6 +73,7 @@
     "import-begin": "\\(require\\s+",
     "import-end": "\\)",
 
+    "block-begin-prefix": " ",
     "block-begin": "\\(begin\\s+",
     "block-end": "\\)",
 
@@ -90,8 +91,8 @@
     "append-infix": "",
     "append-end": "\\)",
 
-    "print-begin": "\\(print\\s+",
-    "print-end": "\\)",
+    "print-begin!": "\\(print\\s+",
+    "print-end!": "\\)",
 
     "break": "\\(break\\)",
     "pass": "",
@@ -106,7 +107,7 @@
 
     "if-begin": "\\(if\\s+",
     "if-condition-begin": "\\(",
-    "if-condition-end": "\\)\\s+",
+    "if-condition-end": "\\)",
     "if-prefix==": "==",
     "if-prefix!=": "!=",
     "if-prefix<": "<",
@@ -124,7 +125,7 @@
     "funcdef-name-end": "",
     "funcdef-args-begin": "",
     "funcdef-arg-separator": "",
-    "funcdef-args-end": "\\)\\s+",
+    "funcdef-args-end": "\\)",
     "funcdef-noarg": "",
     "funcdef-block": "",
     "funcdef-end": "\\)",

@@ -406,3 +406,15 @@ export class AssertNode extends StatementNode {
         return visitor.visitAssertNode(this);
     }
 }
+
+export class CatchNode extends ExpressionNode {
+    /** Wraps a node to catch YuiErrors (for testing/debugging) */
+    constructor(expression) {
+        super();
+        this.expression = _node(expression);
+    }
+
+    visit(visitor) {
+        return visitor.visitCatchNode(this);
+    }
+}
