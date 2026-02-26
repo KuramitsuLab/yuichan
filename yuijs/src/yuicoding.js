@@ -7,7 +7,7 @@ import {
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode,
+    AssertNode, CatchNode, ImportNode,
 } from './yuiast.js';
 
 import { YuiType } from './yuitypes.js';
@@ -251,8 +251,9 @@ export class CodingVisitor extends YuiSyntax {
     }
 
     visitBinaryNode(node) {
+        const symbol = node.operator.symbol ?? String(node.operator);
         if (this.isDefined('binary-infix-prefix-begin')) {
-            this.terminal(`binary-infix-prefix${node.operator}`);
+            this.terminal(`binary-infix-prefix${symbol}`);
             this.wordSegment();
             this.expression(node.leftNode);
             this.wordSegment();
@@ -261,7 +262,7 @@ export class CodingVisitor extends YuiSyntax {
         } else {
             this.expression(node.leftNode);
             this.wordSegment();
-            this.terminal(`binary-infix${node.operator}`);
+            this.terminal(`binary-infix${symbol}`);
             this.wordSegment();
             this.expression(node.rightNode);
         }
@@ -349,10 +350,10 @@ export class CodingVisitor extends YuiSyntax {
     }
 
     visitPrintExpressionNode(node) {
-        if (node.groping) {
-            this.terminal('groping-begin');
+        if (node.grouping) {
+            this.terminal('grouping-begin');
             this.expression(node.expression);
-            this.terminal('groping-end');
+            this.terminal('grouping-end');
         } else if (node.inspection && this.isDefined('unary-inspection')) {
             this.terminal('unary-inspection');
             this.expression(node.expression);

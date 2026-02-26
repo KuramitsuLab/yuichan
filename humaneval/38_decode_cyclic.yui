@@ -13,13 +13,13 @@ decode_cyclic = 入力 s に対し {
         c = s[i]
         iを増やす
         # Rotate right: [a,b,c] → [c,a,b]
-        resultの末尾に c を 追加する
-        resultの末尾に a を 追加する
-        resultの末尾に b を 追加する
+        resultの末尾に c を追加する
+        resultの末尾に a を追加する
+        resultの末尾に b を追加する
     }
     remain = 剰余(length, 3)
     remain回、くり返す {
-        resultの末尾に s[i] を 追加する
+        resultの末尾に s[i] を追加する
         iを増やす
     }
     resultが答え

@@ -75,7 +75,7 @@ encode = 入力 message に対し {
             new_char = 和(new_char, 2)
         }
 
-        resultの末尾に new_char を 追加する
+        resultの末尾に new_char を追加する
         iを増やす
     }
 

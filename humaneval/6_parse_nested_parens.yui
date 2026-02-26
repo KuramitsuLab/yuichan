@@ -30,12 +30,12 @@ parse_nested_parens = 入力 paren_string に対し {
                     }
                     jを増やす
                 }
-                resultの末尾に max_depth を 追加する
+                resultの末尾に max_depth を追加する
                 current_group = []
             }
         }
         そうでなければ {
-            current_groupの末尾に char を 追加する
+            current_groupの末尾に char を追加する
         }
 
         iを増やす
@@ -60,7 +60,7 @@ parse_nested_parens = 入力 paren_string に対し {
             }
             jを増やす
         }
-        resultの末尾に max_depth を 追加する
+        resultの末尾に max_depth を追加する
     }
 
     resultが答え

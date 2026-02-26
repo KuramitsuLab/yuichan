@@ -4,12 +4,12 @@ tri = 入力 n に対し {
     result = []
 
     もし n が 0 ならば {
-        resultの末尾に 1 を 追加する
+        resultの末尾に 1 を追加する
         resultが答え
     }
 
-    resultの末尾に 1 を 追加する
-    resultの末尾に 3 を 追加する
+    resultの末尾に 1 を追加する
+    resultの末尾に 3 を追加する
 
     i = 2
     差(n, 1)回、くり返す {
@@ -18,7 +18,7 @@ tri = 入力 n に対し {
             i_float = 少数化(i)
             half = 商(i_float, 2.0)
             value = 和(half, 1.0)
-            resultの末尾に value を 追加する
+            resultの末尾に value を追加する
         }
         そうでなければ {
             prev1 = 差(i, 1)
@@ -28,7 +28,7 @@ tri = 入力 n に対し {
             i_plus_3_float = 少数化(i_plus_3)
             extra = 商(i_plus_3_float, 2.0)
             value = 和(sum1, extra)
-            resultの末尾に value を 追加する
+            resultの末尾に value を追加する
         }
         iを増やす
     }

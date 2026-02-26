@@ -7,7 +7,7 @@ import {
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PassNode, PrintExpressionNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode,
+    AssertNode, CatchNode, ImportNode,
 } from './yuiast.js';
 
 import { YuiValue, YuiType, YuiError, formatMessages, IntType, NumberType, FloatType, types } from './yuitypes.js';
@@ -352,53 +352,15 @@ export class YuiRuntime {
     }
 
     visitBinaryNode(node) {
-        if (!(this.allowBinaryOps || (this.functionDefined && this.testPassed.length > 0))) {
+        if (!this.allowBinaryOps) {
             throw new YuiError(
-                ['error', 'binary operator not enabled', `🔍${node.operator}`],
+                ['unsupported-operator', `🔍${node.operator.symbol}`],
                 node
             );
         }
         const left  = node.leftNode.visit(this);
         const right = node.rightNode.visit(this);
-        const op = node.operator;
-
-        // 文字列連結: + のみ
-        if (op === '+' && types.isString(left) && types.isString(right)) {
-            return new YuiValue(YuiType.matchedNative(left) + YuiType.matchedNative(right));
-        }
-
-        // 配列連結: + のみ
-        if (op === '+' && types.isArray(left) && types.isArray(right)) {
-            return new YuiValue([...left.array, ...right.array]);
-        }
-
-        // 数値演算
-        NumberType.matchOrRaise(left);
-        NumberType.matchOrRaise(right);
-        const l = YuiType.matchedNative(left);
-        const r = YuiType.matchedNative(right);
-        const isFloat = types.isFloat(left) || types.isFloat(right);
-
-        let result;
-        if (op === '+') {
-            result = l + r;
-        } else if (op === '-') {
-            result = l - r;
-        } else if (op === '*') {
-            result = l * r;
-        } else if (op === '/') {
-            if (r === 0) throw new YuiError(['error', 'division by zero', `❌${r}`], node);
-            result = isFloat ? l / r : Math.floor(l / r);
-        } else if (op === '%') {
-            if (r === 0) throw new YuiError(['error', 'division by zero', `❌${r}`], node);
-            // int: Python互換（正の除数に対して常に非負）
-            // float: JSのmodulo（小数のため符号は稀なケース）
-            result = isFloat ? l % r : ((l % r) + r) % r;
-        } else {
-            throw new YuiError(['error', 'unsupported operator', `🔍${op}`], node);
-        }
-
-        return isFloat ? new YuiValue(result, FloatType) : new YuiValue(result);
+        return node.operator.evaluate(left, right);
     }
 
     visitFuncAppNode(node) {

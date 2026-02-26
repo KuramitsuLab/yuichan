@@ -104,12 +104,12 @@ class TestParseBlockNode_Pylike:
         assert str(if_node) == "if x==1:\n  x=0\n  if x==0:\n    x=1\n\ny=2"
 
     def test_Repeat(self):
-        source = Source("for _ in range(3):\n  x=1\n\n", syntax=py_syntax)
+        source = Source("while times(3):\n  x=1\n\n", syntax=py_syntax)
         repeat_node = source.parse("@Repeat")
-        assert str(repeat_node) == "for _ in range(3):\n  x=1\n\n"
+        assert str(repeat_node) == "while times(3):\n  x=1\n\n"
 
     def test_Repeat_with_break(self):
-        source = Source("for _ in range(10):\n  count += 1\n  if count==5:\n    break\n\n", syntax=py_syntax)
+        source = Source("while times(10):\n  count += 1\n  if count==5:\n    break\n\n", syntax=py_syntax)
         repeat_node = source.parse("@Repeat")
         assert "break" in str(repeat_node)
 

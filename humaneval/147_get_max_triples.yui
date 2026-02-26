@@ -7,7 +7,7 @@ get_max_triples = 入力 n に対し {
     n回、くり返す {
         square = 積(i, i)
         value = 和(差(square, i), 1)
-        aの末尾に value を 追加する
+        aの末尾に value を追加する
         iを増やす
     }
 

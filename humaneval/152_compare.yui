@@ -10,7 +10,7 @@ compare = 入力 game, guess に対し {
         gu = guess[i]
         diff = 差(g, gu)
         abs_diff = 絶対値(diff)
-        resultの末尾に abs_diff を 追加する
+        resultの末尾に abs_diff を追加する
         iを増やす
     }
 

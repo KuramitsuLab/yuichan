@@ -52,11 +52,11 @@ def standard_lib(modules: list):
         """関数の引数の数をチェックする"""
         if expected == -1: #少なくとも一つの引数が必要
             if len(nodeargs) < 1:
-                raise YuiError(("mismatch-argument-number", f"❌{len(nodeargs)}", f"✅>0"))
+                raise YuiError(("mismatch-argument", f"❌{len(nodeargs)}", f"✅>0"))
             return
         if len(nodeargs) != expected:
             last = nodeargs[-1] if nodeargs else None
-            raise YuiError(("mismatch-argument-number", f"✅{expected}", f"❌{len(nodeargs)}"), last)
+            raise YuiError(("mismatch-argument", f"✅{expected}", f"❌{len(nodeargs)}"), last)
 
     def array_to_varargs(nodeargs:list) -> list:
         """引数が配列1つの場合、その要素を展開して返す"""

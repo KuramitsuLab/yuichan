@@ -6,7 +6,6 @@ from .yuisyntax import load_syntax
 
 emoji_syntax = load_syntax('emoji')
 
-
 class TestParseStatementNode_Emoji:
 
     def test_Assignment(self):

@@ -12,12 +12,12 @@ intersperse = 入力 numbers, delimeter に対し {
     上限 = 差(長さ, 1)
 
     上限回、くり返す {
-        結果の末尾に numbers[i] を 追加する
-        結果の末尾に delimeter を 追加する
+        結果の末尾に numbers[i] を追加する
+        結果の末尾に delimeter を追加する
         iを増やす
     }
 
-    結果の末尾に numbers[上限] を 追加する
+    結果の末尾に numbers[上限] を追加する
 
     結果が答え
 }

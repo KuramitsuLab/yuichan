@@ -24,7 +24,7 @@ filter_by_prefix = 入力 strings, prefix に対し {
         }
 
         もし has_prefix が 1 ならば、{
-            resultの末尾に string を 追加する
+            resultの末尾に string を追加する
         }
 
         iを増やす

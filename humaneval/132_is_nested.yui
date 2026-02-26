@@ -10,10 +10,10 @@ is_nested = 入力 string に対し {
     length回、くり返す {
         char = string[i]
         もし char が 91 ならば、{  # '['
-            openingの末尾に i を 追加する
+            openingの末尾に i を追加する
         }
         そうでなければ {
-            closingの末尾に i を 追加する
+            closingの末尾に i を追加する
         }
         iを増やす
     }
@@ -24,7 +24,7 @@ is_nested = 入力 string に対し {
     i = 0
     close_len回、くり返す {
         idx = 差(差(close_len, i), 1)
-        reversed_closingの末尾に closing[idx] を 追加する
+        reversed_closingの末尾に closing[idx] を追加する
         iを増やす
     }
 

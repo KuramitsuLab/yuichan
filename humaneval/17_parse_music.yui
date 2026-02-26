@@ -41,13 +41,13 @@ parse_music = 入力 music_string に対し {
                 }
 
                 もし value が 0 より大きいならば、{
-                    resultの末尾に value を 追加する
+                    resultの末尾に value を追加する
                 }
                 current = []
             }
         }
         そうでなければ {
-            currentの末尾に char を 追加する
+            currentの末尾に char を追加する
         }
 
         iを増やす
@@ -78,7 +78,7 @@ parse_music = 入力 music_string に対し {
         }
 
         もし value が 0 より大きいならば、{
-            resultの末尾に value を 追加する
+            resultの末尾に value を追加する
         }
     }
 

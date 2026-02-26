@@ -208,7 +208,7 @@ export class BinaryNode extends ASTNode {
     constructor(left, operator, right, comparative = false) {
         super();
         this.leftNode = _node(left);
-        this.operator = operator;
+        this.operator = OPERATORS && typeof operator === 'string' ? OPERATORS[operator] : operator;
         this.rightNode = _node(right);
         this.comparative = comparative;
     }
@@ -383,11 +383,11 @@ export class FuncDefNode extends StatementNode {
 }
 
 export class PrintExpressionNode extends StatementNode {
-    constructor(expression, inspection = false, groping = false) {
+    constructor(expression, inspection = false, grouping = false) {
         super();
         this.expression = _node(expression);
         this.inspection = inspection;
-        this.groping = groping;
+        this.grouping = grouping;
     }
 
     visit(visitor) {

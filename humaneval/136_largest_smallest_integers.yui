@@ -31,17 +31,17 @@ largest_smallest_integers = 入力 lst に対し {
     result = []
 
     もし has_neg が 1 ならば、{
-        resultの末尾に largest_neg を 追加する
+        resultの末尾に largest_neg を追加する
     }
     そうでなければ {
-        resultの末尾に [] を 追加する
+        resultの末尾に [] を追加する
     }
 
     もし has_pos が 1 ならば、{
-        resultの末尾に smallest_pos を 追加する
+        resultの末尾に smallest_pos を追加する
     }
     そうでなければ {
-        resultの末尾に [] を 追加する
+        resultの末尾に [] を追加する
     }
 
     resultが答え

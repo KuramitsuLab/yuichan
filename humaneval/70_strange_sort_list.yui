@@ -8,7 +8,7 @@ strange_sort_list = 入力 lst に対し {
     # Initialize used array
     i = 0
     length回、くり返す {
-        usedの末尾に 0 を 追加する
+        usedの末尾に 0 を追加する
         iを増やす
     }
 
@@ -38,7 +38,7 @@ strange_sort_list = 入力 lst に対し {
                 }
                 jを増やす
             }
-            resultの末尾に min_val を 追加する
+            resultの末尾に min_val を追加する
             used[min_idx] = 1
             switch = 0
         }
@@ -64,7 +64,7 @@ strange_sort_list = 入力 lst に対し {
                 }
                 jを増やす
             }
-            resultの末尾に max_val を 追加する
+            resultの末尾に max_val を追加する
             used[max_idx] = 1
             switch = 1
         }

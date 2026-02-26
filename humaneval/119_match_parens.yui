@@ -9,13 +9,13 @@ match_parens = 入力 lst に対し {
     len1 = |s1|
     i = 0
     len1回、くり返す {
-        combined1の末尾に s1[i] を 追加する
+        combined1の末尾に s1[i] を追加する
         iを増やす
     }
     len2 = |s2|
     i = 0
     len2回、くり返す {
-        combined1の末尾に s2[i] を 追加する
+        combined1の末尾に s2[i] を追加する
         iを増やす
     }
 
@@ -45,12 +45,12 @@ match_parens = 入力 lst に対し {
     combined2 = []
     i = 0
     len2回、くり返す {
-        combined2の末尾に s2[i] を 追加する
+        combined2の末尾に s2[i] を追加する
         iを増やす
     }
     i = 0
     len1回、くり返す {
-        combined2の末尾に s1[i] を 追加する
+        combined2の末尾に s1[i] を追加する
         iを増やす
     }
 

@@ -14,10 +14,10 @@ simplify = 入力 x, n に対し {
         }
         そうでなければ {
             もし found_slash が 0 ならば、{
-                x_numの末尾に char を 追加する
+                x_numの末尾に char を追加する
             }
             そうでなければ {
-                x_denの末尾に char を 追加する
+                x_denの末尾に char を追加する
             }
         }
         iを増やす
@@ -36,10 +36,10 @@ simplify = 入力 x, n に対し {
         }
         そうでなければ {
             もし found_slash が 0 ならば、{
-                n_numの末尾に char を 追加する
+                n_numの末尾に char を追加する
             }
             そうでなければ {
-                n_denの末尾に char を 追加する
+                n_denの末尾に char を追加する
             }
         }
         iを増やす

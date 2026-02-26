@@ -1,3 +1,4 @@
+import random
 from typing import Dict, Union
 
 from .yuiast import (
@@ -8,7 +9,7 @@ from .yuiast import (
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode,
+    AssertNode, CatchNode, ImportNode,
 )
 from .yuitypes import YuiType, types
 from .yuisyntax import load_syntax, YuiSyntax
@@ -23,10 +24,11 @@ class CodingVisitor(YuiSyntax):
         self.indent = 0
         self.just_linefeeded = False
 
-    def emit(self, node: ASTNode) -> str:
+    def emit(self, node: ASTNode, random_seed=None) -> str:
         self.buffer = []
         self.indent = 0
         self.just_linefeeded = True
+        self.random_seed = random_seed
         node.visit(self)
         return ''.join(self.buffer)
 
@@ -59,6 +61,10 @@ class CodingVisitor(YuiSyntax):
         if self.is_defined('word-segmenter'):
             if self.last_char() not in no_spaece_if_last_chars:
                 self.string(' ')
+        else:
+            if self.random_seed is not None:
+                if random.random() < 0.5:
+                    self.string(' ')
 
     def terminal(self, terminal: str, if_undefined = None, linefeed_before=False):
         if terminal == 'linefeed':
@@ -220,17 +226,18 @@ class CodingVisitor(YuiSyntax):
             self.visitASTNode(node)
 
     def visitBinaryNode(self, node: BinaryNode):
-        if self.is_defined('binary-infix-prefix-begin'):
-            self.terminal(f'binary-infix-prefix{node.operator}')
+        symbol = node.operator.symbol
+        if self.is_defined('binary-prefix-begin'):
+            self.terminal(f'binary-prefix{symbol}')
             self.word_segment()
             self.expression(node.left_node)
             self.word_segment()
             self.expression(node.right_node)
-            self.terminal(f'binary-infix-prefix-end')
+            self.terminal(f'binary-prefix-end')
         else:
             self.expression(node.left_node)
             self.word_segment()
-            self.terminal(f"binary{node.operator}")
+            self.terminal(f"binary-infix{symbol}")
             self.word_segment()
             self.expression(node.right_node)
 
@@ -306,10 +313,10 @@ class CodingVisitor(YuiSyntax):
             self.terminal('return-none')
         
     def visitPrintExpressionNode(self, node: PrintExpressionNode):
-        if node.groping:
-            self.terminal('groping-begin')
+        if node.grouping:
+            self.terminal('grouping-begin')
             self.expression(node.expression)
-            self.terminal('groping-end')
+            self.terminal('grouping-end')
         elif node.inspection and self.is_defined('unary-inspection'):
             self.terminal('unary-inspection')
             self.expression(node.expression)
@@ -381,6 +388,11 @@ class CodingVisitor(YuiSyntax):
         self.terminal('assert-infix')
         self.expression(node.reference)
         self.terminal('assert-end')
+
+    def visitCatchNode(self, node: CatchNode):
+        self.terminal('catch-begin')
+        self.expression(node.expression)
+        self.terminal('catch-end')
 
     def visitBlockNode(self, node: BlockNode):
         if not node.top_level:

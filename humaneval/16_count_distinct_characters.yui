@@ -29,7 +29,7 @@ count_distinct_characters = 入力 string に対し {
         }
 
         もし is_new が 1 ならば、{
-            seenの末尾に lower_char を 追加する
+            seenの末尾に lower_char を追加する
         }
 
         iを増やす

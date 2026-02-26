@@ -12,7 +12,7 @@ is_sorted = 入力 lst に対し {
     counts = []
     i = 0
     length回、くり返す {
-        countsの末尾に 0 を 追加する
+        countsの末尾に 0 を追加する
         iを増やす
     }
 

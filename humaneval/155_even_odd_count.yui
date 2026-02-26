@@ -28,8 +28,8 @@ even_odd_count = 入力 num に対し {
     }
 
     result = []
-    resultの末尾に even_count を 追加する
-    resultの末尾に odd_count を 追加する
+    resultの末尾に even_count を追加する
+    resultの末尾に odd_count を追加する
     resultが答え
 }
 

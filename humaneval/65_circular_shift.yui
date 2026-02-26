@@ -7,7 +7,7 @@ circular_shift = 入力 x, shift に対し {
     100回、くり返す {
         もし temp が 0 より大きいならば、{
             digit = 剰余(temp, 10)
-            digitsの末尾に digit を 追加する
+            digitsの末尾に digit を追加する
             temp = 商(temp, 10)
         }
     }
@@ -18,7 +18,7 @@ circular_shift = 入力 x, shift に対し {
     i = 0
     length回、くり返す {
         idx = 差(差(length, i), 1)
-        reversed_digitsの末尾に digits[idx] を 追加する
+        reversed_digitsの末尾に digits[idx] を追加する
         iを増やす
     }
 
@@ -34,13 +34,13 @@ circular_shift = 入力 x, shift に対し {
         start_idx = 差(length, shift)
         shift回、くり返す {
             idx = 和(start_idx, i)
-            resultの末尾に reversed_digits[idx] を 追加する
+            resultの末尾に reversed_digits[idx] を追加する
             iを増やす
         }
         # Then add the remaining digits
         i = 0
         start_idx回、くり返す {
-            resultの末尾に reversed_digits[i] を 追加する
+            resultの末尾に reversed_digits[i] を追加する
             iを増やす
         }
     }
@@ -52,7 +52,7 @@ circular_shift = 入力 x, shift に対し {
     result_len回、くり返す {
         digit = result[i]
         char_code = 和(48, digit)  # '0' is 48
-        char_resultの末尾に char_code を 追加する
+        char_resultの末尾に char_code を追加する
         iを増やす
     }
 

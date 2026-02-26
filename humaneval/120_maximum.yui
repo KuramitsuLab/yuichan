@@ -30,7 +30,7 @@ maximum = 入力 arr, k に対し {
     start = 差(length, k)
     i = start
     k回、くり返す {
-        resultの末尾に arr[i] を 追加する
+        resultの末尾に arr[i] を追加する
         iを増やす
     }
 

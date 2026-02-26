@@ -15,15 +15,15 @@ check_if_last_char_is_a_letter = 入力 txt に対し {
     length回、くり返す {
         char = txt[i]
         もし char が 32 ならば、{  # space
-            wordsの末尾に current_word を 追加する
+            wordsの末尾に current_word を追加する
             current_word = []
         }
         そうでなければ {
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
         iを増やす
     }
-    wordsの末尾に current_word を 追加する
+    wordsの末尾に current_word を追加する
 
     # Get last word
     num_words = |words|

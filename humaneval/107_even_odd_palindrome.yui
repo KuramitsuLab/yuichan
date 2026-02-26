@@ -12,7 +12,7 @@ even_odd_palindrome = 入力 n に対し {
         100回、くり返す {
             もし temp が 0 より大きいならば、{
                 digit = 剰余(temp, 10)
-                digitsの末尾に digit を 追加する
+                digitsの末尾に digit を追加する
                 temp = 商(temp, 10)
             }
         }
@@ -45,8 +45,8 @@ even_odd_palindrome = 入力 n に対し {
     }
 
     result = []
-    resultの末尾に even_count を 追加する
-    resultの末尾に odd_count を 追加する
+    resultの末尾に even_count を追加する
+    resultの末尾に odd_count を追加する
     resultが答え
 }
 

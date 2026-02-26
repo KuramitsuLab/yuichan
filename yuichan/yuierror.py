@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 ERROR_MESSAGES = {
     # パーサーエラー
-    "expected-token":           "トークンが不正です",
+    "expected-token":           "書き方が間違っています",
     "expected-number":          "数値が必要です",
     "expected-string":          "文字列が必要です",
     "expected-array":           "配列が必要です",
@@ -11,28 +11,35 @@ ERROR_MESSAGES = {
     "expected-boolean":         "真偽値が必要です",
     "expected-closing":         "閉じ括弧が必要です",
     "expected-variable":        "変数が必要です",
-    "frequent-mistake":         "よくある間違いです",
+    "expected-expression":      "変数や値が必要です",
+    "expected-variable":        "ここは変数が必要です",
+
+    "typo":                     "うっかり間違えてませんか？",
     "wrong-name":               "名前が不正です",
-    "wrong-statement":          "不正な文です",
+    "wrong-statement":          "何とも解釈できない書き方です",
     "wrong-escape-sequence":    "不正なエスケープシーケンスです",
     "wrong-indent-level":       "インデントが不正です",
+    "unexpected-return":        "関数内でのみ使えます",
+    "unexpected-break":         "くり返しの中でのみ使えます",
+
     # ランタイムエラー
-    "undefined-variable":       "変数が未定義です",
-    "undefined-function":       "関数が未定義です",
-    "type-error":               "型エラーです",
-    "division-by-zero":         "ゼロ除算です",
-    "error-index":              "インデックスエラーです",
+    "undefined-variable":       "変数が定義されていません",
+    "undefined-function":       "関数が定義されていません",
+    "type-error":               "データの種類（型）が違っています",
+    "division-by-zero":         "ゼロで割ってしまいました",
+    "error-index":              "配列のインデックスが範囲外です",
     "error-value":              "値エラーです",
-    "too-many-recursions":      "再帰が深すぎます",
-    "runtime-timeout":          "タイムアウトです",
+    "too-many-recursion":       "再帰が深すぎます",
+    "runtime-timeout":          "タイムアウトしました",
     "unsupported-operator":     "サポートされていない演算子です",
-    "unsupported-comparison":   "サポートされていない比較です",
-    "mismatch-argument-number": "引数の数が合いません",
+    "imcomparable":             "両者は直接比較できません",
+    "mismatch-argument":        "引数の数が合いません",
     "not-negative-number":      "負の数は使えません",
     "float-conversion":         "少数への変換エラーです",
     "internal-error":           "内部エラーです",
     "immutable":                "変更できません",
     "array-format":             "配列フォーマットエラーです",
+    "assertion-failed":         "テストを失敗",
 }
 
 

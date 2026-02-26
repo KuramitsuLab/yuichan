@@ -56,15 +56,15 @@ Strongest_Extension = 入力 class_name, extensions に対し {
     class_len = |class_name|
     i = 0
     class_len回、くり返す {
-        resultの末尾に class_name[i] を 追加する
+        resultの末尾に class_name[i] を追加する
         iを増やす
     }
-    resultの末尾に 46 を 追加する  # '.'
+    resultの末尾に 46 を追加する  # '.'
 
     best_len = |best_ext|
     i = 0
     best_len回、くり返す {
-        resultの末尾に best_ext[i] を 追加する
+        resultの末尾に best_ext[i] を追加する
         iを増やす
     }
 

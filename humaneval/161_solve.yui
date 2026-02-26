@@ -30,7 +30,7 @@ solve = 入力 s に対し {
             }
         }
 
-        resultの末尾に new_char を 追加する
+        resultの末尾に new_char を追加する
         iを増やす
     }
 
@@ -40,7 +40,7 @@ solve = 入力 s に対し {
         i = 0
         length回、くり返す {
             idx = 差(差(length, i), 1)
-            reversedの末尾に result[idx] を 追加する
+            reversedの末尾に result[idx] を追加する
             iを増やす
         }
         result = reversed

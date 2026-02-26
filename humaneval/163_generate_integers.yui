@@ -13,7 +13,7 @@ generate_integers = 入力 a, b に対し {
         もし i が upper 以下 ならば、{
             remainder = 剰余(i, 2)
             もし remainder が 0 ならば、{
-                resultの末尾に i を 追加する
+                resultの末尾に i を追加する
             }
             iを増やす
         }

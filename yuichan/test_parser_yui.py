@@ -52,6 +52,16 @@ class TestParseStatementNode_Yui:
         append_node = source.parse("@Statement")
         assert str(append_node) == "xに10を追加する"
 
+    def test_Append_with_tail(self):
+        source = Source("xの末尾に10を追加する")
+        append_node = source.parse("@Append")
+        assert str(append_node) == "xの末尾に10を追加する"
+
+        source = Source("xの末尾に10を追加する # コメント")
+        append_node = source.parse("@Statement")
+        assert str(append_node) == "xの末尾に10を追加する"
+
+
     def test_Break(self):
         source = Source("くり返しを抜ける")
         break_node = source.parse("@Break")

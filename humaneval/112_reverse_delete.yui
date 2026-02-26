@@ -20,7 +20,7 @@ reverse_delete = 入力 s, c に対し {
         }
 
         もし should_remove が 0 ならば、{
-            result_strの末尾に char を 追加する
+            result_strの末尾に char を追加する
         }
 
         iを増やす
@@ -40,8 +40,8 @@ reverse_delete = 入力 s, c に対し {
     }
 
     result = []
-    resultの末尾に result_str を 追加する
-    resultの末尾に is_palindrome を 追加する
+    resultの末尾に result_str を追加する
+    resultの末尾に is_palindrome を追加する
     resultが答え
 }
 

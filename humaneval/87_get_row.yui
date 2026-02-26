@@ -13,9 +13,9 @@ get_row = 入力 lst, x に対し {
         row_len回、くり返す {
             もし row[j] が x ならば、{
                 coord = []
-                coordの末尾に i を 追加する
-                coordの末尾に j を 追加する
-                coordsの末尾に coord を 追加する
+                coordの末尾に i を追加する
+                coordの末尾に j を追加する
+                coordsの末尾に coord を追加する
             }
             jを増やす
         }

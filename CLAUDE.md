@@ -39,14 +39,14 @@ YuiObjectType  → オブジェクト (dict)
 ### YuiValue の定数
 
 ```python
-YuiValue.NullValue  = YuiValue(None,  type=YuiType.NullType)
-YuiValue.TrueValue  = YuiValue(True,  type=YuiType.BooleanType)
-YuiValue.FalseValue = YuiValue(False, type=YuiType.BooleanType)
+YuiValue.NullValue  = YuiValue(None,  type=NullType)
+YuiValue.TrueValue  = YuiValue(True,  type=BoolType)
+YuiValue.FalseValue = YuiValue(False, type=BoolType)
 ```
 
 ### 重要メソッド
 
-- `YuiType.to_native(node_or_value)` — YuiValue → Python native 値
+- `types.unbox(node_or_value)` — YuiValue → Python native 値
 - `YuiType.yui_to_native(value)` — 再帰的に native 変換（`exec()` の戻り値に使用）
 - `YuiType.native_to_yui(native)` — Python native → YuiValue
 - `YuiValue.stringfy_value(value, indent_prefix)` — 値を文字列表示（staticmethod）

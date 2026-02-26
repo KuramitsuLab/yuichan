@@ -71,7 +71,7 @@ numerical_letter_grade = 入力 grades に対し {
             }
         }
 
-        resultの末尾に letter を 追加する
+        resultの末尾に letter を追加する
         iを増やす
     }
 

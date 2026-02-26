@@ -187,6 +187,9 @@ DEFAULT_SYNTAX_JSON = {
     "funcapp-separator": ",",
 
     "unary-inspect": "👀",
+    "catch-begin": "🧤",
+    "catch-end": "🧤",
+
 }
 
 def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
@@ -492,6 +495,7 @@ class YuiSyntax(object):
         super().__init__()
         assert isinstance(syntax_json, dict), "Terminals must be a dictionary"
         self.terminals = syntax_json.copy()
+        self.random_seed = None
 
     def is_defined(self, terminal):
         return self.terminals.get(terminal, "") != ""
@@ -514,7 +518,7 @@ class YuiSyntax(object):
             pattern = self.terminals[terminal]
             if not isinstance(pattern, str):
                 pattern = pattern.pattern
-            example = get_example_from_pattern(pattern)
+            example = get_example_from_pattern(pattern, random_seed=self.random_seed)
             return example
         return ""
 

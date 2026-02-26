@@ -21,7 +21,7 @@ count_nums = 入力 arr に対し {
         100回、くり返す {
             もし temp が 0 より大きいならば、{
                 digit = 剰余(temp, 10)
-                digitsの末尾に digit を 追加する
+                digitsの末尾に digit を追加する
                 temp = 商(temp, 10)
             }
         }

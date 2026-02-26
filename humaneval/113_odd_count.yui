@@ -33,53 +33,53 @@ odd_count = 入力 lst に対し {
         part1 = [116, 104, 101, 32, 110, 117, 109, 98, 101, 114, 32, 111, 102, 32, 111, 100, 100, 32, 101, 108, 101, 109, 101, 110, 116, 115, 32]
         k = 0
         27回、くり返す {
-            msgの末尾に part1[k] を 追加する
+            msgの末尾に part1[k] を追加する
             kを増やす
         }
 
         # Convert odd_cnt to digit character
         cnt_char = 和(48, odd_cnt)
-        msgの末尾に cnt_char を 追加する
+        msgの末尾に cnt_char を追加する
 
         # "n the str"
         part2 = [110, 32, 116, 104, 101, 32, 115, 116, 114]
         k = 0
         9回、くり返す {
-            msgの末尾に part2[k] を 追加する
+            msgの末尾に part2[k] を追加する
             kを増やす
         }
 
-        msgの末尾に cnt_char を 追加する
+        msgの末尾に cnt_char を追加する
 
         # "ng "
         part3 = [110, 103, 32]
         k = 0
         3回、くり返す {
-            msgの末尾に part3[k] を 追加する
+            msgの末尾に part3[k] を追加する
             kを増やす
         }
 
-        msgの末尾に cnt_char を 追加する
+        msgの末尾に cnt_char を追加する
 
         # " of the "
         part4 = [32, 111, 102, 32, 116, 104, 101, 32]
         k = 0
         8回、くり返す {
-            msgの末尾に part4[k] を 追加する
+            msgの末尾に part4[k] を追加する
             kを増やす
         }
 
-        msgの末尾に cnt_char を 追加する
+        msgの末尾に cnt_char を追加する
 
         # "nput."
         part5 = [110, 112, 117, 116, 46]
         k = 0
         5回、くり返す {
-            msgの末尾に part5[k] を 追加する
+            msgの末尾に part5[k] を追加する
             kを増やす
         }
 
-        resultの末尾に msg を 追加する
+        resultの末尾に msg を追加する
         iを増やす
     }
 

@@ -8,7 +8,7 @@ change_base = 入力 x, base に対し {
     100回、くり返す {
         もし temp が 0 より大きいならば、{
             remainder = 剰余(temp, base)
-            digitsの末尾に remainder を 追加する
+            digitsの末尾に remainder を追加する
             temp = 商(temp, base)
         }
     }
@@ -21,7 +21,7 @@ change_base = 入力 x, base に対し {
         idx = 差(差(length, i), 1)
         digit = digits[idx]
         char_code = 和(48, digit)  # '0' is 48
-        resultの末尾に char_code を 追加する
+        resultの末尾に char_code を追加する
         iを増やす
     }
 

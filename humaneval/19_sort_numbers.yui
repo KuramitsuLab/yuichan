@@ -11,17 +11,17 @@ sort_numbers = 入力 numbers に対し {
         char = numbers[i]
         もし char が 32 ならば、{
             もし |current_word| が 0 より大きいならば、{
-                wordsの末尾に current_word を 追加する
+                wordsの末尾に current_word を追加する
                 current_word = []
             }
         }
         そうでなければ {
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
         iを増やす
     }
     もし |current_word| が 0 より大きいならば、{
-        wordsの末尾に current_word を 追加する
+        wordsの末尾に current_word を追加する
     }
 
     # Assign values and sort (simple bubble sort)
@@ -139,12 +139,12 @@ sort_numbers = 入力 numbers に対し {
         word_len = |word|
         j = 0
         word_len回、くり返す {
-            resultの末尾に word[j] を 追加する
+            resultの末尾に word[j] を追加する
             jを増やす
         }
         last_idx = 差(num_words, 1)
         もし i が last_idx より小さいならば、{
-            resultの末尾に 32 を 追加する
+            resultの末尾に 32 を追加する
         }
         iを増やす
     }

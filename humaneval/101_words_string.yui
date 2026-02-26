@@ -11,20 +11,20 @@ words_string = 入力 s に対し {
 
         もし char が 32 ならば、{  # space
             もし |current_word| が 0 より大きいならば、{
-                resultの末尾に current_word を 追加する
+                resultの末尾に current_word を追加する
                 current_word = []
             }
         }
         もし char が 44 ならば、{  # comma
             もし |current_word| が 0 より大きいならば、{
-                resultの末尾に current_word を 追加する
+                resultの末尾に current_word を追加する
                 current_word = []
             }
         }
         そうでなければ {
             もし char が 32 以外 ならば、{
                 もし char が 44 以外 ならば、{
-                    current_wordの末尾に char を 追加する
+                    current_wordの末尾に char を追加する
                 }
             }
         }
@@ -33,7 +33,7 @@ words_string = 入力 s に対し {
     }
 
     もし |current_word| が 0 より大きいならば、{
-        resultの末尾に current_word を 追加する
+        resultの末尾に current_word を追加する
     }
 
     resultが答え

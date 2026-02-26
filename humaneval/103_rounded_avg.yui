@@ -47,7 +47,7 @@ rounded_avg = 入力 n, m に対し {
     100回、くり返す {
         もし temp が 0 より大きいならば、{
             remainder = 剰余(temp, 2)
-            digitsの末尾に remainder を 追加する
+            digitsの末尾に remainder を追加する
             temp = 商(temp, 2)
         }
     }
@@ -57,7 +57,7 @@ rounded_avg = 入力 n, m に対し {
     d_len回、くり返す {
         idx = 差(差(d_len, i), 1)
         digit_char = 和(48, digits[idx])
-        resultの末尾に digit_char を 追加する
+        resultの末尾に digit_char を追加する
         iを増やす
     }
 

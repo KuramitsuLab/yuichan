@@ -12,15 +12,15 @@ separate_paren_groups = 入力 paren_string に対し {
 
         もし char が 40 ならば、{
             current_depthを増やす
-            current_stringの末尾に char を 追加する
+            current_stringの末尾に char を追加する
         }
 
         もし char が 41 ならば、{
             current_depthを減らす
-            current_stringの末尾に char を 追加する
+            current_stringの末尾に char を追加する
 
             もし current_depth が 0 ならば、{
-                resultの末尾に current_string を 追加する
+                resultの末尾に current_string を追加する
                 current_string = []
             }
         }

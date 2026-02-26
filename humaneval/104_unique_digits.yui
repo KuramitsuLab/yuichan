@@ -25,7 +25,7 @@ unique_digits = 入力 x に対し {
         }
 
         もし all_odd が 1 ならば、{
-            valid_numsの末尾に num を 追加する
+            valid_numsの末尾に num を追加する
         }
 
         iを増やす

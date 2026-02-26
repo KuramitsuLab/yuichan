@@ -23,7 +23,7 @@ decode_shift = 入力 s に対し {
         remainder = 剰余(decoded_offset, 26)
         decoded_char = 和(97, remainder)
 
-        resultの末尾に decoded_char を 追加する
+        resultの末尾に decoded_char を追加する
         iを増やす
     }
 

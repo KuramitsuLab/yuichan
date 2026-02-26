@@ -16,7 +16,7 @@ solve = 入力 N に対し {
 
     result = []
     もし total が 0 ならば {
-        resultの末尾に 48 を 追加する
+        resultの末尾に 48 を追加する
         resultが答え
     }
 
@@ -26,7 +26,7 @@ solve = 入力 N に対し {
     100回、くり返す {
         もし temp が 0 より大きい ならば {
             rem = 剰余(temp, 2)
-            digitsの末尾に rem を 追加する
+            digitsの末尾に rem を追加する
             temp = 商(temp, 2)
         }
     }
@@ -37,10 +37,10 @@ solve = 入力 N に対し {
         idx = 差(差(len, j), 1)
         bit = digits[idx]
         もし bit が 0 ならば {
-            resultの末尾に 48 を 追加する
+            resultの末尾に 48 を追加する
         }
         そうでなければ {
-            resultの末尾に 49 を 追加する
+            resultの末尾に 49 を追加する
         }
         jを増やす
     }

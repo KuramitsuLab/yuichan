@@ -19,13 +19,13 @@ order_by_points = 入力 nums に対し {
         # Extract digits
         digits = []
         もし temp が 0 ならば、{
-            digitsの末尾に 0 を 追加する
+            digitsの末尾に 0 を追加する
         }
         そうでなければ {
             100回、くり返す {
                 もし temp が 0 より大きいならば、{
                     digit = 剰余(temp, 10)
-                    digitsの末尾に digit を 追加する
+                    digitsの末尾に digit を追加する
                     temp = 商(temp, 10)
                 }
             }
@@ -48,7 +48,7 @@ order_by_points = 入力 nums に対し {
             jを増やす
         }
 
-        digit_sumsの末尾に sum を 追加する
+        digit_sumsの末尾に sum を追加する
         iを増やす
     }
 

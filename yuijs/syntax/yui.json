@@ -48,6 +48,12 @@
     "binary-infix*": "\\*",
     "binary-infix/": "/",
     "binary-infix%": "%",
+    "binary-infix==": "==",
+    "binary-infix!=": "!=",
+    "binary-infix<=": "<=",
+    "binary-infix>=": ">=",
+    "binary-infix<": "<",
+    "binary-infix>": ">",
     "unary-minus": "-",
 
     "array-indexer-suffix": "\\[",

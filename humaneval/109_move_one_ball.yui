@@ -25,7 +25,7 @@ move_one_ball = 入力 arr に対し {
     i = min_idx
     length回、くり返す {
         idx = 剰余(i, length)
-        rotatedの末尾に arr[idx] を 追加する
+        rotatedの末尾に arr[idx] を追加する
         iを増やす
     }
 

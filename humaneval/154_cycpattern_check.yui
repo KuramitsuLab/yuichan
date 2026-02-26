@@ -9,12 +9,12 @@ cycpattern_check = 入力 a, b に対し {
     pattern = []
     i = 0
     len_b回、くり返す {
-        patternの末尾に b[i] を 追加する
+        patternの末尾に b[i] を追加する
         iを増やす
     }
     i = 0
     len_b回、くり返す {
-        patternの末尾に b[i] を 追加する
+        patternの末尾に b[i] を追加する
         iを増やす
     }
 
@@ -27,7 +27,7 @@ cycpattern_check = 入力 a, b に対し {
         j = 0
         len_b回、くり返す {
             idx = 和(i, j)
-            substringの末尾に a[idx] を 追加する
+            substringの末尾に a[idx] を追加する
             jを増やす
         }
 
@@ -40,7 +40,7 @@ cycpattern_check = 入力 a, b に対し {
             k = 0
             len_b回、くり返す {
                 pat_idx = 和(j, k)
-                pat_substringの末尾に pattern[pat_idx] を 追加する
+                pat_substringの末尾に pattern[pat_idx] を追加する
                 kを増やす
             }
 

@@ -6,692 +6,412 @@ from .yuiast import (
     ConstNode, NumberNode, StringNode,
     ArrayNode, ObjectNode,
     NameNode,
-    MinusNode, ArrayLenNode, GetIndexNode,
+    MinusNode, ArrayLenNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode,
     FuncDefNode, FuncAppNode, ReturnNode,
-    PrintExpressionNode, AssertNode,
+    PrintExpressionNode, AssertNode, CatchNode
 )
 from .yuiexample import get_all_examples
 _all_examples = get_all_examples()
 
-class TestLiteral:
-    """式の評価に関するテストクラス"""
+def init_runtime():
+    runtime = YuiRuntime()
+    runtime.setenv("a", YuiValue(1))
+    runtime.setenv("x", YuiValue(1.23))
+    runtime.setenv("s", YuiValue("abc"))
+    runtime.setenv("A", YuiValue([1, 2, 3]))
+    runtime.setenv("P", YuiValue({"x": 1, "y": 2, "z": 3}))
+    runtime.setenv("M", YuiValue([[1,2], [3,4]]))
+    runtime.allow_binary_ops = True
+    return runtime
 
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        return runtime  
-
-    def test_int(self):
-        runtime = self.init_runtime()
-        expression = NumberNode(42)
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 42
-
-    def test_float(self):
-        runtime = self.init_runtime()
-        expression = NumberNode(42.0)
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 42.0
-
-    def test_string(self):
-        runtime = self.init_runtime()
-        expression = StringNode("A")
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == "A"
-
-    def test_string_interpolation(self):
-        runtime = self.init_runtime()
-        expression = StringNode(["A", NumberNode(1), "B"])
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == "A1B"
-
-    def test_array(self):
-        runtime = self.init_runtime()
-        expression = ArrayNode([1, 2, 3])
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == [1, 2, 3]
-
-    def test_object(self):
-        runtime = self.init_runtime()
-        expression = ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2), StringNode("z"), NumberNode(3)])
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == {"x": 1, "y": 2, "z": 3}
-
-class TestVariable:
-    """式の評価に関するテストクラス"""
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        return runtime  
-
-    def test_variable(self):
-        runtime = self.init_runtime()
-        expression = NameNode("x")
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 1
-
-    def test_undefined_variable(self):
-        runtime = self.init_runtime()
-        expression = NameNode("y")
-        with pytest.raises(YuiError) as excinfo:    
-            result = expression.evaluate(runtime)
-            result = types.unbox(result)
-            assert result == 1
-        assert "undefined" in str(excinfo.value.args[0])
-        assert "variable" in str(excinfo.value.args[0])
-
-class TestUnaryOperator:
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        return runtime
+testcases = {
+    # ConstNode
+    "null":  (ConstNode(None),None),
+    "true":  (ConstNode(True),True),
+    "false": (ConstNode(False),False),
+    # NumberNode
+    "int(42)":   (NumberNode(42),42),
+    "float(3.5)": (NumberNode(3.5),3.5),
+    # Variable
+    "a:int":   (NameNode("a"),1),
+    "x:float": (NameNode("x"),1.23),
+    "undefined": (NameNode("undefined"),"💣undefined-variable"),
+    #String
+    '""': (StringNode(""), ""),
+    '"A"': (StringNode("A"), "A"),
+    '"A{a}B"': (StringNode(["A", NameNode("a"), "B"]), "A1B"),
+    '"{a}B"': (StringNode([NameNode("a"), "B"]), "1B"),
+    '"A{a}"': (StringNode(["A", NameNode("a")]), "A1"),
+    '"A{a}{a}B"': (StringNode(["A", NameNode("a"), NameNode("a"), "B"]), "A11B"),
     
-    def test_minus_int(self):
-        runtime = self.init_runtime()
-        expression = MinusNode(NumberNode(1))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == -1
+    # Array
+    "empty_array": (ArrayNode([]), []),
+    "array": (ArrayNode([NameNode("a"), NumberNode(2), NumberNode(3)]), [1, 2, 3]),
+    # Object
+    "object": (ObjectNode(["x", NameNode("a"), "y", NumberNode(2), "z", NumberNode(3)]), {"x": 1, "y": 2, "z": 3}),
+    # MinusNode (negative literals)
+    "minus/int":   (MinusNode(NumberNode(16)), -16),
+    "minus/float": (MinusNode(NumberNode(3.14)), -3.14),
+    "minus/string": (MinusNode(StringNode("A")), "💣type-error"),
+    # ArrayLenNode
+    "len(A)": (ArrayLenNode(NameNode("A")), 3),
+    "len(s)": (ArrayLenNode(NameNode("s")), 3),
+    "len(P)": (ArrayLenNode(NameNode("P")), 3), 
+    "len(M)": (ArrayLenNode(NameNode("M")), 2), 
+    "len(0)": (ArrayLenNode(0), 1),
+    "len(11)": (ArrayLenNode(11), 4), # 11 = [1, 1, 0, 1]
+    "len(true)": (ArrayLenNode(True), 1),
+    "len(false)": (ArrayLenNode(False), 1),
+    "len(null)": (ArrayLenNode(None), 0),
+    "len(103.14)": (ArrayLenNode(103.14), 9),
+    "len(0.01)": (ArrayLenNode(0.01), 7),
+    # GetIndexNode
+    "A[0]": (GetIndexNode(NameNode("A"), 0), 1),
+    "A[1]": (GetIndexNode(NameNode("A"), 1), 2),
+    "A[2]": (GetIndexNode(NameNode("A"), 2), 3),
+    "A[3]": (GetIndexNode(NameNode("A"), 3), "💣index-error"),
+    "s[0]": (GetIndexNode(NameNode("s"), 0), ord("a")),
+    "s[1]": (GetIndexNode(NameNode("s"), 1), ord("b")),
+    "s[2]": (GetIndexNode(NameNode("s"), 2), ord("c")),
+    "s[3]": (GetIndexNode(NameNode("s"), 3), "💣index-error"),
+    "P[\"x\"]": (GetIndexNode(NameNode("P"), "x"), 1),
+    "P[\"y\"]": (GetIndexNode(NameNode("P"), "y"), 2),
+    "P[\"z\"]": (GetIndexNode(NameNode("P"), "z"), 3),
+    "P[\"w\"]": (GetIndexNode(NameNode("P"), "w"), None),
+    "M[0][0]": (GetIndexNode(GetIndexNode(NameNode("M"), 0), 0), 1),
+    "M[0][1]": (GetIndexNode(GetIndexNode(NameNode("M"), 0), 1), 2),
+    "M[1][0]": (GetIndexNode(GetIndexNode(NameNode("M"), 1), 0), 3),
+    "M[1][1]": (GetIndexNode(GetIndexNode(NameNode("M"), 1), 1), 4),
+    "M[0]": (GetIndexNode(NameNode("M"), 0), [1, 2]),
+    "M[1]": (GetIndexNode(NameNode("M"), 1), [3, 4]),
+    # 11 = [1, 1, 0, 1]
+    "11[0]": (GetIndexNode(11, 0), 1),
+    "11[1]": (GetIndexNode(11, 1), 1),
+    "11[2]": (GetIndexNode(11, 2), 0),
+    "11[3]": (GetIndexNode(11, 3), 1),
+    # 3.14 = [0, 0, 0, 0, 4, 1, 3]
+    "3.14[0]": (GetIndexNode(3.14, 0), 0),
+    "3.14[1]": (GetIndexNode(3.14, 1), 0),
+    "3.14[2]": (GetIndexNode(3.14, 2), 0),
+    "3.14[3]": (GetIndexNode(3.14, 3), 0),
+    "3.14[4]": (GetIndexNode(3.14, 4), 4),
+    "3.14[5]": (GetIndexNode(3.14, 5), 1),
+    "3.14[6]": (GetIndexNode(3.14, 6), 3),
+    # true/false
+    "true[0]": (GetIndexNode(True, 0), 1),
+    "false[0]": (GetIndexNode(False, 0), 0),
+    # character
+    "\"b\"[0]": (GetIndexNode("b", 0), ord("b")),
+    # + operator (binary)
+    "a+1": (BinaryNode("+", NameNode("a"), 1), 2),
+    "a-1": (BinaryNode("-", NameNode("a"), 1), 0),
+    "a*2": (BinaryNode("*", NameNode("a"), 2), 2),
+    "7/2": (BinaryNode("/", 7, 2), 3),
+    "7%2": (BinaryNode("%", 7, 2), 1),
+    "7/a": (BinaryNode("/", 7, NameNode("a")), 7),
+    "7%a": (BinaryNode("%", 7, NameNode("a")), 0),
+    # == operator (binary): "a" は文字列リテラル、NameNode("a") は変数
+    "\"a\"==0": (BinaryNode("==", "a", 0), False),
+    "\"a\"==\"a\"": (BinaryNode("==", "a", "a"), True),
+    "a==0": (BinaryNode("==", NameNode("a"), 0), False),
+    "a==1": (BinaryNode("==", NameNode("a"), 1), True),
 
-    def test_minus_float(self):
-        runtime = self.init_runtime()
-        expression = MinusNode(NumberNode(1.0))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == -1.0
-
-    def test_minus_string(self):
-        runtime = self.init_runtime()
-        expression = MinusNode(StringNode("A"))
-        with pytest.raises(YuiError) as excinfo:    
-            result = expression.evaluate(runtime)
-            result = types.unbox(result)
-            assert result == "A"
-        assert "type" in str(excinfo.value)
-
-    def test_length_array(self):
-        runtime = self.init_runtime()
-        expression = ArrayLenNode(NameNode("A"))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 3
-
-    def test_length_string(self):
-        runtime = self.init_runtime()
-        expression = ArrayLenNode(StringNode("abc"))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 3
-
-    def test_length_int(self):
-        runtime = self.init_runtime()
-        expression = ArrayLenNode(NumberNode(1))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 1  # 可変長: 1 は [1] (1ビット)
-
-class TestGetIndex:
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def test_get_array(self):
-        runtime = self.init_runtime()
-        expression = GetIndexNode(NameNode("A"), NumberNode(1))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 2
-
-    def test_get_string(self):
-        runtime = self.init_runtime()
-        expression = GetIndexNode(NameNode("s"), NumberNode(1))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 98 # 'b'のASCIIコード
-
-    def test_get_charcode(self):
-        runtime = self.init_runtime()
-        expression = GetIndexNode(StringNode("b"), NumberNode(0))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 98 # 'b'のASCIIコード
-
-    def test_object_string(self):
-        runtime = self.init_runtime()
-        expression = GetIndexNode(NameNode("O"), StringNode("y"))
-        result = expression.evaluate(runtime)
-        result = types.unbox(result)
-        assert result == 2
-
-    def test_get_array_out_of_index(self):
-        runtime = self.init_runtime()
-        expression = GetIndexNode(NameNode("A"), NumberNode(3))
-        with pytest.raises(YuiError) as excinfo:    
-            result = expression.evaluate(runtime)
-        assert "index" in str(excinfo.value)
-
-class TestAssignment:
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def test_variable_assignment(self):
-        runtime = self.init_runtime()
-        statement = AssignmentNode(NameNode("A"), NumberNode(3))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("A")) == 3
-
-    def test_string_assignment(self):
-        runtime = self.init_runtime()
-        with pytest.raises(YuiError) as excinfo:
-            statement = AssignmentNode(StringNode("A"), NumberNode(3))
-            statement.evaluate(runtime)
-        assert "expected" in str(excinfo.value)
-        assert "variable" in str(excinfo.value)
-
-    def test_variable_increment(self):
-        runtime = self.init_runtime()
-        statement = IncrementNode(NameNode("x"))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 2
-
-    def test_variable_decrement(self):
-        runtime = self.init_runtime()
-        statement = DecrementNode(NameNode("x"))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 0
-
-    def test_array_assignment(self):
-        runtime = self.init_runtime()
-        statement = AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(0)), NumberNode(3))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("A").get_item(0)) == 3
-
-    def test_array_increment(self):
-        runtime = self.init_runtime()
-        statement = IncrementNode(GetIndexNode(NameNode("A"), NumberNode(0)))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("A").get_item(0)) == 2
-
-    def test_array_decrement(self):
-        runtime = self.init_runtime()
-        statement = DecrementNode(GetIndexNode(NameNode("A"), NumberNode(1)))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("A").get_item(1)) == 1
-
-    def test_object_assignment(self):
-        runtime = self.init_runtime()
-        statement = AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(3))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("O").get_item("x")) == 3
-
-class TestAppend:
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def test_append_array(self):
-        runtime = self.init_runtime()
-        statement = AppendNode(NameNode("A"), NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("A").get_item(3)) == 0
-
-    def test_append_string(self):
-        runtime = self.init_runtime()
-        statement = AppendNode(NameNode("s"), NumberNode(ord("d")))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("s").get_item(3)) == ord("d")
-
-    def test_append_int(self):
-        # 可変長: x=YuiValue(1)=[1]、ビット1を追加すると[1,1]=3
-        runtime = self.init_runtime()
-        statement = AppendNode(NameNode("x"), NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 3
-
-class TestIfCondition:
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def make_if_statement(self, left, operator, right):
-        return IfNode(left, operator, right,
-            AssignmentNode(NameNode("result"), 1),
-            AssignmentNode(NameNode("result"), 0)
-        )
-
-    def test_if_eq(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "==", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "==", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-    def test_if_ne(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "!=", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-    def test_if_lt(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<", NumberNode(2))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-    def test_if_le(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), "<=", NumberNode(2))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-    def test_if_gt(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">", NumberNode(2))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-    def test_if_ge(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(0))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 1
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(1))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("x"), ">=", NumberNode(2))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-    def test_if_eq_string(self):
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("s"), "==", StringNode("abc"))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-        runtime = self.init_runtime()
-        statement = self.make_if_statement(NameNode("s"), "==", StringNode("ABC"))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-    def test_if_eq_float(self):
-        runtime = self.init_runtime()
-        runtime.setenv("f", YuiValue(3.14))
-        statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.14))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 1
-        runtime = self.init_runtime()
-        runtime.setenv("f", YuiValue(3.1))
-        statement = self.make_if_statement(NameNode("f"), "==", NumberNode(3.145))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("result")) == 0
-
-
-class TestStatement:
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def test_block(self):
-        runtime = self.init_runtime()
-        statement = BlockNode([
-            AssignmentNode(NameNode("x"), NumberNode(10)),
+    # Assignment
+    "x=42": (AssignmentNode(NameNode("x"), 42), ("x", 42)),
+    "y=0": (AssignmentNode(NameNode("y"), 0), ("y", 0)),
+    "\"s\"=\"hello\"": (AssignmentNode(StringNode("s"), "hello"), "💣expected-variable"),
+    # Increment/Decrement
+    "a+=1": (IncrementNode(NameNode("a")), ("a", 2)),
+    "a-=1": (DecrementNode(NameNode("a")), ("a", 0)),
+    "s+=1": (IncrementNode(NameNode("s")), "💣type-error"),
+    "s-=1": (DecrementNode(NameNode("s")), "💣type-error"),
+    "\"s\"+=1": (IncrementNode(StringNode("s")), "💣expected-variable"),
+    "\"s\"-=1": (DecrementNode(StringNode("s")), "💣expected-variable"),
+    "undefined+=1": (IncrementNode(NameNode("undefined")), "💣undefined-variable"),
+    "undefined-=1": (DecrementNode(NameNode("undefined")), "💣undefined-variable"),
+    "A[0]+=1": (IncrementNode(GetIndexNode(NameNode("A"), 0)), ("A", [2, 2, 3])),
+    "A[0]-=1": (DecrementNode(GetIndexNode(NameNode("A"), 0)), ("A", [0, 2, 3])),
+    "P[\"x\"]+=1": (IncrementNode(GetIndexNode(NameNode("P"), "x")), ("P", {"x": 2, "y": 2, "z": 3})),
+    "P[\"x\"]-=1": (DecrementNode(GetIndexNode(NameNode("P"), "x")), ("P", {"x": 0, "y": 2, "z": 3})),
+    "M[0][0]+=1": (IncrementNode(GetIndexNode(GetIndexNode(NameNode("M"), 0), 0)), ("M", [[2,2], [3,4]])),
+    "M[0][0]-=1": (DecrementNode(GetIndexNode(GetIndexNode(NameNode("M"), 0), 0)), ("M", [[0,2], [3,4]])),
+    # Append
+    "A.append(4)": (AppendNode(NameNode("A"), 4), ("A", [1, 2, 3, 4])),
+    "s.append(98)": (AppendNode(NameNode("s"), ord("d")), ("s", "abcd")),
+    "null.append(1)": (AppendNode(None, 1), '💣immutable-append'),
+    "s.append(\"d\")": (AppendNode(NameNode("s"), "d"), ("s", "abcd")),
+    "P.append(\"w\")": (AppendNode(NameNode("P"), "w"), ("P", {"x": 1, "y": 2, "z": 3, "w": 4})),
+    # if
+    "if/true": (IfNode(1, "==", 1, 1, 0), 1),
+    "if/false": (IfNode(1, "==", 0, 1, 0), 0),
+    "if/!=": (IfNode(1, "!=", 1, 1, 0), 0),
+    "if/<": (IfNode(1, "<", 1, 1, 0), 0),
+    "if/<=": (IfNode(1, "<=", 1, 1, 0), 1),
+    "if/>": (IfNode(1, ">", 1, 1, 0), 0),
+    "if/>=": (IfNode(1, ">=", 1, 1, 0), 1),
+    "if/in": (IfNode(1, "in", NameNode("A"), 1, 0), 1),
+    "if/notin": (IfNode(1, "notin", NameNode("A"), 1, 0), 0),
+    # repeat/break
+    "repeat": (BlockNode([
+        AssignmentNode(NameNode("x"), 0),
+        RepeatNode(10, BlockNode([
             IncrementNode(NameNode("x")),
+        ]))
+    ]), ("x", 10)),
+    "repeat/break": (BlockNode([
+        AssignmentNode(NameNode("x"), 0),
+        RepeatNode(10, BlockNode([
             IncrementNode(NameNode("x")),
-        ])
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 12
-    
-    def test_repeat(self):
-        runtime = self.init_runtime()
-        statement = RepeatNode(3,IncrementNode(NameNode("x")))
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 4
-
-    def test_repeat_break(self):
-        runtime = self.init_runtime()
-        statement = RepeatNode(
-            NumberNode(10),
+            BreakNode()
+        ]))
+    ]), ("x", 1)),
+    "repeat/if-break": (BlockNode([
+        AssignmentNode(NameNode("x"), 0),
+        RepeatNode(10, BlockNode([
+            IncrementNode(NameNode("x")),
+            IfNode(NameNode("x"), "==", NumberNode(5),BreakNode()),
+        ]))
+    ]), ("x", 5)),
+    "break/outside": (BlockNode([
+        BreakNode()
+    ]), "💣unexpected-break"),
+    # Function definition and application
+    "function/succ(n)": (BlockNode([
+        FuncDefNode(
+            NameNode("succ"),[NameNode("n")],
             BlockNode([
-                IncrementNode(NameNode("x")),
-                IfNode(
-                    left=NameNode("x"),
-                    operator="==",
-                    right=NumberNode(4),
-                    then_block=BlockNode([BreakNode()])
-                )
+                IncrementNode(NameNode("n")),
+                ReturnNode(NameNode("n"))
             ])
-        )
-        statement.evaluate(runtime)
-        assert types.unbox(runtime.getenv("x")) == 4
-
-    def test_print_expression(self, capsys):
-        runtime = self.init_runtime()
-        expression = PrintExpressionNode(
-            NumberNode(5)
-        )
-        expression.evaluate(runtime)
-        captured = capsys.readouterr()
-        output = captured.out.strip()
-        assert "5" in output
-        assert ">>>" in output
-
-    def test_hello_world(self, capsys):
-        runtime = self.init_runtime()
-        expression = PrintExpressionNode(
-            StringNode("hello, world")
-        )
-        expression.evaluate(runtime)
-        captured = capsys.readouterr()
-        output = captured.out.strip()
-        assert "hello, world" in output
-        assert ">>>" not in output
-
-    def test_print_funcapp(self, capsys):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
+        ),
+        FuncAppNode(NameNode("succ"),[NumberNode(0)]
+    )]), 1),    
+    "function/max(a,b)": (BlockNode([
+        FuncDefNode(
+            NameNode("max"),[NameNode("a"), NameNode("b")],
+            IfNode(NameNode("a"), ">", NameNode("b"),
+                   ReturnNode(NameNode("a")),
+                   ReturnNode(NameNode("b"))
+            )
+        ),
+        FuncAppNode(NameNode("max"),[10, 20])
+    ]), 20),
+    "function/mul(a,b)": (BlockNode([
+        FuncDefNode(NameNode("mul"),[NameNode("a"), NameNode("b")], 
+            BlockNode([
+                AssignmentNode(NameNode("result"), NumberNode(0)),
+                RepeatNode(NameNode("b"), BlockNode([
+                    RepeatNode(NameNode("a"), BlockNode([
+                        IncrementNode(NameNode("result"))
+                    ])),
+                ])),
+                ReturnNode(NameNode("result"))
+            ])
+        ),
+        FuncAppNode(NameNode("mul"),[NumberNode(10), NumberNode(20)])
+    ]), 200),
+    "function/zero()": (BlockNode([
+        FuncDefNode(NameNode("zero"),[], ReturnNode(NumberNode(0))),
+        FuncAppNode(NameNode("zero"),[])
+    ]), 0),
+    "function/factorial(n)": (BlockNode([
+        FuncDefNode(NameNode("factorial"),[NameNode("n")], BlockNode([
+            IfNode(NameNode("n"), "==", NumberNode(0),
+                   ReturnNode(NumberNode(1))),
+            ReturnNode(BinaryNode("*", NameNode("n"), FuncAppNode(
+                        NameNode("factorial"), [BinaryNode("-", NameNode("n"), NumberNode(1))]
+            )))
+        ])),
+        FuncAppNode(NameNode("factorial"),[NumberNode(5)])
+    ]), 120),
+    "function/no-return": (BlockNode([
+        FuncDefNode(
+            NameNode("point"),[NameNode("x"), NameNode("y")],
             BlockNode([])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(1), NumberNode(2)]
-        )
-        expression = PrintExpressionNode(
-            func_app
-        )
-        expression.evaluate(runtime)
-        captured = capsys.readouterr()
-        output = captured.out.strip()
-        assert "(1, 2)" in output
-
-    def test_assert(self):
-        runtime = self.init_runtime()
-        expression = AssertNode(NameNode("x"), NumberNode(1))
-        expression.evaluate(runtime)
-        assert len(runtime.test_passed) == 1
-
-    def test_assert_fail(self):
-        runtime = self.init_runtime()
-        expression = AssertNode(NameNode("x"), NumberNode(0))
-        with pytest.raises(YuiError) as excinfo:
-            expression.evaluate(runtime)
-            assert len(runtime.test_passed) == 0
-        assert "failed" in str(excinfo.value.args[0])
-
-class TestAssert:
-    """AssertNode の型別テスト"""
-
-    def rt(self):
-        return YuiRuntime()
-
-    # ── boolean ──────────────────────────────────────────────
-    def test_bool_true(self):
-        rt = self.rt()
-        AssertNode(ConstNode(True), ConstNode(True)).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_bool_false(self):
-        rt = self.rt()
-        AssertNode(ConstNode(False), ConstNode(False)).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_bool_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(ConstNode(True), ConstNode(False)).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    # ── int ──────────────────────────────────────────────────
-    def test_int_equal(self):
-        rt = self.rt()
-        AssertNode(NumberNode(42), NumberNode(42)).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_int_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(NumberNode(1), NumberNode(2)).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    def test_int_vs_bool(self):
-        """int と bool は等値にならない"""
-        rt = self.rt()
-        with pytest.raises(YuiError):
-            AssertNode(NumberNode(1), ConstNode(True)).evaluate(rt)
-
-    # ── float ─────────────────────────────────────────────────
-    def test_float_equal(self):
-        rt = self.rt()
-        AssertNode(NumberNode(3.14), NumberNode(3.14)).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_float_rounding(self):
-        """小数は小数点6桁で丸めて比較"""
-        rt = self.rt()
-        AssertNode(NumberNode(1.0000001), NumberNode(1.0000002)).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_float_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(NumberNode(3.14), NumberNode(3.15)).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    # ── string ────────────────────────────────────────────────
-    def test_string_equal(self):
-        rt = self.rt()
-        AssertNode(StringNode("hello"), StringNode("hello")).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_string_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(StringNode("hello"), StringNode("world")).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    # ── array ─────────────────────────────────────────────────
-    def test_array_equal(self):
-        rt = self.rt()
-        AssertNode(ArrayNode([1, 2, 3]), ArrayNode([1, 2, 3])).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_array_nested(self):
-        rt = self.rt()
-        AssertNode(
-            ArrayNode([ArrayNode([1, 2]), ArrayNode([3, 4])]),
-            ArrayNode([ArrayNode([1, 2]), ArrayNode([3, 4])]),
-        ).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_array_charcode_vs_string(self):
-        """文字コード配列と文字列は等値になる"""
-        rt = self.rt()
-        # [72, 105] == "Hi"
-        AssertNode(ArrayNode([72, 105]), StringNode("Hi")).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_array_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(ArrayNode([1, 2, 3]), ArrayNode([1, 2, 4])).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    def test_array_length_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(ArrayNode([1, 2]), ArrayNode([1, 2, 3])).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-    # ── object ────────────────────────────────────────────────
-    def test_object_equal(self):
-        rt = self.rt()
-        obj = lambda: ObjectNode([StringNode("x"), NumberNode(1), StringNode("y"), NumberNode(2)])
-        AssertNode(obj(), obj()).evaluate(rt)
-        assert len(rt.test_passed) == 1
-
-    def test_object_mismatch(self):
-        rt = self.rt()
-        with pytest.raises(YuiError) as exc:
-            AssertNode(
-                ObjectNode([StringNode("x"), NumberNode(1)]),
-                ObjectNode([StringNode("x"), NumberNode(2)]),
-            ).evaluate(rt)
-        assert "failed" in str(exc.value.args[0])
-
-
-class TestFunction:
-
-    def init_runtime(self):
-        runtime = YuiRuntime()
-        runtime.setenv("x", YuiValue(1))
-        runtime.setenv("s", YuiValue("abc"))
-        runtime.setenv("A", YuiValue([1, 2, 3]))
-        runtime.setenv("O", YuiValue({"x": 1, "y": 2, "z": 3}))
-        return runtime
-
-    def test_function(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
+        ),
+        FuncAppNode(NameNode("point"),[NumberNode(0), NumberNode(1)])
+    ]), {"x": 0, "y": 1}),
+    "function/undefined": (FuncAppNode(NameNode("sub"), [NumberNode(10)]), "💣undefined-function"),
+    "function_argument_mismatch": (BlockNode([
+        FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
             BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(10), NumberNode(20)]
-        )
-        result = func_app.evaluate(runtime)
-        assert types.unbox(result) == 10
-
-    def test_function_return_none(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
+        ),
+        FuncAppNode(NameNode("add"),[NumberNode(10)])
+    ]), "💣mismatch-arguments"),
+    "function/too-many-recursion": (BlockNode([
+        FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],
+            ReturnNode(FuncAppNode(NameNode("add"),[10, 20]))
+        ),
+        FuncAppNode(NameNode("add"),[10, 20])       
+    ]), "💣too-many-recursion"),
+    "Return/outside": (BlockNode([
+        ReturnNode(NumberNode(0))
+    ]), "💣unexpected-return"),
+    "Assert/a==1": (AssertNode(NameNode("a"), 1), True),
+    "Assert/a==0": (AssertNode(NameNode("a"), 0), "💣assertion-failed"),
+    "Assert/s==\"abc\"": (AssertNode(NameNode("s"), "abc"), True),
+    "Assert/A==[1,2,3]": (AssertNode(NameNode("A"), [1,2,3]), True),
+    "Assert/P=={\"x\":1,\"y\":2,\"z\":3}": (AssertNode(NameNode("P"), {"x":1,"y":2,"z":3}), True),
+    "Assert/M==[[1,2],[3,4]]": (AssertNode(NameNode("M"), [[1,2],[3,4]]), True),
+    "Assert/succ(0)==1": (BlockNode([
+        FuncDefNode(
+            NameNode("succ"),[NameNode("n")],
             BlockNode([
-                AssignmentNode(NameNode("a"), 1),
-                AssignmentNode(NameNode("c"), 3)
+                IncrementNode(NameNode("n")),
+                ReturnNode(NameNode("n"))
             ])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(0), NumberNode(1)]
-        )
-        result = func_app.evaluate(runtime)
-        assert types.is_object(result)
-        result = types.unbox(result)
-        assert result["a"] == 1
-        assert result["b"] == 1
-        assert result["c"] == 3
+        ),
+        AssertNode(FuncAppNode(NameNode("succ"),[NumberNode(0)]), 1)
+    ]), True),
+}
 
-    def test_function_undefined(self):
-        runtime = self.init_runtime()
-        func_app = FuncAppNode(
-            name=NameNode("sub"),
-            arguments=[NumberNode(10), NumberNode(20)]
-        )
-        with pytest.raises(YuiError) as excinfo:    
-            result = func_app.evaluate(runtime)
-        assert "undefined" in str(excinfo.value.args[0])
-        assert "function" in str(excinfo.value.args[0])
-    
-    def test_function_argument_mismatch(self):
-        runtime = self.init_runtime()
-        func_def = FuncDefNode(
-            NameNode("add"),[NameNode("a"), NameNode("b")],
-            BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
-        )
-        func_def.evaluate(runtime)
-        func_app = FuncAppNode(
-            name=NameNode("add"),
-            arguments=[NumberNode(10)]
-        )
-        with pytest.raises(YuiError) as excinfo:    
-            result = func_app.evaluate(runtime)
-        assert "mismatch" in str(excinfo.value.args[0])
-        assert "argument" in str(excinfo.value.args[0]) 
+@pytest.mark.parametrize("name", list(testcases.keys()))
+def test_ast(name):
+    node, expected = testcases[name]
+    runtime = init_runtime()
+    if isinstance(expected, str) and expected.startswith("💣"):
+        node = CatchNode(node)
+    if isinstance(expected, tuple):
+        key, value = expected
+        result = node.evaluate(runtime)
+        assert types.unbox(runtime.getenv(key)) == value
+    else:
+        result = node.evaluate(runtime)
+        assert types.unbox(result) == expected
 
-    
+
+
+binary_testcases = {
+    # + operator (binary)
+    "0+1": (BinaryNode("+", 0, 1), 1),
+    "0.0+1.0": (BinaryNode("+", 0.0, 1.0), 1.0),
+    "0+1.0": (BinaryNode("+", 0, 1.0), 1.0),
+    "1.0+0": (BinaryNode("+", 1.0, 0), 1.0),
+    "\"A\"+\"B\"": (BinaryNode("+", "A", "B"), "AB"),
+    "A+A": (BinaryNode("+", NameNode("A"), NameNode("A")), [1, 2, 3, 1, 2, 3]),
+    # - operator (binary)
+    "1-0": (BinaryNode("-", 1, 0), 1),
+    "1.0-0.0": (BinaryNode("-", 1.0, 0.0), 1.0),
+    "1-0.0": (BinaryNode("-", 1, 0.0), 1.0),
+    "1.0-0": (BinaryNode("-", 1.0, 0), 1.0),
+    "s-s": (BinaryNode("-", NameNode("s"), NameNode("s")), "💣type-error"),
+    "A-A": (BinaryNode("-", NameNode("A"), NameNode("A")), "💣type-error"),
+    # * operator (binary)
+    "2*3": (BinaryNode("*", 2, 3), 6),
+    "2.0*3.0": (BinaryNode("*", 2.0, 3.0), 6.0),
+    "2*3.0": (BinaryNode("*", 2, 3.0), 6.0),
+    "2.0*3": (BinaryNode("*", 2.0, 3), 6.0),
+    "s*s": (BinaryNode("*", NameNode("s"), NameNode("s")), "💣type-error"),
+    "A*A": (BinaryNode("*", NameNode("A"), NameNode("A")), "💣type-error"),
+    # / operator (binary)
+    "7/2": (BinaryNode("/", 7, 2), 3),
+    "7.0/2.0": (BinaryNode("/", 7.0, 2.0), 3.5),
+    "7/2.0": (BinaryNode("/", 7, 2.0), 3.5),
+    "7.0/2": (BinaryNode("/", 7.0, 2), 3.5),
+    "7/0": (BinaryNode("/", 7, 0), "💣division-by-zero"),
+    '"A"/"B"': (BinaryNode("/", "A", "B"), "💣type-error"),
+    # % operator (binary)
+    "7%3": (BinaryNode("%", 7, 3), 1),
+    "7.0%3.0": (BinaryNode("%", 7.0, 3.0), 1.0),
+    "7%3.0": (BinaryNode("%", 7, 3.0), 1.0),
+    "7.0%3": (BinaryNode("%", 7.0, 3), 1.0),
+    "7%0": (BinaryNode("%", 7, 0), "💣division-by-zero"),
+    '"A"%"B"': (BinaryNode("%", "A", "B"), "💣type-error"),
+
+    # == operator (binary)
+    "0==0": (BinaryNode("==", 0, 0), True),
+    "0==1": (BinaryNode("==", 0, 1), False),
+    "0.0==0.0": (BinaryNode("==", 0.0, 0.0), True),
+    "0.0==1.0": (BinaryNode("==", 0.0, 1.0), False),
+    "0==1.0": (BinaryNode("==", 0, 1.0), False),  
+    "1.0==0": (BinaryNode("==", 1.0, 0), False),
+    "1==1.0": (BinaryNode("==", 1, 1.0), True),  
+    "1.0==1": (BinaryNode("==", 1.0, 1), True),
+    "\"A\"==\"A\"": (BinaryNode("==", "A", "A"), True),
+    "\"A\"==\"B\"": (BinaryNode("==", "A", "B"), False),
+    "A==A": (BinaryNode("==", NameNode("A"), NameNode("A")), True),
+    "A==[1, 2]": (BinaryNode("==", NameNode("A"), ArrayNode([1, 2])), False),
+    "x==a": (BinaryNode("==", NameNode("x"), NameNode("a")), False),
+    "x==s": (BinaryNode("==", NameNode("x"), NameNode("s")), False),
+    # != operator (binary)
+    "0!=0": (BinaryNode("!=", 0, 0), False),
+    "0!=1": (BinaryNode("!=", 0, 1), True),
+    "0.0!=0.0": (BinaryNode("!=", 0.0, 0.0), False),
+    "0.0!=1.0": (BinaryNode("!=", 0.0, 1.0), True),
+    "0!=1.0": (BinaryNode("!=", 0, 1.0), True),  
+    "1.0!=0": (BinaryNode("!=", 1.0, 0), True),
+    "1!=1.0": (BinaryNode("!=", 1, 1.0), False),  
+    "1.0!=1": (BinaryNode("!=", 1.0, 1), False),
+    "\"A\"!=\"A\"": (BinaryNode("!=", "A", "A"), False),
+    "\"A\"!=\"B\"": (BinaryNode("!=", "A", "B"), True),
+    "A!=A": (BinaryNode("!=", NameNode("A"), NameNode("A")), False),
+    "A!=[1, 2]": (BinaryNode("!=", NameNode("A"), ArrayNode([1, 2])), True),
+    # < operator (binary)
+    "0<1": (BinaryNode("<", 0, 1), True),
+    "1<0": (BinaryNode("<", 1, 0), False),
+    "0.0<1.0": (BinaryNode("<", 0.0, 1.0), True),
+    "1.0<0.0": (BinaryNode("<", 1.0, 0.0), False),
+    "0<1.0": (BinaryNode("<", 0, 1.0), True),
+    "1.0<0": (BinaryNode("<", 1.0, 0), False),
+    "\"A\"<\"B\"": (BinaryNode("<", "A", "B"), True),
+    "\"B\"<\"A\"": (BinaryNode("<", "B", "A"), False),
+    "A<[1, 2]": (BinaryNode("<", NameNode("A"), ArrayNode([1, 2])), "💣imcomparable"),
+    # > operator (binary)
+    "0>1": (BinaryNode(">", 0, 1), False),
+    "1>0": (BinaryNode(">", 1, 0), True),
+    "0.0>1.0": (BinaryNode(">", 0.0, 1.0), False),
+    "1.0>0.0": (BinaryNode(">", 1.0, 0.0), True),
+    "0>1.0": (BinaryNode(">", 0, 1.0), False),
+    "1.0>0": (BinaryNode(">", 1.0, 0), True),
+    "\"A\">\"B\"": (BinaryNode(">", "A", "B"), False),
+    "\"B\">\"A\"": (BinaryNode(">", "B", "A"), True),
+    "\"A\">\"A\"": (BinaryNode(">", "A", "A"), False),
+    "A>[1, 2]": (BinaryNode(">", NameNode("A"), ArrayNode([1, 2])), "💣imcomparable"),
+    # <= operator (binary)
+    "0<=1": (BinaryNode("<=", 0, 1), True),
+    "1<=0": (BinaryNode("<=", 1, 0), False),
+    "1<=1": (BinaryNode("<=", 1, 1), True),
+    "0.0<=1.0": (BinaryNode("<=", 0.0, 1.0), True),
+    "1.0<=0.0": (BinaryNode("<=", 1.0, 0.0), False),
+    "0<=1.0": (BinaryNode("<=", 0, 1.0), True),
+    "1.0<=0": (BinaryNode("<=", 1.0, 0), False),
+    "1<=1.0": (BinaryNode("<=", 1, 1.0), True),
+    "1.0<=1": (BinaryNode("<=", 1.0, 1), True),        
+    "\"A\"<=\"B\"": (BinaryNode("<=", "A", "B"), True),
+    "\"B\"<=\"A\"": (BinaryNode("<=", "B", "A"), False),
+    "\"A\"<=\"A\"": (BinaryNode("<=", "A", "A"), True),
+    "A<=[1, 2]": (BinaryNode("<=", NameNode("A"), ArrayNode([1, 2])), "💣imcomparable"),
+    # >= operator (binary)
+    "0>=1": (BinaryNode(">=", 0, 1), False),
+    "1>=0": (BinaryNode(">=", 1, 0), True),
+    "0.0>=1.0": (BinaryNode(">=", 0.0, 1.0), False),
+    "1.0>=0.0": (BinaryNode(">=", 1.0, 0.0), True),
+    "0>=1.0": (BinaryNode(">=", 0, 1.0), False),
+    "1.0>=0": (BinaryNode(">=", 1.0, 0), True),
+    "\"A\">=\"B\"": (BinaryNode(">=", "A", "B"), False),
+    "\"B\">=\"A\"": (BinaryNode(">=", "B", "A"), True),
+    "\"A\">=\"A\"": (BinaryNode(">=", "A", "A"), True),
+    "A>=[1, 2]": (BinaryNode(">=", NameNode("A"), ArrayNode([1, 2])), "💣imcomparable"),
+}
+
+@pytest.mark.parametrize("name", list(binary_testcases.keys()))
+def test_binary_ops(name):
+    node, expected = binary_testcases[name]
+    runtime = init_runtime()
+    if isinstance(expected, str) and expected.startswith("💣"):
+        node = CatchNode(node)
+    if isinstance(expected, tuple):
+        key, value = expected
+        result = node.evaluate(runtime)
+        assert types.unbox(runtime.getenv(key)) == value
+    else:
+        result = node.evaluate(runtime)
+        assert types.unbox(result) == expected
+
 class TestExample:
 
     def get_example_ast(self, name):
@@ -710,4 +430,3 @@ class TestExample:
     def test_all_examples(self, example):
         runtime = YuiRuntime()
         example.ast_node.evaluate(runtime)
-

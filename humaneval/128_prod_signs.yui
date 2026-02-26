@@ -19,7 +19,7 @@ prod_signs = 入力 arr に対し {
     }
 
     もし has_zero が 1 ならば、{
-        resultの末尾に 0 を 追加する
+        resultの末尾に 0 を追加する
         resultが答え
     }
 
@@ -46,7 +46,7 @@ prod_signs = 入力 arr に対し {
     }
 
     result_value = 積(prod, magnitude_sum)
-    resultの末尾に result_value を 追加する
+    resultの末尾に result_value を追加する
     resultが答え
 }
 

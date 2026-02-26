@@ -7,7 +7,7 @@ get_odd_collatz = 入力 n に対し {
     # Add n if odd
     remainder = 剰余(n, 2)
     もし remainder が 1 ならば、{
-        resultの末尾に n を 追加する
+        resultの末尾に n を追加する
     }
 
     # Generate Collatz sequence
@@ -27,7 +27,7 @@ get_odd_collatz = 入力 n に対し {
             # Add to result if odd
             new_remainder = 剰余(current, 2)
             もし new_remainder が 1 ならば、{
-                resultの末尾に current を 追加する
+                resultの末尾に current を追加する
             }
         }
     }

@@ -7,7 +7,7 @@ import {
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode,
+    AssertNode, CatchNode, ImportNode,
 } from './yuiast.js';
 
 import { YuiValue, YuiType, YuiError } from './yuitypes.js';

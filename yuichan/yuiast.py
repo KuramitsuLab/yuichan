@@ -79,13 +79,22 @@ class ExpressionNode(ASTNode):
         super().__init__()
 
 def _node(node: Any) -> ASTNode:
-    if node is None: return None
+    if node is None or isinstance(node, bool): 
+        return ConstNode(node)
     if isinstance(node, (int, float)):
         return NumberNode(node)
     if isinstance(node, str):
+        if node.startswith("📦"): # 変数を表す特殊文字
+            return NameNode(node[1:].strip())
         return StringNode(node)
     if isinstance(node, list):
         return ArrayNode([_node(e) for e in node])
+    if isinstance(node, dict):
+        l = []
+        for k, v in node.items():
+            l.append(_node(str(k)))
+            l.append(_node(v))
+        return ObjectNode(l)
     assert isinstance(node, ASTNode)
     return node
 
@@ -121,7 +130,7 @@ class ArrayLenNode(ExpressionNode):
 
     def __init__(self, element: ExpressionNode):
         super().__init__()
-        self.element = element
+        self.element = _node(element)
 
     def visit(self, visitor):
         return visitor.visitArrayLenNode(self)
@@ -220,7 +229,7 @@ class BinaryNode(ASTNode):
 
     def __init__(self, operator: str, left: ExpressionNode, right: ExpressionNode, comparative: bool = False):
         super().__init__()
-        self.operator = operator
+        self.operator = OPERATORS[operator]
         self.left_node = _node(left)
         self.right_node = _node(right)
         self.comparative = comparative
@@ -291,7 +300,7 @@ class DecrementNode(StatementNode):
 
 @dataclass
 class AppendNode(StatementNode):
-    """配列への追加（変数の末尾に 値 を 追加する）を表すノード"""
+    """配列への追加（変数の末尾に 値 を追加する）を表すノード"""
     variable: NameNode
     expression: ExpressionNode
 
@@ -336,8 +345,8 @@ class IfNode(StatementNode):
         self.left = _node(left)
         self.operator = OPERATORS[operator]
         self.right = _node(right)
-        self.then_block = then_block
-        self.else_block = else_block
+        self.then_block = _node(then_block)
+        self.else_block = _node(else_block) if else_block is not None else PassNode()
 
     def visit(self, visitor):
         return visitor.visitIfNode(self)
@@ -419,13 +428,13 @@ class PrintExpressionNode(StatementNode):
     """式の出力（単独で書かれた式）を表すノード"""
     expression: ExpressionNode
     inspection: bool
-    groping: bool = False
+    grouping: bool = False
 
-    def __init__(self, expression: ExpressionNode, inspection: bool = False, groping: bool = False):
+    def __init__(self, expression: ExpressionNode, inspection: bool = False, grouping: bool = False):
         super().__init__()
         self.expression = _node(expression)
         self.inspection = inspection
-        self.groping = groping
+        self.grouping = grouping
 
     def visit(self, visitor):
         return visitor.visitPrintExpressionNode(self)
@@ -444,4 +453,16 @@ class AssertNode(StatementNode):
     def visit(self, visitor):
         return visitor.visitAssertNode(self)
 
+
+@dataclass
+class CatchNode(ExpressionNode):
+    """エラーをキャッチするノード（デバッグ用)"""
+    expression: ExpressionNode
+
+    def __init__(self, expression: ExpressionNode):
+        super().__init__()
+        self.expression = _node(expression)
+
+    def visit(self, visitor):
+        return visitor.visitCatchNode(self)
 

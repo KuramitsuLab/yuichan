@@ -8,13 +8,13 @@ decimal_to_binary = 入力 decimal に対し {
     temp = decimal
 
     もし temp が 0 ならば、{
-        resultの末尾に 48 を 追加する  # '0'
+        resultの末尾に 48 を追加する  # '0'
     }
     そうでなければ {
         100回、くり返す {
             もし temp が 0 より大きいならば、{
                 remainder = 剰余(temp, 2)
-                digitsの末尾に remainder を 追加する
+                digitsの末尾に remainder を追加する
                 temp = 商(temp, 2)
             }
         }
@@ -26,13 +26,13 @@ decimal_to_binary = 入力 decimal に対し {
             idx = 差(差(length, i), 1)
             digit = digits[idx]
             char_code = 和(48, digit)
-            resultの末尾に char_code を 追加する
+            resultの末尾に char_code を追加する
             iを増やす
         }
     }
 
-    resultの末尾に 100 を 追加する  # 'd'
-    resultの末尾に 98 を 追加する   # 'b'
+    resultの末尾に 100 を追加する  # 'd'
+    resultの末尾に 98 を追加する   # 'b'
 
     resultが答え
 }

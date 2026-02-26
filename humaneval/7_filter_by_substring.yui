@@ -39,7 +39,7 @@ filter_by_substring = 入力 strings, substring に対し {
         }
 
         もし 含む が 1 ならば、{
-            結果の末尾に 文字列 を 追加する
+            結果の末尾に 文字列 を追加する
         }
 
         iを増やす

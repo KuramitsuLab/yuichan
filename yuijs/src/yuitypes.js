@@ -958,6 +958,70 @@ export class NotIn extends Operator {
     }
 }
 
+export class Add extends Operator {
+    constructor(symbol = '+') { super(symbol, false); }
+    evaluate(left, right) {
+        if (types.isString(left) && types.isString(right)) {
+            return new YuiValue(YuiType.matchedNative(left) + YuiType.matchedNative(right));
+        }
+        if (types.isArray(left) && types.isArray(right)) {
+            return new YuiValue([...left.array, ...right.array]);
+        }
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
+        const l = YuiType.matchedNative(left), r = YuiType.matchedNative(right);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
+        return isFloat ? new YuiValue(l + r, FloatType) : new YuiValue(l + r);
+    }
+}
+
+export class Sub extends Operator {
+    constructor(symbol = '-') { super(symbol, false); }
+    evaluate(left, right) {
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
+        const l = YuiType.matchedNative(left), r = YuiType.matchedNative(right);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
+        return isFloat ? new YuiValue(l - r, FloatType) : new YuiValue(l - r);
+    }
+}
+
+export class Mul extends Operator {
+    constructor(symbol = '*') { super(symbol, false); }
+    evaluate(left, right) {
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
+        const l = YuiType.matchedNative(left), r = YuiType.matchedNative(right);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
+        return isFloat ? new YuiValue(l * r, FloatType) : new YuiValue(l * r);
+    }
+}
+
+export class Div extends Operator {
+    constructor(symbol = '/') { super(symbol, false); }
+    evaluate(left, right) {
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
+        const l = YuiType.matchedNative(left), r = YuiType.matchedNative(right);
+        if (r === 0) throw new YuiError(['division-by-zero', `❌${r}`], null);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
+        return isFloat ? new YuiValue(l / r, FloatType) : new YuiValue(Math.floor(l / r));
+    }
+}
+
+export class Mod extends Operator {
+    constructor(symbol = '%') { super(symbol, false); }
+    evaluate(left, right) {
+        NumberType.matchOrRaise(left);
+        NumberType.matchOrRaise(right);
+        const l = YuiType.matchedNative(left), r = YuiType.matchedNative(right);
+        if (r === 0) throw new YuiError(['division-by-zero', `❌${r}`], null);
+        const isFloat = types.isFloat(left) || types.isFloat(right);
+        const result = isFloat ? l % r : ((l % r) + r) % r;
+        return isFloat ? new YuiValue(result, FloatType) : new YuiValue(result);
+    }
+}
+
 export const OPERATORS = {
     '==': new Equals(),
     '!=': new NotEquals(),
@@ -967,6 +1031,11 @@ export const OPERATORS = {
     '>=': new GreaterThanEquals(),
     'in': new In(),
     'notin': new NotIn(),
+    '+': new Add(),
+    '-': new Sub(),
+    '*': new Mul(),
+    '/': new Div(),
+    '%': new Mod(),
 };
 
 // ─────────────────────────────────────────────

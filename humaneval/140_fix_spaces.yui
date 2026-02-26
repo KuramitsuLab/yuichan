@@ -29,20 +29,20 @@ fix_spaces = 入力 text に対し {
                     # Add underscores
                     k = 0
                     space_count回、くり返す {
-                        resultの末尾に 95 を 追加する  # '_'
+                        resultの末尾に 95 を追加する  # '_'
                         kを増やす
                     }
                 }
                 そうでなければ {
                     # Add single dash
-                    resultの末尾に 45 を 追加する  # '-'
+                    resultの末尾に 45 を追加する  # '-'
                 }
 
                 # Skip the counted spaces
                 i = 和(i, 差(space_count, 1))
             }
             そうでなければ {
-                resultの末尾に char を 追加する
+                resultの末尾に char を追加する
             }
             iを増やす
         }

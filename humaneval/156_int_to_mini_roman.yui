@@ -36,7 +36,7 @@ int_to_mini_roman = 入力 number に対し {
                 # Add symbol to result
                 j = 0
                 symbol_len回、くり返す {
-                    resultの末尾に symbol[j] を 追加する
+                    resultの末尾に symbol[j] を追加する
                     jを増やす
                 }
                 number = 差(number, value)

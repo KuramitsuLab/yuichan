@@ -62,7 +62,7 @@ sorted_list_sum = 入力 lst に対し {
         word_len = |word|
         remainder = 剰余(word_len, 2)
         もし remainder が 0 ならば、{
-            filteredの末尾に word を 追加する
+            filteredの末尾に word を追加する
         }
         iを増やす
     }

@@ -62,10 +62,10 @@ minPath = 入力 grid, k に対し {
     k回、くり返す {
         remainder = 剰余(i, 2)
         もし remainder が 0 ならば、{
-            ansの末尾に 1 を 追加する
+            ansの末尾に 1 を追加する
         }
         そうでなければ {
-            ansの末尾に val を 追加する
+            ansの末尾に val を追加する
         }
         iを増やす
     }

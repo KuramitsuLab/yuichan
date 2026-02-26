@@ -27,17 +27,17 @@ split_words = 入力 txt に対し {
             char = txt[i]
             もし char が 32 ならば、{
                 もし |current_word| が 0 より大きいならば、{
-                    resultの末尾に current_word を 追加する
+                    resultの末尾に current_word を追加する
                     current_word = []
                 }
             }
             そうでなければ {
-                current_wordの末尾に char を 追加する
+                current_wordの末尾に char を追加する
             }
             iを増やす
         }
         もし |current_word| が 0 より大きいならば、{
-            resultの末尾に current_word を 追加する
+            resultの末尾に current_word を追加する
         }
     }
     そうでなければ {
@@ -48,17 +48,17 @@ split_words = 入力 txt に対し {
                 char = txt[i]
                 もし char が 44 ならば、{
                     もし |current_word| が 0 より大きいならば、{
-                        resultの末尾に current_word を 追加する
+                        resultの末尾に current_word を追加する
                         current_word = []
                     }
                 }
                 そうでなければ {
-                    current_wordの末尾に char を 追加する
+                    current_wordの末尾に char を追加する
                 }
                 iを増やす
             }
             もし |current_word| が 0 より大きいならば、{
-                resultの末尾に current_word を 追加する
+                resultの末尾に current_word を追加する
             }
         }
         そうでなければ {

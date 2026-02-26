@@ -49,10 +49,10 @@ string_to_md5 = 入力 text に対し {
     padded = []
     i = 0
     text_len回、くり返す {
-        paddedの末尾に text[i] を 追加する
+        paddedの末尾に text[i] を追加する
         iを増やす
     }
-    paddedの末尾に 128 を 追加する
+    paddedの末尾に 128 を追加する
 
     # Append zeros until length ≡ 448 (mod 512)
     current_len = 和(text_len, 1)
@@ -62,21 +62,21 @@ string_to_md5 = 入力 text に対し {
     i = current_len
     1000回、くり返す {
         もし i が target_len より小さいならば、{
-            paddedの末尾に 0 を 追加する
+            paddedの末尾に 0 を追加する
             iを増やす
         }
     }
 
     # Append length as 64-bit little-endian
     # For simplicity, only handle lengths < 2^32
-    paddedの末尾に 剰余(msg_len_bits, 256) を 追加する
-    paddedの末尾に 剰余(商(msg_len_bits, 256), 256) を 追加する
-    paddedの末尾に 剰余(商(msg_len_bits, 65536), 256) を 追加する
-    paddedの末尾に 剰余(商(msg_len_bits, 16777216), 256) を 追加する
-    paddedの末尾に 0 を 追加する
-    paddedの末尾に 0 を 追加する
-    paddedの末尾に 0 を 追加する
-    paddedの末尾に 0 を 追加する
+    paddedの末尾に 剰余(msg_len_bits, 256) を追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 256), 256) を追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 65536), 256) を追加する
+    paddedの末尾に 剰余(商(msg_len_bits, 16777216), 256) を追加する
+    paddedの末尾に 0 を追加する
+    paddedの末尾に 0 を追加する
+    paddedの末尾に 0 を追加する
+    paddedの末尾に 0 を追加する
 
     # Process each 512-bit block
     padded_len = |padded|
@@ -100,7 +100,7 @@ string_to_md5 = 入力 text に対し {
             word = 和(word, 剰余(左シフト(byte3, 24), 4294967296))
             word = 剰余(word, 4294967296)
 
-            Mの末尾に word を 追加する
+            Mの末尾に word を追加する
             word_idxを増やす
         }
 
@@ -194,8 +194,8 @@ string_to_md5 = 入力 text に対し {
             low = 剰余(byte, 16)
             high = 商(byte, 16)
 
-            resultの末尾に hex_chars[high] を 追加する
-            resultの末尾に hex_chars[low] を 追加する
+            resultの末尾に hex_chars[high] を追加する
+            resultの末尾に hex_chars[low] を追加する
 
             byte_idxを増やす
         }

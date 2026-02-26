@@ -12,17 +12,17 @@ words_in_sentence = 入力 sentence に対し {
         char = sentence[i]
         もし char が 32 ならば、{
             もし |current_word| が 0 より大きいならば、{
-                word_listの末尾に current_word を 追加する
+                word_listの末尾に current_word を追加する
                 current_word = []
             }
         }
         そうでなければ {
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
         iを増やす
     }
     もし |current_word| が 0 より大きいならば、{
-        word_listの末尾に current_word を 追加する
+        word_listの末尾に current_word を追加する
     }
 
     # Filter by prime length - collect prime words first
@@ -54,7 +54,7 @@ words_in_sentence = 入力 sentence に対し {
         }
 
         もし is_prime が 1 ならば、{
-            prime_wordsの末尾に word を 追加する
+            prime_wordsの末尾に word を追加する
         }
         iを増やす
     }
@@ -68,14 +68,14 @@ words_in_sentence = 入力 sentence に対し {
 
         j = 0
         word_len回、くり返す {
-            resultの末尾に word[j] を 追加する
+            resultの末尾に word[j] を追加する
             jを増やす
         }
 
         # Add space if not last word
         next_idx = 和(i, 1)
         もし next_idx が pw_len より小さいならば、{
-            resultの末尾に 32 を 追加する  # space
+            resultの末尾に 32 を追加する  # space
         }
 
         iを増やす

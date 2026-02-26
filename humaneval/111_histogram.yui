@@ -21,13 +21,13 @@ histogram = 入力 test に対し {
             # Space - end current word
             word_len = |current_word|
             もし word_len が 0 より大きいならば、{
-                wordsの末尾に current_word を 追加する
+                wordsの末尾に current_word を追加する
                 current_word = []
             }
         }
         そうでなければ {
             # Add char to current word
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
 
         iを増やす
@@ -36,7 +36,7 @@ histogram = 入力 test に対し {
     # Add last word if exists
     word_len = |current_word|
     もし word_len が 0 より大きいならば、{
-        wordsの末尾に current_word を 追加する
+        wordsの末尾に current_word を追加する
     }
 
     # Count occurrences and find max
@@ -167,9 +167,9 @@ histogram = 入力 test に対し {
 
                 もし already_added が 0 ならば、{
                     entry = []
-                    entryの末尾に word を 追加する
-                    entryの末尾に max_count を 追加する
-                    resultの末尾に entry を 追加する
+                    entryの末尾に word を追加する
+                    entryの末尾に max_count を追加する
+                    resultの末尾に entry を追加する
                 }
             }
 

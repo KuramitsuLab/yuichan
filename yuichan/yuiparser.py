@@ -11,7 +11,7 @@ from .yuiast import (
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, PrintExpressionNode, PassNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
-    AssertNode, ImportNode,
+    AssertNode, CatchNode, ImportNode,
 )
 
 from .yuitypes import YuiValue, YuiType, YuiError
@@ -392,6 +392,7 @@ class StringParser(ParserCombinator):
                     next_char = source.source[source.pos]
                     source.pos += 1
                     string_content.append(_escaped_string.get(next_char, next_char))
+                    opening_pos = source.pos
                     continue
                 start_inter_pos = source.pos
                 if source.is_("string-interpolation-begin", lskip_ws=False):
@@ -399,6 +400,7 @@ class StringParser(ParserCombinator):
                     source.require_("string-interpolation-end", opening_pos=start_inter_pos)
                     string_content.append(expression)
                     expression_count += 1
+                    opening_pos = source.pos
                     continue
             source.require_("string-end", lskip_ws=False, opening_pos=opening_quote_pos)
             if expression_count == 0:
@@ -451,8 +453,13 @@ class NameParser(ParserCombinator):
 
     def match(self, source: Source):
         start_pos = source.pos
-        if source.is_('keywords', unconsumed=True):
-            raise YuiError(("keyword-name", f"❌`{source.matched_string}`"), source.p(start_pos=start_pos), BK=True)
+        if source.is_("keywords"):
+            matched_keyword = source.matched_string
+            saved_pos = source.pos
+            source.is_("name-chars", lskip_ws=False)
+            if source.pos == saved_pos: #続かないとキーワード確定
+                raise YuiError(("keyword-name", f"❌`{matched_keyword}`"), source.p(start_pos=start_pos), BK=True)
+            source
         special_name = source.match_special_name()
         if special_name is not None:
             return source.p(NameNode(special_name), start_pos=source.pos-len(special_name))
@@ -492,6 +499,11 @@ class TermParser(ParserCombinator):
             if source.is_("minus-end"):
                 return source.p(MinusNode(expression), start_pos=opening_pos)
             source.pos = opening_pos
+        if source.is_("catch-begin"):
+            opening_pos = source.pos - len(source.matched_string)
+            expression = source.parse("@Expression", BK=False)
+            source.require_("catch-end", opening_pos=opening_pos)
+            return source.p(CatchNode(expression), start_pos=opening_pos)
         if source.is_("array-indexer-begin"):
             expression = source.parse("@Expression")
             source.require_("array-indexer-separator")
@@ -531,7 +543,7 @@ class PrimaryParser(ParserCombinator):
     def match(self, source: Source):
         start_pos = source.pos
         if source.is_("unary-minus"):
-            return source.p(source.parse('@Primary'), start_pos=start_pos)
+            return source.p(MinusNode(source.parse('@Primary')), start_pos=start_pos)
         if source.is_('unary-length'):
             return source.p(ArrayLenNode(source.parse('@Primary')), start_pos=start_pos)
         if source.is_('unary-inspect'):
@@ -878,16 +890,16 @@ NONTERMINALS["@Block"] = BlockParser()
 
 STATEMENTS = [
     "@FuncDef",
+    "@Increment",
+    "@Decrement",
+    "@Append",
+    "@Import",
+    "@Break",
     "@Assignment",
     "@Assert",
     "@If",
     "@Repeat",
-    "@Break",
-    "@Increment",
-    "@Decrement",
-    "@Append",
     "@Return",
-    "@Import",
     "@Pass",
     "@PrintExpression",
 ]

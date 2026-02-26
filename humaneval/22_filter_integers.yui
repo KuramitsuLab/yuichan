@@ -9,7 +9,7 @@ filter_integers = 入力 values に対し {
         値 = values[i]
         is_int = 整数判定(値)
         もし is_int が true ならば、{
-            結果の末尾に 値 を 追加する
+            結果の末尾に 値 を追加する
         }
         iを増やす
     }

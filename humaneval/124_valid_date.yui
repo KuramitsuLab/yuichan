@@ -15,14 +15,14 @@ valid_date = 入力 date に対し {
     year_str = []
 
     もし length が 10 ならば、{
-        month_strの末尾に date[0] を 追加する
-        month_strの末尾に date[1] を 追加する
-        day_strの末尾に date[3] を 追加する
-        day_strの末尾に date[4] を 追加する
-        year_strの末尾に date[6] を 追加する
-        year_strの末尾に date[7] を 追加する
-        year_strの末尾に date[8] を 追加する
-        year_strの末尾に date[9] を 追加する
+        month_strの末尾に date[0] を追加する
+        month_strの末尾に date[1] を追加する
+        day_strの末尾に date[3] を追加する
+        day_strの末尾に date[4] を追加する
+        year_strの末尾に date[6] を追加する
+        year_strの末尾に date[7] を追加する
+        year_strの末尾に date[8] を追加する
+        year_strの末尾に date[9] を追加する
     }
 
     # Convert to integers

@@ -107,7 +107,7 @@ class YuiBooleanType(YuiType):
         return [1] if n else [0]
 
     def to_native(self, elements: List[int], sign: int = 1, node=None) -> bool:
-        return len(elements) > 0
+        return bool(elements[0]) if elements else False
 
     def stringfy(self, native_value: bool, indent_prefix: str = "", width=80) -> str:
         return "true" if native_value else "false"
@@ -383,13 +383,13 @@ class YuiObjectType(YuiType):
         obj = {}
         for key_value in elements:
             if not isinstance(key_value, YuiValue):
-                raise YuiError(f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node)
+                raise YuiError((f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
             key_value = key_value.native
             if not isinstance(key_value, list) or len(key_value) != 2:
-                raise YuiError(f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}", node)
+                raise YuiError((f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
             key = key_value[0]
             if not isinstance(key, str):
-                raise YuiError(f"conversion-object", f"❌{key}", f"✅<string>", f"🔍{key_value}", node)
+                raise YuiError((f"conversion-object", f"❌{key}", f"✅<string>", f"🔍{key_value}"), node)
             value = key_value[1]
             obj[key] = value
         return obj
@@ -472,6 +472,7 @@ class YuiValue(object):
         if self.elements is None:
             self.elements = self.type.to_arrayview(self.native_value)
             self.sign = self.type.to_sign(self.native_value)
+            self.native_value = None  # elements を使うので native キャッシュを無効化
         return self.elements
 
     def get_item(self, index: Any, index_node=None) -> Any:
@@ -767,6 +768,68 @@ class NotIn(Operator):
                 return False
         return True
 
+@dataclass
+class Add(Operator):
+    def __init__(self, symbol: str = "+"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
+        if types.is_string(left) and types.is_string(right):
+            return types.unbox(left) + types.unbox(right)
+        if types.is_array(left) and types.is_array(right):
+            return left.native + right.native
+        NumberType.match_or_raise(left, binary_node)
+        NumberType.match_or_raise(right, binary_node)
+        return types.unbox(left) + types.unbox(right)
+
+@dataclass
+class Sub(Operator):
+    def __init__(self, symbol: str = "-"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
+        NumberType.match_or_raise(left, binary_node)
+        NumberType.match_or_raise(right, binary_node)
+        return types.unbox(left) - types.unbox(right)
+
+@dataclass
+class Mul(Operator):
+    def __init__(self, symbol: str = "*"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
+        NumberType.match_or_raise(left, binary_node)
+        NumberType.match_or_raise(right, binary_node)
+        return types.unbox(left) * types.unbox(right)
+
+@dataclass
+class Div(Operator):
+    def __init__(self, symbol: str = "/"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
+        NumberType.match_or_raise(left, binary_node)
+        NumberType.match_or_raise(right, binary_node)
+        l, r = types.unbox(left), types.unbox(right)
+        if r == 0:
+            raise YuiError(("division-by-zero", f"❌{r}"), binary_node)
+        if types.is_float(left) or types.is_float(right):
+            return l / r
+        return l // r
+
+@dataclass
+class Mod(Operator):
+    def __init__(self, symbol: str = "%"):
+        super().__init__(symbol, comparative=False)
+
+    def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
+        NumberType.match_or_raise(left, binary_node)
+        NumberType.match_or_raise(right, binary_node)
+        l, r = types.unbox(left), types.unbox(right)
+        if r == 0:
+            raise YuiError(("division-by-zero", f"❌{r}"), binary_node)
+        return l % r  # Python: 正の除数に対して常に非負
+
 OPERATORS = {
     '==': Equals(),
     '!=': NotEquals(),
@@ -776,6 +839,11 @@ OPERATORS = {
     '>=': GreaterThanEquals(),
     'in': In(),
     'notin': NotIn(),
+    '+': Add(),
+    '-': Sub(),
+    '*': Mul(),
+    '/': Div(),
+    '%': Mod(),
 }
 
 

@@ -57,13 +57,13 @@ select_words = 入力 s, n に対し {
                 }
 
                 もし consonants が n ならば、{
-                    resultの末尾に current_word を 追加する
+                    resultの末尾に current_word を追加する
                 }
                 current_word = []
             }
         }
         そうでなければ {
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
         iを増やす
     }
@@ -97,7 +97,7 @@ select_words = 入力 s, n に対し {
             jを増やす
         }
         もし consonants が n ならば、{
-            resultの末尾に current_word を 追加する
+            resultの末尾に current_word を追加する
         }
     }
 

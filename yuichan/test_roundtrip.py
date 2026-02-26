@@ -30,6 +30,9 @@ _examples_by_name = {
     # NumberNode
     "int":   NumberNode(42),
     "float": NumberNode(3.5),
+    # MinusNode (negative literals) — regression for unary-minus not wrapping in MinusNode
+    "minus_int":   MinusNode(NumberNode(16)),
+    "minus_float": MinusNode(NumberNode(3.14)),
     # StringNode
     "empty_string": StringNode(""),
     "string": StringNode("hello"),
@@ -41,10 +44,21 @@ _examples_by_name = {
         AssignmentNode(NameNode("x"), NumberNode(42)),
         PrintExpressionNode(NameNode("x")),
     ], top_level=True),
-    # Increment
+    # Assignment with negative value — regression for unary-minus in assignment RHS
+    "assign_minus": BlockNode([
+        AssignmentNode(NameNode("x"), MinusNode(NumberNode(5))),
+        PrintExpressionNode(NameNode("x")),
+    ], top_level=True),
+    # Increment — regression for statement ordering (Increment must be tried before Assignment)
     "increment": BlockNode([
         AssignmentNode(NameNode("n"), NumberNode(0)),
         IncrementNode(NameNode("n")),
+        PrintExpressionNode(NameNode("n")),
+    ], top_level=True),
+    # Decrement — same regression check
+    "decrement": BlockNode([
+        AssignmentNode(NameNode("n"), NumberNode(5)),
+        DecrementNode(NameNode("n")),
         PrintExpressionNode(NameNode("n")),
     ], top_level=True),
     # Append
@@ -52,6 +66,12 @@ _examples_by_name = {
         AssignmentNode(NameNode("A"), ArrayNode([NumberNode(1), NumberNode(2)])),
         AppendNode(NameNode("A"), NumberNode(3)),
         PrintExpressionNode(NameNode("A")),
+    ], top_level=True),
+    # Assert with negative reference value — regression for closest_integer("-15.5") bug:
+    # the doctest reference "-16" was parsed as positive 16 when MinusNode was missing.
+    "assert_minus_ref": BlockNode([
+        AssignmentNode(NameNode("x"), MinusNode(NumberNode(16))),
+        AssertNode(NameNode("x"), MinusNode(NumberNode(16))),
     ], top_level=True),
     # If (true branch)
     "if_true": BlockNode([
@@ -65,6 +85,15 @@ _examples_by_name = {
         AssignmentNode(NameNode("s"), NumberNode(0)),
         RepeatNode(NumberNode(3), BlockNode([IncrementNode(NameNode("s"))])),
         PrintExpressionNode(NameNode("s")),
+    ], top_level=True),
+    # Variables: mix of assignment + increment, the exact case that exposed the ordering bug
+    "variables": BlockNode([
+        AssignmentNode(NameNode("x"), NumberNode(1)),
+        AssignmentNode(NameNode("y"), MinusNode(NumberNode(2))),
+        IncrementNode(NameNode("x")),
+        DecrementNode(NameNode("y")),
+        AssertNode(NameNode("x"), NumberNode(2)),
+        AssertNode(NameNode("y"), MinusNode(NumberNode(3))),
     ], top_level=True),
 }
 

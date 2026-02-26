@@ -19,7 +19,7 @@ same_chars = 入力 s0, s1 に対し {
             jを増やす
         }
         もし is_new が 1 ならば、{
-            unique0の末尾に char を 追加する
+            unique0の末尾に char を追加する
         }
         iを増やす
     }
@@ -39,7 +39,7 @@ same_chars = 入力 s0, s1 に対し {
             jを増やす
         }
         もし is_new が 1 ならば、{
-            unique1の末尾に char を 追加する
+            unique1の末尾に char を追加する
         }
         iを増やす
     }

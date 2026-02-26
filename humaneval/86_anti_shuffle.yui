@@ -10,15 +10,15 @@ anti_shuffle = 入力 s に対し {
     length回、くり返す {
         char = s[i]
         もし char が 32 ならば、{  # space
-            wordsの末尾に current_word を 追加する
+            wordsの末尾に current_word を追加する
             current_word = []
         }
         そうでなければ {
-            current_wordの末尾に char を 追加する
+            current_wordの末尾に char を追加する
         }
         iを増やす
     }
-    wordsの末尾に current_word を 追加する
+    wordsの末尾に current_word を追加する
 
     # Sort each word
     num_words = |words|
@@ -45,7 +45,7 @@ anti_shuffle = 入力 s に対し {
             jを増やす
         }
 
-        sorted_wordsの末尾に word を 追加する
+        sorted_wordsの末尾に word を追加する
         iを増やす
     }
 
@@ -58,14 +58,14 @@ anti_shuffle = 入力 s に対し {
 
         j = 0
         word_len回、くり返す {
-            resultの末尾に word[j] を 追加する
+            resultの末尾に word[j] を追加する
             jを増やす
         }
 
         # Add space if not last word
         last_idx = 差(num_words, 1)
         もし i が last_idx より小さいならば、{
-            resultの末尾に 32 を 追加する  # space
+            resultの末尾に 32 を追加する  # space
         }
 
         iを増やす

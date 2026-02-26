@@ -337,12 +337,12 @@ describe('binary ops auto-unlock', () => {
         expect(() => rt.exec('x = 1 + 2', 'yui', 30, false)).toThrow(YuiError);
     });
 
-    test('unlocked after func + assert', () => expect(val(runUnlocked('x = 1 + 2'),   'x')).toBe(3));
-    test('unlocked add',                 () => expect(val(runUnlocked('x = 10 + 5'),  'x')).toBe(15));
-    test('unlocked subtract',            () => expect(val(runUnlocked('x = 10 - 3'),  'x')).toBe(7));
-    test('unlocked multiply',            () => expect(val(runUnlocked('x = 3 * 4'),   'x')).toBe(12));
-    test('unlocked divide',              () => expect(val(runUnlocked('x = 10 / 4'),  'x')).toBe(2));
-    test('unlocked modulo',              () => expect(val(runUnlocked('x = 10 % 3'),  'x')).toBe(1));
+    // auto-unlock は廃止済み: func + assert があっても allowBinaryOps なしでは常にロック
+    test('locked even after func + assert', () => {
+        const rt = new YuiRuntime();
+        rt.exec(FUNC_AND_ASSERT, 'yui', 30, false);
+        expect(() => rt.exec('x = 1 + 2', 'yui', 30, false)).toThrow(YuiError);
+    });
 });
 
 // ─────────────────────────────────────────────

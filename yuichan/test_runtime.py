@@ -386,22 +386,9 @@ class TestBinaryOpsUnlock:
         with pytest.raises(YuiError):
             rt.exec("x = 1 + 2", 'yui', eval_mode=False)
 
-    def test_unlocked_after_func_and_assert(self):
-        """関数定義 + アサート通過後は二項演算子が使える"""
-        env = self.run_unlocked("x = 1 + 2")
-        assert val(env, 'x') == 3
-
-    def test_unlocked_add(self):
-        assert val(self.run_unlocked("x = 10 + 5"), 'x') == 15
-
-    def test_unlocked_subtract(self):
-        assert val(self.run_unlocked("x = 10 - 3"), 'x') == 7
-
-    def test_unlocked_multiply(self):
-        assert val(self.run_unlocked("x = 3 * 4"), 'x') == 12
-
-    def test_unlocked_divide(self):
-        assert val(self.run_unlocked("x = 10 / 4"), 'x') == 2
-
-    def test_unlocked_modulo(self):
-        assert val(self.run_unlocked("x = 10 % 3"), 'x') == 1
+    def test_still_locked_after_func_and_assert(self):
+        """allow_binary_ops=False のままでは関数定義 + アサート通過後も二項演算子は使えない"""
+        rt = YuiRuntime()
+        rt.exec(self.FUNC_AND_ASSERT, 'yui', eval_mode=False)
+        with pytest.raises(YuiError):
+            rt.exec("x = 1 + 2", 'yui', eval_mode=False)

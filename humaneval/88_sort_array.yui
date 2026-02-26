@@ -11,7 +11,7 @@ sort_array = 入力 array に対し {
     i = 0
 
     length回、くり返す {
-        resultの末尾に array[i] を 追加する
+        resultの末尾に array[i] を追加する
         iを増やす
     }
 

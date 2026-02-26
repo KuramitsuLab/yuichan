@@ -133,7 +133,7 @@ get_closest_vowel = 入力 word に対し {
                     }
 
                     もし both_consonants が 1 ならば、{
-                        resultの末尾に char を 追加する
+                        resultの末尾に char を追加する
                         found = 1
                     }
                 }

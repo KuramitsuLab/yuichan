@@ -25,7 +25,7 @@ encrypt = 入力 s に対し {
             new_char = 和(97, new_offset)
         }
 
-        resultの末尾に new_char を 追加する
+        resultの末尾に new_char を追加する
         iを増やす
     }
 

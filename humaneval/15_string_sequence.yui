@@ -7,7 +7,7 @@ string_sequence = 入力 n に対し {
     和(n, 1)回、くり返す {
         # Convert i to digits
         もし i が 0 ならば、{
-            resultの末尾に 48 を 追加する
+            resultの末尾に 48 を追加する
         }
         そうでなければ {
             digits = []
@@ -15,7 +15,7 @@ string_sequence = 入力 n に対し {
             100回、くり返す {
                 もし temp が 0 より大きいならば、{
                     digit = 剰余(temp, 10)
-                    digitsの末尾に digit を 追加する
+                    digitsの末尾に digit を追加する
                     temp = 商(temp, 10)
                 }
             }
@@ -27,14 +27,14 @@ string_sequence = 入力 n に対し {
                 idx = 差(差(digit_len, j), 1)
                 digit = digits[idx]
                 char_code = 和(48, digit)
-                resultの末尾に char_code を 追加する
+                resultの末尾に char_code を追加する
                 jを増やす
             }
         }
 
         # Add space if not last
         もし i が n より小さいならば、{
-            resultの末尾に 32 を 追加する
+            resultの末尾に 32 を追加する
         }
 
         iを増やす
