@@ -707,6 +707,8 @@ NONTERMINALS["@Import"] = ImportParser()
 
 class PassParser(ParserCombinator):
     def match(self, source: Source):
+        if not source.is_defined('pass'):
+            raise YuiError(("pass-not-defined",), source.p(length=1), BK=True)
         start_pos = source.pos
         source.require_('pass', BK=True)
         return source.p(PassNode(), start_pos=start_pos)
@@ -890,7 +892,10 @@ class BlockParser(ParserCombinator):
             return source.p(BlockNode(statements), start_pos=opening_pos, end_pos=block_end_pos)
         
         while not source.is_("block-end", lskip_lf=True, unconsumed=True):
+            cur_pos = source.pos
             statements.extend(source.parse("@Statement[]", lskip_lf=True))
+            if cur_pos == source.pos:
+                break  # Safety: prevent infinite loop if no progress
         source.require_("block-end", lskip_lf=True, opening_pos=opening_pos)
         return source.p(BlockNode(statements), start_pos=opening_pos)
 

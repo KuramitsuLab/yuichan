@@ -51,6 +51,12 @@
     "binary-infix-prefix*": "\\*",
     "binary-infix-prefix/": "/",
     "binary-infix-prefix%": "%",
+    "binary-infix-prefix==": "==",
+    "binary-infix-prefix!=": "!=",
+    "binary-infix-prefix<=": "<=",
+    "binary-infix-prefix>=": ">=",
+    "binary-infix-prefix<": "<",
+    "binary-infix-prefix>": ">",
     "binary-infix-prefix-end": "\\)",
 
     "array-indexer-begin": "\\(aref\\s+",
@@ -60,7 +66,7 @@
     "funcapp-begin": "\\(",
     "funcapp-args-begin": "",
     "funcapp-args-end": "",
-    "funcapp-separator": " ",
+    "funcapp-separator": "",
     "funcapp-end": "\\)",
 
     "import-standard": "\\(require-standard\\)",
@@ -110,7 +116,7 @@
     "if-prefixin": "in",
     "if-prefixnotin": "not-in",
     "if-then": "",
-    "if-else": "[^\\)]",
+    "if-else": "",
     "if-end": "\\)",
 
     "funcdef-begin": "\\(define\\s+",
@@ -124,6 +130,6 @@
     "funcdef-end": "\\)",
 
     "assert-begin": "\\(assert\\s+",
-    "assert-infix": " ",
+    "assert-infix": "",
     "assert-end": "\\)"
 }

@@ -7,7 +7,7 @@ from .yuiast import (
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
-    BlockNode, PrintExpressionNode, PassNode,
+    BlockNode, PrintExpressionNode, PassNode, StatementNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, CatchNode, ImportNode,
 )
@@ -29,7 +29,10 @@ class CodingVisitor(YuiSyntax):
         self.indent = 0
         self.just_linefeeded = True
         self.random_seed = random_seed
-        node.visit(self)
+        if not isinstance(node, StatementNode) and self.is_defined('print-begin'):
+            PrintExpressionNode(node).visit(self)
+        else:
+            node.visit(self)
         return ''.join(self.buffer)
 
     def last_char(self) -> str:
@@ -227,13 +230,13 @@ class CodingVisitor(YuiSyntax):
 
     def visitBinaryNode(self, node: BinaryNode):
         symbol = node.operator.symbol
-        if self.is_defined('binary-prefix-begin'):
-            self.terminal(f'binary-prefix{symbol}')
+        if self.is_defined('binary-infix-prefix-begin'):
+            self.terminal(f'binary-infix-prefix{symbol}')
             self.word_segment()
             self.expression(node.left_node)
             self.word_segment()
             self.expression(node.right_node)
-            self.terminal(f'binary-prefix-end')
+            self.terminal('binary-infix-prefix-end')
         else:
             self.expression(node.left_node)
             self.word_segment()
@@ -328,23 +331,29 @@ class CodingVisitor(YuiSyntax):
     def visitIfNode(self, node: IfNode):
         self.terminal('if-begin')
         self.terminal('if-condition-begin')
-        self.expression(node.left)
         if isinstance(node.left, BinaryNode) and node.left.comparative:
-            pass
+            self.expression(node.left)
         else:
-            if self.is_defined(f'if-infix{node.operator}'):
-                self.terminal(f'if-infix{node.operator}')
+            op_symbol = str(node.operator)
+            if self.is_defined(f'if-prefix{op_symbol}'):
+                self.terminal(f'if-prefix{op_symbol}')
+                self.expression(node.left)
+                self.expression(node.right)
             else:
-                self.terminal('if-infix')
-            self.expression(node.right)
-            if self.is_defined(f'if-suffix{node.operator}'):
-                self.terminal(f'if-suffix{node.operator}')
-            else:
-                self.terminal('if-suffix')
-            self.terminal('if-condition-end')
+                self.expression(node.left)
+                if self.is_defined(f'if-infix{op_symbol}'):
+                    self.terminal(f'if-infix{op_symbol}')
+                else:
+                    self.terminal('if-infix')
+                self.expression(node.right)
+                if self.is_defined(f'if-suffix{op_symbol}'):
+                    self.terminal(f'if-suffix{op_symbol}')
+                else:
+                    self.terminal('if-suffix')
+        self.terminal('if-condition-end')
         self.terminal('if-then')
         self.block(node.then_block)
-        if node.else_block:
+        if node.else_block and not isinstance(node.else_block, PassNode):
             if self.is_defined('if-else-if') and isinstance(node.else_block, IfNode):
                 self.terminal('if-else-if', linefeed_before=True)
                 self.block(node.else_block)
@@ -402,11 +411,14 @@ class CodingVisitor(YuiSyntax):
 
         if len(node.statements) == 0:
             self.terminal('pass')
-        else: 
+        else:
             for i, statement in enumerate(node.statements):
                 if i > 0:
                     self.linefeed()
-                statement.visit(self)
+                if not isinstance(statement, StatementNode) and self.is_defined('print-begin'):
+                    PrintExpressionNode(statement).visit(self)
+                else:
+                    statement.visit(self)
                 if isinstance(statement, FuncDefNode):
                     self.linefeed()
                 self.terminal("block-separator")
