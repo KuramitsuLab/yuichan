@@ -80,10 +80,10 @@ export class CodingVisitor extends YuiSyntax {
             console.warn(`Warning: terminal '${terminal}' is empty string`);
             return;
         }
+        if (linefeedBefore) this.linefeed();
         if (!',()[]{}:"\'.' .includes(token[0])) {
             this.wordSegment();
         }
-        if (linefeedBefore) this.linefeed();
         this.string(token);
     }
 
@@ -118,7 +118,7 @@ export class CodingVisitor extends YuiSyntax {
         } else {
             node.visit(this);
         }
-        this.wordSegment();
+        // this.wordSegment();  // pylike で末尾スペースが付きパースエラーになるため無効化
     }
 
     escape(text) {

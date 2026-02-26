@@ -766,7 +766,11 @@ class IfParser(ParserCombinator):
             right_node = source.parse("@Expression", BK=BK)
         else:
             left_node = source.parse("@Expression", BK=BK)
-            if source.is_("if-infix", ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']):
+            if isinstance(left_node, BinaryNode) and left_node.comparative:
+                operator = str(left_node.operator)
+                right_node = left_node.right_node
+                left_node = left_node.left_node
+            elif source.is_("if-infix", ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']):
                 operator = source.matched_suffix
                 BK=False
                 right_node = source.parse("@Expression", BK=BK)
@@ -837,8 +841,12 @@ class AssertParser(ParserCombinator):
         source.require_('assert-begin', BK=BK)
         if BK: BK = source.pos == start_pos
         test_node = source.parse("@Expression", BK=BK)
-        source.require_('assert-infix', BK=BK)
-        reference_node = source.parse("@Expression", BK=BK)
+        if isinstance(test_node, BinaryNode) and test_node.comparative:
+            reference_node = test_node.right_node
+            test_node = test_node.left_node
+        else:
+            source.require_('assert-infix', BK=BK)
+            reference_node = source.parse("@Expression", BK=BK)
         source.require_('assert-end', BK=BK)
         return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
 

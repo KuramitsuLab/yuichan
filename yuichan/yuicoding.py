@@ -76,11 +76,11 @@ class CodingVisitor(YuiSyntax):
         if token == "": 
             print(f"Warning: terminal '{terminal}' is empty string")
             return
-        if token[0] not in ",()[]{}:\"'.": 
-            # avoid unnecessary word segmentation before terminals
-            self.word_segment()
         if linefeed_before:
             self.linefeed()
+        if token[0] not in ",()[]{}:\"'.":
+            # avoid unnecessary word segmentation before terminals
+            self.word_segment()
         self.string(token)
 
     def comment(self, comment: str):
@@ -109,7 +109,7 @@ class CodingVisitor(YuiSyntax):
             BlockNode([node]).visit(self)
         else:
             node.visit(self)
-        self.word_segment()
+        # self.word_segment()  # pylike で末尾スペースが付きパースエラーになるため無効化
 
     def escape(self, text: str) -> str:
         return text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
