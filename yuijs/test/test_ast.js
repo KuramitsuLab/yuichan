@@ -17,7 +17,7 @@ function ENV(key, value) {
     return { __env__: true, key, value };
 }
 
-function initRuntime() {
+export function initRuntime() {
     const rt = new YuiRuntime();
     rt.setenv('a', new YuiValue(1));
     rt.setenv('x', new YuiValue(1.23));
@@ -40,7 +40,7 @@ function initRuntime() {
 //   division-by-zero, mismatch-arguments, expected-variable,
 //   undefined-variable, undefined-function: same as Python
 // ─────────────────────────────────────────────
-const testcases = {
+export const testcases = {
     // ConstNode
     'null':  [new ConstNode(null),  null],
     'true':  [new ConstNode(true),  true],

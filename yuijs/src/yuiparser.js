@@ -657,9 +657,9 @@ class ComparativeParser extends ParserCombinator {
         const leftNode = parse('@Additive', source, pc, { BK: true });
         try {
             for (const [op, sym] of [
-                ['binary==', '=='], ['binary!=', '!='], ['binary<=', '<='],
-                ['binary>=', '>='], ['binary<', '<'], ['binary>', '>'],
-                ['binaryin', 'in'], ['binarynotin', 'notin'],
+                ['binary-infix==', '=='], ['binary-infix!=', '!='], ['binary-infix<=', '<='],
+                ['binary-infix>=', '>='], ['binary-infix<', '<'], ['binary-infix>', '>'],
+                ['binary-infixin', 'in'], ['binary-infixnotin', 'notin'],
             ]) {
                 if (source.isMatch(op, { ifUndefined: false })) {
                     const rightNode = parse('@Additive', source, pc);
@@ -903,7 +903,7 @@ class FuncDefParser extends ParserCombinator {
             while (!source.isMatch('funcdef-args-end', { unconsumed: true })) {
                 const argNode = parse('@Name', source, pc);
                 args.push(argNode);
-                if (source.isMatch('funcdef-arg-separator')) continue;
+                if (!source.isDefined('funcdef-arg-separator') || source.isMatch('funcdef-arg-separator')) continue;
                 break;
             }
             source.tryMatch('funcdef-args-end', { BK: false });
@@ -924,7 +924,7 @@ class AssertParser extends ParserCombinator {
         let BK = source.canBacktrack('assert-lookahead');
         source.tryMatch('assert-begin', { BK });
         if (BK) BK = source.pos === startPos;
-        const testNode = parse('@Expression', source, pc, { BK });
+        const testNode = parse('@Additive', source, pc, { BK });
         source.tryMatch('assert-infix', { BK });
         const referenceNode = parse('@Expression', source, pc, { BK });
         source.tryMatch('assert-end', { BK });
@@ -950,26 +950,40 @@ class BlockParser extends ParserCombinator {
             return source.p({ node: new BlockNode(statements), startPos: savedPos });
         }
 
-        const endLevelIndent = pc.indent ?? '';
-        while (source.hasNext()) {
-            source.isEosOrLinefeed();
-            const lineStartPos = source.pos;
-            if (source.consumeString(endLevelIndent)) {
-                if (source.isMatch('whitespace', { lskipWs: false })) {
-                    if (source.isMatch('block-end', { unconsumed: true })) {
-                        throw new YuiError(
-                            ['wrong-indent-level', `✅\`${endLevelIndent}\``],
-                            source.p({ startPos: lineStartPos, length: endLevelIndent.length })
-                        );
-                    }
-                    statements = statements.concat(parse('@Statement[]', source, pc));
-                    continue;
-                }
+        if (source.isDefined('block-end')) {
+            // Explicit block-end token (yui with {}, sexpr with (begin...))
+            while (!source.isMatch('block-end', { unconsumed: true, lskipLf: true })) {
+                const curPos = source.pos;
+                source.skipWhitespacesAndComments(true);
+                statements = statements.concat(parse('@Statement[]', source, pc));
+                if (curPos === source.pos) break;
             }
-            if (source.isMatch('linefeed', { unconsumed: true })) continue;
-            break;
+            source.tryMatch('block-end', { openingPos: savedPos, lskipLf: true });
+        } else {
+            // Indentation-based (pylike)
+            const endLevelIndent = pc.indent ?? '';
+            while (source.hasNext()) {
+                source.isEosOrLinefeed({ lskipWs: false });
+                const lineStartPos = source.pos;
+                const idxBeforeConsume = source.pos;
+                if (source.consumeString(endLevelIndent)) {
+                    if (source.isMatch('whitespace', { lskipWs: false })) {
+                        if (source.isMatch('block-end', { unconsumed: true })) {
+                            throw new YuiError(
+                                ['wrong-indent-level', `✅\`${endLevelIndent}\``],
+                                source.p({ startPos: lineStartPos, length: endLevelIndent.length })
+                            );
+                        }
+                        statements = statements.concat(parse('@Statement[]', source, pc));
+                        continue;
+                    }
+                    source.pos = idxBeforeConsume;
+                }
+                if (source.isMatch('linefeed', { unconsumed: true })) continue;
+                break;
+            }
+            source.tryMatch('block-end', { openingPos: savedPos });
         }
-        source.tryMatch('block-end', { openingPos: savedPos });
         return source.p({ node: new BlockNode(statements), startPos: savedPos });
     }
 }
