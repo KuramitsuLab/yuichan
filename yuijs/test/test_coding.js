@@ -115,3 +115,47 @@ describe('pylike syntax', () => {
         expect(v instanceof Object ? v.native : v).toBe(42);
     });
 });
+
+describe('sexpr syntax', () => {
+    function execSexpr(src) {
+        const rt = new YuiRuntime();
+        rt.allowBinaryOps = true;
+        rt.exec(src, 'sexpr', 30, false);
+        const env = rt.environments[rt.environments.length - 1];
+        return (k) => { const v = env[k]; return v instanceof Object ? v.native : v; };
+    }
+
+    test('variable assignment', () => {
+        const env = execSexpr('(set! x 42)');
+        expect(env('x')).toBe(42);
+    });
+
+    test('binary expression', () => {
+        // sexpr binary: (set! x + 1 2)) — the ( comes from assignment-begin, ) closes binary then assignment
+        const env = execSexpr('(set! x + 1 2))');
+        expect(env('x')).toBe(3);
+    });
+
+    test('if statement with prefix operator', () => {
+        const env = execSexpr('(if (== 1 1) (begin (set! x 10)) (begin (set! x 20)))');
+        expect(env('x')).toBe(10);
+    });
+
+    test('function definition and call', () => {
+        const src = '(define (succ n) (begin (return + n 1))))\n(set! x (succ 5))';
+        const env = execSexpr(src);
+        expect(env('x')).toBe(6);
+    });
+
+    test('roundtrip: parse and regenerate', () => {
+        const src = '(set! x 42)';
+        const parser = new YuiParser('sexpr');
+        const ast = parser.parse(src);
+        const visitor = new CodingVisitor('sexpr');
+        const code = visitor.emit(ast);
+        const rt = new YuiRuntime();
+        rt.exec(code, 'sexpr', 30, false);
+        const env = rt.environments[rt.environments.length - 1];
+        expect((env['x']?.native ?? env['x'])).toBe(42);
+    });
+});

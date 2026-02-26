@@ -502,6 +502,48 @@ class TermParser extends ParserCombinator {
             source.tryMatch('length-end', { openingPos });
             return source.p({ node: new ArrayLenNode(exprNode), startPos: openingPos });
         }
+        if (source.isMatch('minus-begin', { ifUndefined: false })) {
+            const exprNode = parse('@Expression', source, pc);
+            if (source.isMatch('minus-end', { ifUndefined: false })) {
+                return source.p({ node: new MinusNode(exprNode), startPos: openingPos });
+            }
+            source.pos = openingPos;
+        }
+        if (source.isMatch('array-indexer-begin', { ifUndefined: false })) {
+            const exprNode = parse('@Expression', source, pc);
+            source.tryMatch('array-indexer-separator');
+            const indexNode = parse('@Expression', source, pc);
+            source.tryMatch('array-indexer-end', { openingPos });
+            return source.p({ node: new GetIndexNode(exprNode, indexNode), startPos: openingPos });
+        }
+        if (source.isDefined('binary-infix-prefix-begin')) {
+            const prefixOp = source.findMatch('binary-infix-prefix', ['+', '-', '*', '/', '%', '==', '!=', '<=', '>=', '<', '>', 'notin', 'in']);
+            if (prefixOp !== null) {
+                const leftNode = parse('@Expression', source, pc);
+                const rightNode = parse('@Expression', source, pc);
+                source.tryMatch('binary-infix-prefix-end', { openingPos });
+                return source.p({ node: new BinaryNode(leftNode, prefixOp, rightNode), startPos: openingPos });
+            }
+        }
+        const savedPos = source.pos;
+        if (source.isMatch('funcapp-begin', { ifUndefined: false })) {
+            try {
+                const nameNode = parse('@Name', source, pc, { BK: true });
+                const args = [];
+                while (!source.isMatch('funcapp-end', { unconsumed: true })) {
+                    source.tryMatch('funcapp-separator');
+                    args.push(parse('@Expression', source, pc));
+                }
+                source.tryMatch('funcapp-end', { openingPos: savedPos });
+                return source.p({ node: new FuncAppNode(nameNode, args), startPos: openingPos });
+            } catch (e) {
+                if (e instanceof YuiError) {
+                    source.pos = savedPos;
+                } else {
+                    throw e;
+                }
+            }
+        }
         for (const literal of LITERALS) {
             if (NONTERMINALS[literal].quickCheck(source)) {
                 source.pos = openingPos;
@@ -724,6 +766,9 @@ NONTERMINALS['@Import'] = new ImportParser();
 
 class PassParser extends ParserCombinator {
     match(source, pc) {
+        if (!source.isDefined('pass')) {
+            throw new YuiError(['pass-not-defined'], source.p({ length: 1 }), true);
+        }
         const startPos = source.pos;
         source.tryMatch('pass', { BK: true });
         return source.p({ node: new PassNode(), startPos });
@@ -781,23 +826,31 @@ class IfParser extends ParserCombinator {
         source.tryMatch('if-begin', { BK });
         source.tryMatch('if-condition-begin', { BK });
         if (BK) BK = source.pos === startPos;
-        let leftNode = parse('@Expression', source, pc, { BK });
-        let operator, rightNode;
+        let leftNode, operator, rightNode;
 
-        if (leftNode instanceof BinaryNode && leftNode.comparative) {
-            operator = leftNode.operator;
-            rightNode = leftNode.rightNode;
-            leftNode = leftNode.leftNode;
-        } else {
-            operator = source.findMatch('if-infix', ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']);
-            if (!operator) {
-                source.tryMatch('if-infix', { BK });
-            }
+        const ifPrefixOp = source.findMatch('if-prefix', ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']);
+        if (ifPrefixOp !== null) {
+            operator = ifPrefixOp;
+            BK = false;
+            leftNode = parse('@Expression', source, pc, { BK });
             rightNode = parse('@Expression', source, pc, { BK });
-            if (!operator) {
-                operator = source.findMatch('if-suffix', ['!=', '<=', '<', '>=', '>', 'notin', 'in', '==']);
-                source.skipWhitespacesAndComments();
-                if (operator === null) operator = '==';
+        } else {
+            leftNode = parse('@Expression', source, pc, { BK });
+            if (leftNode instanceof BinaryNode && leftNode.comparative) {
+                operator = leftNode.operator;
+                rightNode = leftNode.rightNode;
+                leftNode = leftNode.leftNode;
+            } else {
+                operator = source.findMatch('if-infix', ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']);
+                if (!operator) {
+                    source.tryMatch('if-infix', { BK });
+                }
+                rightNode = parse('@Expression', source, pc, { BK });
+                if (!operator) {
+                    operator = source.findMatch('if-suffix', ['!=', '<=', '<', '>=', '>', 'notin', 'in', '==']);
+                    source.skipWhitespacesAndComments();
+                    if (operator === null) operator = '==';
+                }
             }
         }
 
@@ -811,6 +864,17 @@ class IfParser extends ParserCombinator {
         let elseNode = null;
         if (source.isMatch('if-else')) {
             elseNode = parse('@Block', source, pc, { BK: false });
+        } else if (source.isDefined('if-end') && !source.isMatch('if-end', { unconsumed: true })) {
+            // No explicit if-else token, but if-end is not next → implicit else block
+            try {
+                elseNode = parse('@Block', source, pc, { BK: false });
+            } catch (e) {
+                if (e instanceof YuiError) {
+                    source.pos = savePos;
+                } else {
+                    throw e;
+                }
+            }
         } else {
             source.pos = savePos;
         }

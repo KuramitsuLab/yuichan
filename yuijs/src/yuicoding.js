@@ -5,7 +5,7 @@ import {
     StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode, FuncAppNode, GetIndexNode, BinaryNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
-    BlockNode, PrintExpressionNode, PassNode,
+    BlockNode, PrintExpressionNode, PassNode, StatementNode,
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, CatchNode, ImportNode,
 } from './yuiast.js';
@@ -24,11 +24,16 @@ export class CodingVisitor extends YuiSyntax {
         this.justLinefeeded = false;
     }
 
-    emit(node) {
+    emit(node, randomSeed = null) {
         this.buffer = [];
         this.indent = 0;
         this.justLinefeeded = true;
-        node.visit(this);
+        this.randomSeed = randomSeed;
+        if (!(node instanceof StatementNode) && this.isDefined('print-begin')) {
+            new PrintExpressionNode(node).visit(this);
+        } else {
+            node.visit(this);
+        }
         return this.buffer.join('');
     }
 
@@ -367,25 +372,33 @@ export class CodingVisitor extends YuiSyntax {
     visitIfNode(node) {
         this.terminal('if-begin');
         this.terminal('if-condition-begin');
-        this.expression(node.left);
-        if (!(node.left instanceof BinaryNode && node.left.comparative)) {
+        if (node.left instanceof BinaryNode && node.left.comparative) {
+            this.expression(node.left);
+        } else {
             const opSymbol = node.operator.symbol ?? String(node.operator);
-            if (this.isDefined(`if-infix${opSymbol}`)) {
-                this.terminal(`if-infix${opSymbol}`);
+            if (this.isDefined(`if-prefix${opSymbol}`)) {
+                this.terminal(`if-prefix${opSymbol}`);
+                this.expression(node.left);
+                this.expression(node.right);
             } else {
-                this.terminal('if-infix');
+                this.expression(node.left);
+                if (this.isDefined(`if-infix${opSymbol}`)) {
+                    this.terminal(`if-infix${opSymbol}`);
+                } else {
+                    this.terminal('if-infix');
+                }
+                this.expression(node.right);
+                if (this.isDefined(`if-suffix${opSymbol}`)) {
+                    this.terminal(`if-suffix${opSymbol}`);
+                } else {
+                    this.terminal('if-suffix');
+                }
             }
-            this.expression(node.right);
-            if (this.isDefined(`if-suffix${opSymbol}`)) {
-                this.terminal(`if-suffix${opSymbol}`);
-            } else {
-                this.terminal('if-suffix');
-            }
-            this.terminal('if-condition-end');
         }
+        this.terminal('if-condition-end');
         this.terminal('if-then');
         this.block(node.thenBlock);
-        if (node.elseBlock) {
+        if (node.elseBlock && !(node.elseBlock instanceof PassNode)) {
             if (this.isDefined('if-else-if') && node.elseBlock instanceof IfNode) {
                 this.terminal('if-else-if', { linefeedBefore: true });
                 this.block(node.elseBlock);
@@ -446,7 +459,11 @@ export class CodingVisitor extends YuiSyntax {
         } else {
             node.statements.forEach((statement, i) => {
                 if (i > 0) this.linefeed();
-                statement.visit(this);
+                if (!(statement instanceof StatementNode) && this.isDefined('print-begin')) {
+                    new PrintExpressionNode(statement).visit(this);
+                } else {
+                    statement.visit(this);
+                }
                 if (statement instanceof FuncDefNode) this.linefeed();
                 this.terminal('block-separator');
                 if (statement instanceof PassNode) this.linefeed();
