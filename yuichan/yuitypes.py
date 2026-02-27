@@ -520,12 +520,12 @@ class YuiValue(object):
         self.array.append(value)
         self.native_value = None
 
-    # @staticmethod
-    # def stringfy_value(value: Any, indent_prefix: str = "", width=80) -> str:
-    #     """YuiValue または任意の値を文字列に変換する（クラスメソッドとして呼び出し可能）"""
-    #     if isinstance(value, YuiValue):
-    #         return value.stringfy(indent_prefix=indent_prefix, width=width)
-    #     return str(value)
+    @staticmethod
+    def stringfy_value(value: Any, indent_prefix: str = "", width=80) -> str:
+        """YuiValue または任意の値を文字列に変換する（クラスメソッドとして呼び出し可能）"""
+        if isinstance(value, YuiValue):
+            return value.stringfy(indent_prefix=indent_prefix, width=width)
+        return str(value)
 
     def __str__(self):
         """文字列表現を返す"""
