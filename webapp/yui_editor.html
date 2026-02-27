@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yui Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+            transition: background 0.3s;
+        }
+
+        body.dark {
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: #2d2d30;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        .header-sub {
+            font-size: 0.75em;
+            color: #999;
+            margin-left: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+
+        .btn-run {
+            background: #007acc;
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-run:hover { background: #005a9e; }
+
+        .btn-record {
+            background: #5a5a5a;
+            color: white;
+        }
+
+        .btn-record:hover { background: #6a6a6a; }
+
+        .theme-toggle {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 7px 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        /* ── Main layout ── */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 52px);
+        }
+
+        /* ── Editor panel (left) ── */
+        .editor-panel {
+            width: 55%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ddd;
+        }
+
+        body.dark .editor-panel { border-right-color: #3e3e3e; }
+
+        .editor-toolbar {
+            background: #f8f8f8;
+            padding: 8px 12px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        body.dark .editor-toolbar {
+            background: #2d2d30;
+            border-bottom-color: #3e3e3e;
+        }
+
+        .editor-toolbar label {
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        body.dark .editor-toolbar label { color: #aaa; }
+
+        .syntax-select {
+            padding: 5px 9px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            min-width: 160px;
+        }
+
+        body.dark .syntax-select {
+            background: #3c3c3c;
+            color: #d4d4d4;
+            border-color: #555;
+        }
+
+        .toolbar-hint {
+            color: #888;
+            font-size: 12px;
+            margin-left: auto;
+        }
+
+        .editor-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #editor { width: 100%; height: 100%; }
+
+        #fallback-editor {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            display: none;
+        }
+
+        body:not(.dark) #fallback-editor { background: white; color: #333; }
+        body.dark #fallback-editor { background: #1e1e1e; color: #d4d4d4; }
+
+        /* ── Resizer ── */
+        .resizer {
+            width: 4px;
+            background: #ddd;
+            cursor: col-resize;
+            z-index: 10;
+            transition: background 0.15s;
+        }
+
+        body.dark .resizer { background: #3e3e3e; }
+        .resizer:hover { background: #007acc; }
+
+        /* ── Right panel (sample + output) ── */
+        .output-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body:not(.dark) .output-panel { background: white; }
+        body.dark .output-panel { background: #252526; }
+
+        /* ── Tabs ── */
+        .output-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
+        }
+
+        body:not(.dark) .output-tabs { background: #f8f8f8; }
+        body.dark .output-tabs {
+            background: #2d2d30;
+            border-bottom-color: #3e3e3e;
+        }
+
+        .tab {
+            padding: 10px 18px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-size: 13px;
+            user-select: none;
+            transition: all 0.15s;
+        }
+
+        .tab:hover { background: rgba(0,0,0,0.05); }
+        body.dark .tab:hover { background: rgba(255,255,255,0.05); }
+
+        .tab.active { border-bottom-color: #007acc; }
+        body:not(.dark) .tab.active { background: white; }
+        body.dark .tab.active { background: #252526; }
+
+        /* ── Tab content areas ── */
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Sample tab ── */
+        .sample-toolbar {
+            padding: 8px 12px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        body.dark .sample-toolbar {
+            background: #2d2d30;
+            border-bottom-color: #3e3e3e;
+        }
+
+        .sample-toolbar label {
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        body.dark .sample-toolbar label { color: #aaa; }
+
+        .sample-select {
+            padding: 5px 9px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        body.dark .sample-select {
+            background: #3c3c3c;
+            color: #d4d4d4;
+            border-color: #555;
+        }
+
+        .btn-load {
+            background: #4a8c4a;
+            color: white;
+            padding: 5px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .btn-load:hover { background: #3a7a3a; }
+        .btn-load:disabled {
+            background: #888;
+            cursor: default;
+        }
+
+        .sample-desc {
+            padding: 6px 12px;
+            font-size: 12px;
+            color: #888;
+            border-bottom: 1px solid #eee;
+            min-height: 28px;
+            flex-shrink: 0;
+            font-style: italic;
+        }
+
+        body.dark .sample-desc {
+            color: #777;
+            border-bottom-color: #3e3e3e;
+        }
+
+        #sample-code {
+            flex: 1;
+            width: 100%;
+            border: none;
+            padding: 14px 16px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.65;
+            resize: none;
+            outline: none;
+            overflow: auto;
+            color: #333;
+            background: #fafafa;
+        }
+
+        body.dark #sample-code {
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+
+        .sample-placeholder {
+            padding: 16px;
+            color: #888;
+            font-style: italic;
+            font-family: sans-serif;
+            font-size: 13px;
+        }
+
+        /* ── Output / Stats tab content ── */
+        .output-scroll {
+            flex: 1;
+            padding: 14px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* ── Output items ── */
+        .placeholder {
+            color: #888;
+            font-style: italic;
+            font-family: sans-serif;
+        }
+
+        .print-item {
+            margin-bottom: 14px;
+        }
+
+        .print-expr {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+
+        .print-expr .line-num {
+            opacity: 0.6;
+        }
+
+        .print-value {
+            padding: 6px 10px;
+            border-left: 3px solid #007acc;
+            background: rgba(0, 122, 204, 0.05);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        body.dark .print-value {
+            background: rgba(0, 122, 204, 0.1);
+            color: #a8d4f0;
+        }
+
+        .print-value.is-string { border-left-color: #ce9178; }
+        .print-value.is-array  { border-left-color: #4ec9b0; }
+        .print-value.is-object { border-left-color: #dcdcaa; }
+        .print-value.is-null   { border-left-color: #888; color: #888; }
+        .print-value.is-bool   { border-left-color: #569cd6; }
+
+        .error-box {
+            color: #e74c3c;
+            background: #ffeaea;
+            padding: 10px 14px;
+            border-left: 4px solid #e74c3c;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        body.dark .error-box {
+            background: #2d1b1b;
+            color: #ff8080;
+        }
+
+        .error-location {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        /* ── Stats tab ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-family: sans-serif;
+        }
+
+        .stat-card {
+            background: #f8f8f8;
+            border: 1px solid #e1e1e1;
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+
+        body.dark .stat-card {
+            background: #2d2d30;
+            border-color: #3e3e3e;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #007acc;
+            font-family: 'Monaco', monospace;
+        }
+
+        .stat-value.passed { color: #4ec9b0; }
+        .stat-value.failed { color: #e74c3c; }
+
+        .stats-placeholder {
+            color: #888;
+            font-style: italic;
+            font-family: sans-serif;
+            font-size: 13px;
+        }
+
+        /* ── Error decoration ── */
+        .error-line {
+            background: rgba(231, 76, 60, 0.18) !important;
+        }
+
+        .error-line-glyph {
+            background: #e74c3c;
+            border-radius: 50%;
+            margin-left: 4px;
+            margin-top: 3px;
+        }
+
+        .error-line-glyph::after {
+            content: "!";
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 700px) {
+            .main-container { flex-direction: column; }
+            .editor-panel { width: 100%; height: 55%; }
+            .resizer { width: 100%; height: 4px; cursor: row-resize; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display:flex; align-items:baseline;">
+            <h1>Yui Editor</h1>
+            <span class="header-sub" id="version-display"></span>
+        </div>
+        <div class="header-controls">
+            <button class="btn btn-run" id="run-btn">▶ 実行 <kbd style="opacity:.7;font-size:11px;">Ctrl+Enter</kbd></button>
+            <button class="btn btn-record" onclick="downloadRecord()">📥 演習記録</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- ── Left: Editor ── -->
+        <div class="editor-panel">
+            <div class="editor-toolbar">
+                <label for="syntax-select">構文：</label>
+                <select id="syntax-select" class="syntax-select" onchange="changeSyntax()">
+                    <option value="yui">Yui（日本語）</option>
+                    <option value="pylike">Python 風</option>
+                    <option value="jslike">JavaScript 風</option>
+                    <option value="emoji">絵文字</option>
+                    <option value="nannan">なんなん</option>
+                </select>
+                <span class="toolbar-hint">Ctrl+Enter で実行</span>
+            </div>
+            <div class="editor-container">
+                <div id="editor"></div>
+                <textarea id="fallback-editor" placeholder="Yui プログラムをここに入力してください..."></textarea>
+            </div>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <!-- ── Right: Sample viewer + Output ── -->
+        <div class="output-panel">
+            <div class="output-tabs">
+                <div class="tab active" data-tab="sample" onclick="switchTab(this,'sample')">サンプル</div>
+                <div class="tab" data-tab="output" onclick="switchTab(this,'output')">出力</div>
+                <div class="tab" data-tab="stats" onclick="switchTab(this,'stats')">統計</div>
+            </div>
+
+            <!-- サンプル tab -->
+            <div class="tab-content" id="tab-sample">
+                <div class="sample-toolbar">
+                    <label for="sample-select">例：</label>
+                    <select id="sample-select" class="sample-select" onchange="updateSamplePreview()">
+                        <option value="">-- サンプルを選択 --</option>
+                    </select>
+                    <button class="btn-load" id="load-btn" onclick="loadSampleToEditor()" disabled>↓ エディタへ</button>
+                </div>
+                <div class="sample-desc" id="sample-desc"></div>
+                <textarea id="sample-code" readonly spellcheck="false"><div class="sample-placeholder">サンプルを選択するとコードが表示されます</div></textarea>
+            </div>
+
+            <!-- 出力 tab -->
+            <div class="tab-content" id="tab-output" style="display:none;">
+                <div class="output-scroll" id="output-scroll">
+                    <div class="placeholder">プログラムを実行すると結果がここに表示されます</div>
+                </div>
+            </div>
+
+            <!-- 統計 tab -->
+            <div class="tab-content" id="tab-stats" style="display:none;">
+                <div class="output-scroll" id="stats-scroll">
+                    <div class="stats-placeholder">プログラムを実行すると統計情報が表示されます</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monaco loader (non-module, defines global require) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
+    <!-- Yui runtime bundle (generated by: cd yuijs && npm run build) -->
+    <!-- Works with both HTTP server and file:// -->
+    <script src="yui_bundle.js"></script>
+
+    <script>
+        const { YuiRuntime, YuiError, YuiType, YuiValue, getAllSamples } = YuiEditor;
+
+        // ─────────────────────────────────────────────
+        // State
+        // ─────────────────────────────────────────────
+        let monacoEditor = null;
+        let isDarkTheme = false;
+        let currentTab = 'sample';
+        let currentSyntax = 'yui';
+        let errorDecorations = [];
+        let lastResult = null;
+        const allExamples = getAllSamples();
+
+        // ── 演習記録用 ──
+        const sessionStart = new Date();
+        const runHistory = [];   // { time, code, syntax, outputs, error, typingCount }
+        let lastRunCode = null;  // 直前の実行コード（変更なし判定用）
+        let totalRuns = 0;
+        let successRuns = 0;
+        let errorRuns = 0;
+        let sessionTypingCount = 0;     // セッション累積タイピング文字数（1文字ずつ）
+        let sessionPasteCount = 0;      // セッション累積ペースト文字数
+        let lastRecordTypingCount = 0;
+        let lastRecordPasteCount = 0;
+        let _isPasting = false;         // ペースト検出フラグ
+
+        // ─────────────────────────────────────────────
+        // Populate sample select
+        // ─────────────────────────────────────────────
+        {
+            const sel = document.getElementById('sample-select');
+            for (const ex of allExamples) {
+                const opt = document.createElement('option');
+                opt.value = ex.name;
+                opt.textContent = ex.description;
+                sel.appendChild(opt);
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // Editor helpers
+        // ─────────────────────────────────────────────
+        function getEditorValue() {
+            return monacoEditor
+                ? monacoEditor.getValue()
+                : document.getElementById('fallback-editor').value;
+        }
+
+        function setEditorValue(text) {
+            if (monacoEditor) monacoEditor.setValue(text);
+            else document.getElementById('fallback-editor').value = text;
+        }
+
+        function clearErrorHighlights() {
+            if (monacoEditor && errorDecorations.length > 0) {
+                errorDecorations = monacoEditor.deltaDecorations(errorDecorations, []);
+            }
+        }
+
+        function highlightErrorLine(line, message) {
+            if (!monacoEditor || line < 1) return;
+            errorDecorations = monacoEditor.deltaDecorations(errorDecorations, [{
+                range: new monaco.Range(line, 1, line, 1),
+                options: {
+                    isWholeLine: true,
+                    className: 'error-line',
+                    glyphMarginClassName: 'error-line-glyph',
+                    hoverMessage: { value: message },
+                }
+            }]);
+        }
+
+        // ─────────────────────────────────────────────
+        // Syntax selector
+        // ─────────────────────────────────────────────
+        function changeSyntax() {
+            currentSyntax = document.getElementById('syntax-select').value;
+            // Refresh sample preview with new syntax
+            updateSamplePreview();
+        }
+
+        // ─────────────────────────────────────────────
+        // Sample viewer
+        // ─────────────────────────────────────────────
+        function updateSamplePreview() {
+            const sel = document.getElementById('sample-select');
+            const ex = allExamples.find(e => e.name === sel.value);
+            const codeEl = document.getElementById('sample-code');
+            const descEl = document.getElementById('sample-desc');
+            const loadBtn = document.getElementById('load-btn');
+
+            if (!ex) {
+                codeEl.value = '';
+                codeEl.placeholder = 'サンプルを選択するとコードが表示されます';
+                descEl.textContent = '';
+                loadBtn.disabled = true;
+                return;
+            }
+
+            const code = ex.generate(currentSyntax, false);
+            codeEl.value = code;
+            codeEl.placeholder = '';
+            descEl.textContent = ex.description;
+            loadBtn.disabled = false;
+        }
+
+        function loadSampleToEditor() {
+            const sel = document.getElementById('sample-select');
+            const ex = allExamples.find(e => e.name === sel.value);
+            if (!ex) return;
+            setEditorValue(ex.generate(currentSyntax, false));
+            clearErrorHighlights();
+            // Switch to editor focus
+            if (monacoEditor) monacoEditor.focus();
+        }
+
+        // ─────────────────────────────────────────────
+        // Value formatting for output panel
+        // ─────────────────────────────────────────────
+        function formatValue(yuiValue) {
+            const native = YuiType.yuiToNative(yuiValue);
+            if (native === null)    return { text: 'null',               cls: 'is-null' };
+            if (native === true)    return { text: 'true',               cls: 'is-bool' };
+            if (native === false)   return { text: 'false',              cls: 'is-bool' };
+            if (typeof native === 'string')
+                                    return { text: `"${native}"`,        cls: 'is-string' };
+            if (Array.isArray(native))
+                                    return { text: JSON.stringify(native), cls: 'is-array' };
+            if (typeof native === 'object')
+                                    return { text: JSON.stringify(native, null, 2), cls: 'is-object' };
+            return { text: String(native), cls: '' };
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function renderOutputTab(items, error) {
+            const el = document.getElementById('output-scroll');
+            if (error) {
+                el.innerHTML = `
+                    <div class="error-box">${escapeHtml(error.messages.join(' '))}
+                        <div class="error-location">${error.runtime ? '[実行時エラー]' : '[構文エラー]'} — 行 ${error.lineno}、列 ${error.offset}</div>
+                    </div>`;
+                return;
+            }
+            if (items.length === 0) {
+                el.innerHTML = '<div class="placeholder">出力なし（プリント式がありませんでした）</div>';
+                return;
+            }
+            el.innerHTML = items.map(({ line, snippet, yuiValue }) => {
+                const { text, cls } = formatValue(yuiValue);
+                return `
+                    <div class="print-item">
+                        <div class="print-expr">
+                            &gt;&gt;&gt; ${escapeHtml(snippet)}
+                            <span class="line-num">&nbsp;#行${line}</span>
+                        </div>
+                        <div class="print-value ${cls}">${escapeHtml(text)}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderStatsTab(rt) {
+            const el = document.getElementById('stats-scroll');
+            if (!rt) {
+                el.innerHTML = '<div class="stats-placeholder">プログラムを実行すると統計情報が表示されます</div>';
+                return;
+            }
+            const passed = rt.testPassed.length;
+            const failed = rt.testFailed.length;
+            el.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">インクリメント回数</div>
+                        <div class="stat-value">${rt.incrementCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">デクリメント回数</div>
+                        <div class="stat-value">${rt.decrementCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">比較回数</div>
+                        <div class="stat-value">${rt.compareCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">テスト合格 / 不合格</div>
+                        <div>
+                            <span class="stat-value passed">${passed}</span>
+                            <span style="font-size:1.2em; color:#888;"> / </span>
+                            <span class="stat-value failed">${failed}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // ─────────────────────────────────────────────
+        // Execution
+        // ─────────────────────────────────────────────
+        function executeCode() {
+            const source = getEditorValue();
+            if (!source.trim()) return;
+
+            clearErrorHighlights();
+
+            const outputs = [];
+            const rt = new YuiRuntime();
+
+            rt.print = (value, node) => {
+                const [line, , snippet] = node.extract();
+                outputs.push({ line, snippet: snippet.trim(), yuiValue: value });
+            };
+
+            let error = null;
+            try {
+                rt.exec(source, currentSyntax, 30, false);
+            } catch (e) {
+                if (e instanceof YuiError) {
+                    error = e;
+                    highlightErrorLine(e.lineno, e.messages.join(' '));
+                } else {
+                    error = { messages: [String(e)], runtime: null, lineno: 0, offset: 0 };
+                }
+            }
+
+            // ── 演習記録トラッキング ──
+            totalRuns++;
+            if (error) errorRuns++; else successRuns++;
+            if (source !== lastRunCode) {
+                runHistory.push({
+                    time: new Date(),
+                    code: source,
+                    syntax: currentSyntax,
+                    outputs: outputs.map(o => ({ ...o })),
+                    error: error,
+                    typingCount: sessionTypingCount - lastRecordTypingCount,
+                    pasteCount:  sessionPasteCount  - lastRecordPasteCount,
+                });
+                lastRecordTypingCount = sessionTypingCount;
+                lastRecordPasteCount  = sessionPasteCount;
+            }
+            lastRunCode = source;
+
+            lastResult = { rt: error ? null : rt, outputs, error };
+
+            renderOutputTab(outputs, error);
+            renderStatsTab(error ? null : rt);
+
+            // Auto-switch to output tab to show result
+            const outputTab = document.querySelector('[data-tab="output"]');
+            switchTab(outputTab, 'output');
+        }
+
+        // ─────────────────────────────────────────────
+        // 演習記録ダウンロード
+        // ─────────────────────────────────────────────
+        function downloadRecord() {
+            const now = new Date();
+            const fmtTime = d => d.toLocaleString('ja-JP');
+            const fmtDate = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+
+            const syntaxErrCount  = runHistory.filter(r => r.error && r.error.runtime === null).length;
+            const runtimeErrCount = runHistory.filter(r => r.error && r.error.runtime !== null).length;
+
+            let md = `# Yui 演習記録\n\n`;
+
+            // ── サマリー ──
+            md += `## サマリー\n\n`;
+            md += `| 項目 | 値 |\n`;
+            md += `|------|-----|\n`;
+            md += `| 開始時刻 | ${fmtTime(sessionStart)} |\n`;
+            md += `| 終了時刻 | ${fmtTime(now)} |\n`;
+            md += `| 実行回数（合計） | ${totalRuns} |\n`;
+            md += `| 成功回数 | ${successRuns} |\n`;
+            md += `| エラー回数 | ${errorRuns} |\n`;
+            md += `| タイピング文字数 | ${sessionTypingCount} |\n`;
+            md += `| ペースト文字数   | ${sessionPasteCount} |\n`;
+
+            if (errorRuns > 0) {
+                md += `\n### エラー内訳\n\n`;
+                md += `| 種別 | 件数 |\n`;
+                md += `|------|------|\n`;
+                if (syntaxErrCount  > 0) md += `| 構文エラー   | ${syntaxErrCount} |\n`;
+                if (runtimeErrCount > 0) md += `| 実行時エラー | ${runtimeErrCount} |\n`;
+            }
+
+            // ── 実行ログ ──
+            md += `\n## 実行ログ\n`;
+            if (runHistory.length === 0) {
+                md += `\n（記録なし）\n`;
+            } else {
+                runHistory.forEach((r, i) => {
+                    const status = r.error ? 'エラー' : '成功';
+                    const typingInfo = `タイピング: ${r.typingCount}字` +
+                        (r.pasteCount > 0 ? `、ペースト: ${r.pasteCount}字` : '');
+                    md += `\n### ${i + 1}. ${fmtTime(r.time)} — ${status}（${typingInfo}）\n\n`;
+                    md += `\`\`\`${r.syntax}\n${r.code}\n\`\`\`\n`;
+
+                    if (r.error) {
+                        const errType = r.error.runtime === null ? '構文エラー' : '実行時エラー';
+                        const msg = r.error.messages.join(' ');
+                        const loc = r.error.lineno > 0
+                            ? ` （行 ${r.error.lineno}、列 ${r.error.offset}）` : '';
+                        md += `\n**エラー [${errType}]:** ${msg}${loc}\n`;
+                    } else if (r.outputs.length > 0) {
+                        md += `\n**出力:**\n\n\`\`\`\n`;
+                        r.outputs.forEach(o => {
+                            md += `${formatValue(o.yuiValue).text}\n`;
+                        });
+                        md += `\`\`\`\n`;
+                    } else {
+                        md += `\n**出力:** なし\n`;
+                    }
+                });
+            }
+
+            // ── ダウンロード ──
+            const blob = new Blob([md], { type: 'text/markdown; charset=utf-8' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `yui_exercise_${fmtDate(now)}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ─────────────────────────────────────────────
+        // Tabs
+        // ─────────────────────────────────────────────
+        function switchTab(el, tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            currentTab = tab;
+            document.getElementById('tab-sample').style.display = tab === 'sample' ? '' : 'none';
+            document.getElementById('tab-output').style.display = tab === 'output' ? '' : 'none';
+            document.getElementById('tab-stats').style.display  = tab === 'stats'  ? '' : 'none';
+        }
+
+        // ─────────────────────────────────────────────
+        // Theme
+        // ─────────────────────────────────────────────
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('dark', isDarkTheme);
+            if (monacoEditor) {
+                monaco.editor.setTheme(isDarkTheme ? 'yui-dark' : 'yui-light');
+            }
+            const fe = document.getElementById('fallback-editor');
+            fe.style.background = isDarkTheme ? '#1e1e1e' : 'white';
+            fe.style.color = isDarkTheme ? '#d4d4d4' : '#333';
+            localStorage.setItem('yui-theme', isDarkTheme ? 'dark' : 'light');
+        }
+
+        // ─────────────────────────────────────────────
+        // Expose to inline handlers (onclick="...")
+        // ─────────────────────────────────────────────
+        window.executeCode         = executeCode;
+        window.downloadRecord      = downloadRecord;
+        window.switchTab           = switchTab;
+        window.changeSyntax        = changeSyntax;
+        window.updateSamplePreview = updateSamplePreview;
+        window.loadSampleToEditor  = loadSampleToEditor;
+        window.toggleTheme         = toggleTheme;
+
+        // ─────────────────────────────────────────────
+        // Monaco Editor init
+        // ─────────────────────────────────────────────
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], () => {
+
+            // --- Yui language definition ---
+            monaco.languages.register({ id: 'yui' });
+
+            monaco.languages.setMonarchTokensProvider('yui', {
+                tokenizer: {
+                    root: [
+                        [/[#＃].*$/, 'comment'],
+                        [/>>>/, 'keyword.doctest'],
+                        [/標準ライブラリを使う|四則演算子を使う/, 'keyword.import'],
+                        [/もし|ならば|そうでなければ|くり返しを抜ける|もう一度/, 'keyword.control'],
+                        [/くり返す|回/, 'keyword.control'],
+                        [/より小さい|より大きい|以上|以下|以外|のいずれでもない|のいずれか/, 'operator.comparison'],
+                        [/に対して|に対し|入力なし|入力|関数から抜ける/, 'keyword.function'],
+                        [/が答え|を増やす|を減らす|追加する|の末尾に|何もしない/, 'keyword.operator'],
+                        [/値なし|真|偽/, 'keyword.constant'],
+                        [/[0-9]+\.[0-9]*/, 'number.float'],
+                        [/[0-9]+/, 'number'],
+                        [/"([^"\\]|\\.)*"/, 'string'],
+                        [/[{}()\[\]]/, 'delimiter.bracket'],
+                        [/\|/, 'delimiter'],
+                        [/[=+\-*/%,、。]/, 'operator'],
+                        [/[A-Za-z_\u3000-\u9fff\uff00-\uffef][A-Za-z0-9_\u3000-\u9fff\uff00-\uffef]*/, 'identifier'],
+                    ]
+                }
+            });
+
+            // --- Light theme ---
+            monaco.editor.defineTheme('yui-light', {
+                base: 'vs', inherit: true,
+                rules: [
+                    { token: 'comment',             foreground: '6a9955', fontStyle: 'italic' },
+                    { token: 'keyword.control',      foreground: '0000cc', fontStyle: 'bold' },
+                    { token: 'keyword.function',     foreground: 'cc6600', fontStyle: 'bold' },
+                    { token: 'keyword.operator',     foreground: '9900aa', fontStyle: 'bold' },
+                    { token: 'keyword.import',       foreground: '008080', fontStyle: 'bold' },
+                    { token: 'keyword.constant',     foreground: '0070c1', fontStyle: 'bold' },
+                    { token: 'keyword.doctest',      foreground: '008000', fontStyle: 'bold' },
+                    { token: 'operator.comparison',  foreground: '007700', fontStyle: 'bold' },
+                    { token: 'number',               foreground: 'b5200d' },
+                    { token: 'number.float',         foreground: 'b5200d' },
+                    { token: 'string',               foreground: 'a31515' },
+                    { token: 'delimiter',            foreground: '666666' },
+                    { token: 'identifier',           foreground: '001188' },
+                ],
+                colors: {}
+            });
+
+            // --- Dark theme ---
+            monaco.editor.defineTheme('yui-dark', {
+                base: 'vs-dark', inherit: true,
+                rules: [
+                    { token: 'comment',             foreground: '6a9955', fontStyle: 'italic' },
+                    { token: 'keyword.control',     foreground: '569cd6', fontStyle: 'bold' },
+                    { token: 'keyword.function',    foreground: 'ff9800', fontStyle: 'bold' },
+                    { token: 'keyword.operator',    foreground: 'e91e63', fontStyle: 'bold' },
+                    { token: 'keyword.import',      foreground: '4ec9b0', fontStyle: 'bold' },
+                    { token: 'keyword.constant',    foreground: '4fc1ff', fontStyle: 'bold' },
+                    { token: 'keyword.doctest',     foreground: '4ec9b0', fontStyle: 'bold' },
+                    { token: 'operator.comparison', foreground: '4caf50', fontStyle: 'bold' },
+                    { token: 'number',              foreground: 'b5cea8' },
+                    { token: 'number.float',        foreground: 'b5cea8' },
+                    { token: 'string',              foreground: 'ce9178' },
+                    { token: 'delimiter',           foreground: '888888' },
+                    { token: 'identifier',          foreground: '9cdcfe' },
+                ],
+                colors: {}
+            });
+
+            // --- Create editor ---
+            const initialCode = [
+                '# Yui プログラムをここに書いてください',
+                '# 右の「サンプル」タブでコードを選び、「↓ エディタへ」で読み込めます',
+                '',
+                'x = 0',
+                '5回、くり返す {',
+                '  xを増やす',
+                '}',
+                'x',
+            ].join('\n');
+
+            monacoEditor = monaco.editor.create(document.getElementById('editor'), {
+                value: initialCode,
+                language: 'yui',
+                theme: isDarkTheme ? 'yui-dark' : 'yui-light',
+                fontSize: 14,
+                lineNumbers: 'on',
+                glyphMargin: true,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                minimap: { enabled: false },
+                wordWrap: 'on',
+                tabSize: 2,
+                insertSpaces: true,
+            });
+
+            monacoEditor.addCommand(
+                monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+                () => executeCode()
+            );
+
+            // タイピング / ペースト文字数カウント
+            monacoEditor.getDomNode().addEventListener('paste', () => { _isPasting = true; });
+            monacoEditor.onDidChangeModelContent(event => {
+                const wasPaste = _isPasting;
+                _isPasting = false;
+                for (const change of event.changes) {
+                    if (change.text.length > 0) {
+                        if (wasPaste) sessionPasteCount  += change.text.length;
+                        else          sessionTypingCount += change.text.length;
+                    }
+                }
+            });
+
+            document.getElementById('version-display').textContent = 'yuijs v0.5.2';
+        });
+
+        // Fallback: if Monaco fails to load within 3s, show textarea
+        setTimeout(() => {
+            if (!monacoEditor) {
+                document.getElementById('editor').style.display = 'none';
+                const fe = document.getElementById('fallback-editor');
+                fe.style.display = 'block';
+                fe.value = [
+                    '# Yui プログラムをここに書いてください',
+                    '',
+                    'x = 0',
+                    '5回、くり返す {',
+                    '  xを増やす',
+                    '}',
+                    'x',
+                ].join('\n');
+            }
+        }, 3000);
+
+        // Keyboard shortcut + タイピングカウント for fallback textarea
+        let _fallbackPrevLen = 0;
+        const _fallbackEl = document.getElementById('fallback-editor');
+        _fallbackEl.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                executeCode();
+            }
+        });
+        _fallbackEl.addEventListener('paste', () => { _isPasting = true; });
+        _fallbackEl.addEventListener('input', () => {
+            const newLen = _fallbackEl.value.length;
+            const delta = newLen - _fallbackPrevLen;
+            if (delta > 0) {
+                if (_isPasting) sessionPasteCount  += delta;
+                else            sessionTypingCount += delta;
+            }
+            _isPasting = false;
+            _fallbackPrevLen = newLen;
+        });
+
+        // Run button
+        document.getElementById('run-btn').addEventListener('click', () => executeCode());
+
+        // Restore theme from localStorage
+        if (localStorage.getItem('yui-theme') === 'dark') toggleTheme();
+
+        // ─────────────────────────────────────────────
+        // Panel resize (drag)
+        // ─────────────────────────────────────────────
+        {
+            const resizer     = document.getElementById('resizer');
+            const editorPanel = document.querySelector('.editor-panel');
+            const outputPanel = document.querySelector('.output-panel');
+            let dragging = false;
+
+            resizer.addEventListener('mousedown', () => {
+                dragging = true;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const total = document.querySelector('.main-container').offsetWidth;
+                const pct   = (e.clientX / total) * 100;
+                if (pct > 20 && pct < 80) {
+                    editorPanel.style.width = pct + '%';
+                    outputPanel.style.flex = 'unset';
+                    outputPanel.style.width = (100 - pct) + '%';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!dragging) return;
+                dragging = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            });
+        }
+    </script>
+</body>
+</html>

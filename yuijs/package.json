@@ -1,6 +1,6 @@
 {
   "name": "yuijs",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Yui Programming Language - JavaScript port",
   "type": "module",
   "scripts": {
