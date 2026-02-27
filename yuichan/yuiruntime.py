@@ -18,6 +18,29 @@ from .yuistdlib import standard_lib
 from .yuiparser import YuiParser
 
 
+def _format_source_context(node, prefix: str, marker: str, lineoffset: int, context: int = 3) -> str:
+    """エラー箇所を行番号付き・前後コンテキスト付きで返す"""
+    line, col, _ = node.extract()
+    line += lineoffset
+    length = max(node.end_pos - node.pos, 3) if node.end_pos is not None else 3
+    make_pointer = marker * min(length, 16)
+
+    all_lines = node.source.split('\n')
+    start_idx = max(0, line - 1 - context)   # 直前 context 行 (0-based)
+    line_width = len(str(line))
+    sep = " | "
+
+    lines_out = []
+    for i in range(start_idx, min(line, len(all_lines))):
+        lineno = i + 1
+        lines_out.append(f"{prefix}{lineno:>{line_width}}{sep}{all_lines[i]}")
+
+    pointer_indent = " " * (len(prefix) + line_width + len(sep) + col - 1)
+    lines_out.append(f"{pointer_indent}{make_pointer}")
+
+    return f"line {line}, column {col}:\n" + "\n".join(lines_out)
+
+
 class YuiRuntime(object):
     """Yui言語のランタイムシステム(Visitor版)
     プログラムの実行を制御し、以下の機能を提供します：
@@ -114,12 +137,8 @@ class YuiRuntime(object):
         is_runtime = hasattr(error, 'runtime')
         message = _format_messages(error.messages)
         if error.error_node:
-            line, col, snippet = error.error_node.extract()
-            length = max(error.error_node.end_pos - error.error_node.pos, 3) if error.error_node.end_pos is not None else 3
-            make_pointer = marker * min(length, 16)
-            snippet = snippet.split('\n')[0]
-            indent = " " * (col - 1)
-            message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
+            context = _format_source_context(error.error_node, prefix, marker, lineoffset)
+            message = f"{message} {context}"
         if is_runtime:
             return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringfy_env(stack=-1)}\n"
         return f"[構文エラー/SyntaxError] {message}"
