@@ -110,7 +110,8 @@ class YuiRuntime(object):
         return ''.join(lines)
 
     def format_error(self, error: 'YuiError', prefix: str = " ", marker: str = '^', lineoffset: int = 0) -> str: # type: ignore
-        """YuiError を実行時エラーとして整形したメッセージを返す（環境情報付き）"""
+        """YuiError を整形したメッセージを返す。パースエラーは構文エラー、実行中エラーは実行時エラーとして表示する"""
+        is_runtime = hasattr(error, 'runtime')
         message = _format_messages(error.messages)
         if error.error_node:
             line, col, snippet = error.error_node.extract()
@@ -119,7 +120,9 @@ class YuiRuntime(object):
             snippet = snippet.split('\n')[0]
             indent = " " * (col - 1)
             message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
-        return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringfy_env(stack=-1)}\n"
+        if is_runtime:
+            return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringfy_env(stack=-1)}\n"
+        return f"[構文エラー/SyntaxError] {message}"
 
     def push_call_frame(self, func_name: str, args: List[Any], node):
         """関数呼び出しフレームをスタックに追加"""

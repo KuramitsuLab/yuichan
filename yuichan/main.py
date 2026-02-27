@@ -26,13 +26,6 @@ from . import yuiexample
 from . import message as _message
 
 
-def _format_yui_error(e: YuiError, runtime: YuiRuntime, prefix: str = "| ") -> str:
-    """パースエラーは構文エラー、実行中エラーは実行時エラーとして整形する"""
-    if hasattr(e, 'runtime'):
-        return runtime.format_error(e, prefix)
-    return e.formatted_message(prefix)
-
-
 def main(argv=None):
     """Main entry point"""
     if argv is None:
@@ -320,7 +313,7 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                 runtime.exec(code, syntax)
 
             except YuiError as e:
-                print(_format_yui_error(e, runtime, "| "))
+                print(runtime.format_error(e, "| "))
             except KeyboardInterrupt:
                 print("\nExiting")
                 break
@@ -571,7 +564,7 @@ def test_examples(syntax: str = 'yui'):
 
         except YuiError as e:
             print(f"✗ {example.name:<20} FAILED")
-            print(_format_yui_error(e, runtime, "    | "))
+            print(runtime.format_error(e, "    | "))
             failed += 1
 
         except Exception as e:
@@ -637,7 +630,7 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
             # Yui syntax or runtime error
             results.append(0)
             print(f"✗ {label}")
-            print(_format_yui_error(e, runtime, "  | "))
+            print(runtime.format_error(e, "  | "))
 
         except Exception as e:
             # Other errors
