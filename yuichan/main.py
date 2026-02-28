@@ -53,11 +53,6 @@ Examples:
   yui --find-syntax file.yui                        # Find syntax that can parse given files
   yui --find-syntax test/*.yui                      # Find syntax matching multiple files
 
-Syntax files (yuichan/syntax/):
-  yui      - Japanese-style natural syntax (default)
-  pylike   - Python-style syntax
-  emoji    - Emoji-based syntax
-
 Error message languages (--lang):
   ja       - Japanese (default)
   (others) - raw message fallback
@@ -307,6 +302,7 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
             pass
 
     runtime = YuiRuntime()
+    runtime.interactive_mode = True
     for key, value in env.items():
         runtime.setenv(key, value)
 
@@ -627,6 +623,8 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
         files: List of .yui files to execute
         syntax: Syntax file to use for parsing
     """
+    from collections import Counter
+
     # Filter .yui files, excluding _doctest.yui
     yui_files = [f for f in files if f.endswith('.yui') and not f.endswith('_doctest.yui')]
 
@@ -635,6 +633,7 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
         sys.exit(1)
 
     results = []
+    error_counts = Counter()
 
     for filename in yui_files:
         try:
@@ -662,35 +661,47 @@ def pass_at_1_mode(files: list, syntax: str = 'yui'):
         except FileNotFoundError:
             # File not found
             results.append(0)
+            error_counts['file-not-found'] += 1
             print(f"✗ {filename} (File not found)")
 
         except YuiError as e:
             # Yui syntax or runtime error
             results.append(0)
+            error_counts[e.messages[0]] += 1
             print(f"✗ {label}")
             print(runtime.format_error(e, "  | "))
 
         except Exception as e:
             # Other errors
             results.append(0)
+            error_counts['other-error'] += 1
             print(f"✗ {label}")
             print(f"  | Error: {e}")
 
     # Calculate pass rate
     total = len(results)
     passed = sum(results)
+    failed = total - passed
     pass_rate = passed / total if total > 0 else 0
 
     # Display results
     print(f"\n{'='*50}")
     print(f"Total: {total}")
     print(f"Passed: {passed}")
-    print(f"Failed: {total - passed}")
+    print(f"Failed: {failed}")
     print(f"pass@1: {pass_rate:.2%} ({passed}/{total})")
+
+    # Error breakdown
+    if error_counts:
+        print(f"\nError breakdown ({failed} failures):")
+        for error_type, count in error_counts.most_common():
+            bar = '█' * count
+            print(f"  {error_type:<30} {count:>4}  {bar}")
+
     print(f"{'='*50}")
 
     # Exit with error code if any failed
-    if total - passed > 0:
+    if failed > 0:
         sys.exit(1)
 
 
