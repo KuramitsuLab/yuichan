@@ -117,6 +117,16 @@ testcases = {
     "\"a\"==\"a\"": (BinaryNode("==", "a", "a"), True),
     "a==0": (BinaryNode("==", NameNode("a"), 0), False),
     "a==1": (BinaryNode("==", NameNode("a"), 1), True),
+    # complex operatos # a=1
+    "1+2+3": (BinaryNode("+", BinaryNode("+", 1, 2), 3), 6),
+    "2*3*4": (BinaryNode("*", BinaryNode("*", 2, 3), 4), 24),
+    "1-2-3": (BinaryNode("-", BinaryNode("-", 1, 2), 3), -4),
+    "24/2/3": (BinaryNode("/", BinaryNode("/", 24, 2), 3), 4),
+    "3*2+4": (BinaryNode("+", BinaryNode("*", 3, 2), 4), 10),
+    "3*(2+4)": (BinaryNode("*", 3, BinaryNode("+", 2, 4)), 18),
+    "a+3*2": (BinaryNode("+", NameNode("a"), BinaryNode("*", 3, 2)), 7),
+    "(a+3)*2": (BinaryNode("*", BinaryNode("+", NameNode("a"), 3), 2), 8),
+
 
     # Assignment
     "x=42": (AssignmentNode(NameNode("x"), 42), ("x", 42)),

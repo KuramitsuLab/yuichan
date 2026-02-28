@@ -679,14 +679,18 @@ def _compare(left, right) -> int:
 @dataclass
 class Operator(ABC):
     symbol: str
-    comparative: bool
-
-    def __init__(self, symbol: str, comparative: bool):
+    precedence: int
+    
+    def __init__(self, symbol: str, precedence: int = 0):
         self.symbol = symbol
-        self.comparative = comparative
+        self.precedence = precedence
 
     def __str__(self):
         return self.symbol
+
+    @property
+    def comparative(self) -> bool:
+        return self.precedence == 3
 
     @abstractmethod
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
@@ -695,7 +699,7 @@ class Operator(ABC):
 @dataclass
 class Equals(Operator):
     def __init__(self, symbol: str = "=="):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return left.equals(right)
@@ -703,7 +707,7 @@ class Equals(Operator):
 @dataclass
 class NotEquals(Operator):
     def __init__(self, symbol: str = "!="):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return not left.equals(right)
@@ -711,7 +715,7 @@ class NotEquals(Operator):
 @dataclass
 class LessThan(Operator):
     def __init__(self, symbol: str = "<"):
-        super().__init__(symbol, comparative=True)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return not left.equals(right) and \
@@ -720,7 +724,7 @@ class LessThan(Operator):
 @dataclass
 class GreaterThan(Operator):
     def __init__(self, symbol: str = ">"):
-        super().__init__(symbol, comparative=True)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return not left.equals(right) and \
@@ -729,7 +733,7 @@ class GreaterThan(Operator):
 @dataclass
 class LessThanEquals(Operator):
     def __init__(self, symbol: str = "<="):
-        super().__init__(symbol, comparative=True)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return left.equals(right) or \
@@ -738,7 +742,7 @@ class LessThanEquals(Operator):
 @dataclass
 class GreaterThanEquals(Operator):
     def __init__(self, symbol: str = ">="):
-        super().__init__(symbol, comparative=True)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return left.equals(right) or \
@@ -747,7 +751,7 @@ class GreaterThanEquals(Operator):
 @dataclass
 class In(Operator):
     def __init__(self, symbol: str = "in"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         right_array = right.array
@@ -759,7 +763,7 @@ class In(Operator):
 @dataclass
 class NotIn(Operator):
     def __init__(self, symbol: str = "notin"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=3)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         right_array = right.array
@@ -771,7 +775,7 @@ class NotIn(Operator):
 @dataclass
 class Add(Operator):
     def __init__(self, symbol: str = "+"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=2)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         if types.is_string(left) and types.is_string(right):
@@ -785,7 +789,7 @@ class Add(Operator):
 @dataclass
 class Sub(Operator):
     def __init__(self, symbol: str = "-"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=2)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         NumberType.match_or_raise(left, binary_node)
@@ -795,7 +799,7 @@ class Sub(Operator):
 @dataclass
 class Mul(Operator):
     def __init__(self, symbol: str = "*"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=1)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         NumberType.match_or_raise(left, binary_node)
@@ -805,7 +809,7 @@ class Mul(Operator):
 @dataclass
 class Div(Operator):
     def __init__(self, symbol: str = "/"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=1)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         NumberType.match_or_raise(left, binary_node)
@@ -820,7 +824,7 @@ class Div(Operator):
 @dataclass
 class Mod(Operator):
     def __init__(self, symbol: str = "%"):
-        super().__init__(symbol, comparative=False)
+        super().__init__(symbol, precedence=1)
 
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         NumberType.match_or_raise(left, binary_node)

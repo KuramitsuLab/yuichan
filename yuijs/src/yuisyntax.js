@@ -585,6 +585,8 @@ const BUILTIN_SYNTAXES = {
         "key-value-separator": ":",
         "grouping-begin!": "",
         "grouping-end!": "",
+        "grouping-begin": "",
+        "grouping-end": "",
         "minus-begin": "\\(-\\s+",
         "minus-end": "\\)",
         "length-begin": "\\(len\\s+",
@@ -702,6 +704,11 @@ const DEFAULT_SYNTAX_JSON = {
 
     'array-indexer-suffix': '\\[',
     'array-indexer-end':    '\\]',
+
+    'grouping-begin': '\\(',
+    'grouping-end':   '\\)',
+
+    'unary-inspect':  '👀',
 
     'funcapp-args-begin':    '\\(',
     'funcapp-args-end':       '\\)',

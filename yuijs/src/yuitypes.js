@@ -852,9 +852,13 @@ YuiValue.FalseValue = new YuiValue(false, BoolType);
 // ─────────────────────────────────────────────
 
 export class Operator {
-    constructor(symbol, comparative) {
+    constructor(symbol, precedence = 0) {
         this.symbol = symbol;
-        this.comparative = comparative;
+        this.precedence = precedence;
+    }
+
+    get comparative() {
+        return this.precedence === 3;
     }
 
     toString() {
@@ -868,7 +872,7 @@ export class Operator {
 
 export class Equals extends Operator {
     constructor(symbol = '==') {
-        super(symbol, false);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -878,7 +882,7 @@ export class Equals extends Operator {
 
 export class NotEquals extends Operator {
     constructor(symbol = '!=') {
-        super(symbol, false);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -888,7 +892,7 @@ export class NotEquals extends Operator {
 
 export class LessThan extends Operator {
     constructor(symbol = '<') {
-        super(symbol, true);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -899,7 +903,7 @@ export class LessThan extends Operator {
 
 export class GreaterThan extends Operator {
     constructor(symbol = '>') {
-        super(symbol, true);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -910,7 +914,7 @@ export class GreaterThan extends Operator {
 
 export class LessThanEquals extends Operator {
     constructor(symbol = '<=') {
-        super(symbol, true);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -921,7 +925,7 @@ export class LessThanEquals extends Operator {
 
 export class GreaterThanEquals extends Operator {
     constructor(symbol = '>=') {
-        super(symbol, true);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -932,7 +936,7 @@ export class GreaterThanEquals extends Operator {
 
 export class In extends Operator {
     constructor(symbol = 'in') {
-        super(symbol, false);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -946,7 +950,7 @@ export class In extends Operator {
 
 export class NotIn extends Operator {
     constructor(symbol = 'notin') {
-        super(symbol, false);
+        super(symbol, 3);
     }
 
     evaluate(leftNode, rightNode) {
@@ -959,7 +963,7 @@ export class NotIn extends Operator {
 }
 
 export class Add extends Operator {
-    constructor(symbol = '+') { super(symbol, false); }
+    constructor(symbol = '+') { super(symbol, 2); }
     evaluate(left, right) {
         if (types.isString(left) && types.isString(right)) {
             return new YuiValue(YuiType.matchedNative(left) + YuiType.matchedNative(right));
@@ -976,7 +980,7 @@ export class Add extends Operator {
 }
 
 export class Sub extends Operator {
-    constructor(symbol = '-') { super(symbol, false); }
+    constructor(symbol = '-') { super(symbol, 2); }
     evaluate(left, right) {
         NumberType.matchOrRaise(left);
         NumberType.matchOrRaise(right);
@@ -987,7 +991,7 @@ export class Sub extends Operator {
 }
 
 export class Mul extends Operator {
-    constructor(symbol = '*') { super(symbol, false); }
+    constructor(symbol = '*') { super(symbol, 1); }
     evaluate(left, right) {
         NumberType.matchOrRaise(left);
         NumberType.matchOrRaise(right);
@@ -998,7 +1002,7 @@ export class Mul extends Operator {
 }
 
 export class Div extends Operator {
-    constructor(symbol = '/') { super(symbol, false); }
+    constructor(symbol = '/') { super(symbol, 1); }
     evaluate(left, right) {
         NumberType.matchOrRaise(left);
         NumberType.matchOrRaise(right);
@@ -1010,7 +1014,7 @@ export class Div extends Operator {
 }
 
 export class Mod extends Operator {
-    constructor(symbol = '%') { super(symbol, false); }
+    constructor(symbol = '%') { super(symbol, 1); }
     evaluate(left, right) {
         NumberType.matchOrRaise(left);
         NumberType.matchOrRaise(right);

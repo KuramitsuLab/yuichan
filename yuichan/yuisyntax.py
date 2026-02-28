@@ -172,6 +172,9 @@ DEFAULT_SYNTAX_JSON = {
     "string-interpolation-end": "\\}",
 #    "string-content-end": "\\\\|\\{|\\\"",
 
+    "grouping-begin": "\\(",
+    "grouping-end": "\\)",
+
     "array-begin": "\\[",
     "array-end": "\\]",
     "array-separator": ",",

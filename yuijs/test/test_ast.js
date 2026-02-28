@@ -128,6 +128,15 @@ export const testcases = {
     '"b"[0]': [new GetIndexNode(new StringNode('b'), 0), 98],  // ord('b')
 
     // BinaryNode — NOTE: JS constructor is BinaryNode(left, op, right)
+    // complex operators (a=1)
+    '1+2+3':   [new BinaryNode(new BinaryNode(1, '+', 2), '+', 3), 6],
+    '2*3*4':   [new BinaryNode(new BinaryNode(2, '*', 3), '*', 4), 24],
+    '1-2-3':   [new BinaryNode(new BinaryNode(1, '-', 2), '-', 3), -4],
+    '24/2/3':  [new BinaryNode(new BinaryNode(24, '/', 2), '/', 3), 4],
+    '3*2+4':   [new BinaryNode(new BinaryNode(3, '*', 2), '+', 4), 10],
+    '3*(2+4)': [new BinaryNode(3, '*', new BinaryNode(2, '+', 4)), 18],
+    'a+3*2':   [new BinaryNode(new NameNode('a'), '+', new BinaryNode(3, '*', 2)), 7],
+    '(a+3)*2': [new BinaryNode(new BinaryNode(new NameNode('a'), '+', 3), '*', 2), 8],
     'a+1':     [new BinaryNode(new NameNode('a'), '+', 1), 2],
     'a-1':     [new BinaryNode(new NameNode('a'), '-', 1), 0],
     'a*2':     [new BinaryNode(new NameNode('a'), '*', 2), 2],

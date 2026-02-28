@@ -3,7 +3,7 @@ import pytest
 from .yuiast import (
     ConstNode, NumberNode, StringNode,
     ArrayNode, ObjectNode,
-    NameNode,
+    NameNode,BinaryNode,
     MinusNode, ArrayLenNode, GetIndexNode,
     AssignmentNode, IncrementNode, DecrementNode, AppendNode,
     BlockNode, IfNode, RepeatNode, BreakNode,
@@ -15,101 +15,61 @@ from .yuisyntax import load_syntax
 
 yui_syntax = load_syntax('yui')
 
-class TestCodeGeneration:
-    """Yuiコード生成に関するテストクラス"""
+testcases = {
+    # ConstNode
+    "null":  (ConstNode(None),'値なし'),
+    "true":  (ConstNode(True),'真'),
+    "false": (ConstNode(False),'偽'),
+    # NumberNode
+    "123": (NumberNode(123), '123'),
+    # StringNode
+    '"hello"': (StringNode("hello"), '"hello"'),
+    # ArrayNode
+    "[1,2,3]": (ArrayNode([NumberNode(1), NumberNode(2), NumberNode(3)]), '[1,2,3]'),
+    # ObjectNode
+    '{"a":1,"b":"two"}': (ObjectNode([
+        StringNode("a"), NumberNode(1),
+        StringNode("b"), StringNode("two"),
+    ]), '{"a":1,"b":"two"}'),
+    # MinusNode
+    "-5": (MinusNode(NumberNode(5)), '-5'),
+    # ArrayLenNode
+    "arr.length": (ArrayLenNode(NameNode("arr")), 'arrの大きさ'),
+    # GetIndexNode
+    "arr[2]": (GetIndexNode(NameNode("arr"), NumberNode(2)), 'arr[2]'),
+    # PrintExpressionNode with inspection
+    "inspect(a)": (PrintExpressionNode(NameNode("a"), inspection=True), '👀a'),
+    # BinaryNode
+    "1+2": (BinaryNode("+", 1, 2), '1+2'),
+    "3*4": (BinaryNode("*", 3, 4), '3*4'),
+    "1+2*3": (BinaryNode("+", 1, BinaryNode("*", 2, 3)), '1+2*3'),
+    "(1+2)*3": (BinaryNode("*", BinaryNode("+", 1, 2), 3), '(1+2)*3'),
+    "1-2-3": (BinaryNode("-", BinaryNode("-", 1, 2), 3), '1-2-3'),
+    "1-(2-3)": (BinaryNode("-", 1, BinaryNode("-", 2, 3)), '1-(2-3)'),
+    # AssignmentNode
+    "x=10": (AssignmentNode(NameNode("x"), NumberNode(10)), 'x=10'),
+    # IncrementNode
+    "x++": (IncrementNode(NameNode("x")), 'xを増やす'),
+    # DecrementNode
+    "x--": (DecrementNode(NameNode("x")), 'xを減らす'),
+    # AppendNode
+    "arr.push(10)": (AppendNode(NameNode("arr"), NumberNode(10)), 'arrに10を追加する'),
+    # BreakNode
+    "break": (BreakNode(), 'くり返しを抜ける'),
+    # ReturnNode
+    "return result": (ReturnNode(NameNode("result")), 'resultが答え'),
+    # PrintExpressionNode
+    'print "Hello, World!"': (PrintExpressionNode(StringNode("Hello, World!")), '"Hello, World!"'),   
+    # BlockNode
+    "{ x=1; y=2; }": (BlockNode([
+        AssignmentNode(NameNode("x"), NumberNode(1)),
+        AssignmentNode(NameNode("y"), NumberNode(2)),
+    ], top_level=True), 'x=1\ny=2'),
+}
 
-    def init_coder(self):
-        return CodingVisitor(syntax_json=yui_syntax)
+@pytest.mark.parametrize("name", list(testcases.keys()))
+def test_coding(name):
+    node, expected = testcases[name]
+    coder = CodingVisitor(syntax_json=yui_syntax)
+    assert coder.emit(node) == expected
 
-    def test_ConstNode_null(self):
-        emitter = self.init_coder()
-        assert emitter.emit(ConstNode(None)) == '値なし'
-
-    def test_ConstNode_true(self):
-        emitter = self.init_coder()
-        assert emitter.emit(ConstNode(True)) == '真'
-
-    def test_ConstNode_false(self):
-        emitter = self.init_coder()
-        assert emitter.emit(ConstNode(False)) == '偽'
-
-    def test_NumberNode(self):
-        node = NumberNode(123)
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '123'
-
-    def test_StringNode(self):
-        node = StringNode("hello")
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '"hello"'
-
-    def test_ArrayNode(self):
-        node = ArrayNode([NumberNode(1), NumberNode(2), NumberNode(3)])
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '[1,2,3]'
-
-    def test_ObjectNode(self):
-        node = ObjectNode([
-            StringNode("a"), NumberNode(1),
-            StringNode("b"), StringNode("two"),
-        ])
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '{"a":1,"b":"two"}'
-
-    def test_MinusNode(self):
-        node = MinusNode(NumberNode(5))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '-5'
-    
-    def test_ArrayLenNode(self):
-        node = ArrayLenNode(NameNode("arr"))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'arrの大きさ'
-    
-    def test_GetIndexNode(self):
-        node = GetIndexNode(NameNode("arr"), NumberNode(2))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'arr[2]'
-    
-    def test_AssignmentNode(self):
-        node = AssignmentNode(NameNode("x"), NumberNode(10))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'x=10'
-
-    def test_IncrementNode(self):
-        node = IncrementNode(NameNode("x"))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'xを増やす'
-
-    def test_DecrementNode(self):
-        node = DecrementNode(NameNode("x"))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'xを減らす'
-
-    def test_AppendNode(self):
-        node = AppendNode(NameNode("arr"), NumberNode(10))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'arrに10を追加する'
-
-    def test_BreakNode(self):
-        node = BreakNode()
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'くり返しを抜ける'
-
-    def test_ReturnNode(self):
-        node = ReturnNode(NameNode("result"))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'resultが答え'
-
-    def test_PrintExpressionNode(self):
-        node = PrintExpressionNode(StringNode("Hello, World!"))
-        emitter = self.init_coder()
-        assert emitter.emit(node) == '"Hello, World!"'
-
-    def test_BlockNode(self):
-        node = BlockNode([
-            AssignmentNode(NameNode("x"), NumberNode(1)),
-            AssignmentNode(NameNode("y"), NumberNode(2)),
-        ], top_level=True)
-        emitter = self.init_coder()
-        assert emitter.emit(node) == 'x=1\ny=2'

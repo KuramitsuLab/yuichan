@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any, Union
 from abc import ABC, abstractmethod
-from .yuitypes import OPERATORS
+from .yuitypes import OPERATORS, Operator
 
 @dataclass
 class ASTNode(ABC):
@@ -224,7 +224,7 @@ class BinaryNode(ASTNode):
     """二項演算子を表すノード"""
     left_node: ExpressionNode
     right_node: ExpressionNode
-    operator: str
+    operator: Operator
     comparative: bool
 
     def __init__(self, operator: str, left: ExpressionNode, right: ExpressionNode, comparative: bool = False):

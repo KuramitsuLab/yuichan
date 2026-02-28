@@ -4,14 +4,84 @@ import { CodingVisitor } from '../src/yuicoding.js';
 import { YuiParser } from '../src/yuiparser.js';
 import { YuiRuntime } from '../src/yuiruntime.js';
 import {
-    ConstNode, NumberNode, StringNode, ArrayNode, NameNode,
-    AssignmentNode, BlockNode, FuncDefNode, FuncAppNode, ReturnNode,
-    RepeatNode, IncrementNode, AppendNode,
+    ConstNode, NumberNode, StringNode, ArrayNode, ObjectNode, NameNode,
+    BinaryNode, MinusNode, ArrayLenNode, GetIndexNode,
+    AssignmentNode, IncrementNode, DecrementNode, AppendNode,
+    BlockNode, IfNode, RepeatNode, BreakNode,
+    FuncDefNode, FuncAppNode, ReturnNode,
+    PrintExpressionNode, AssertNode,
 } from '../src/yuiast.js';
 
 const STDLIB = '標準ライブラリを使う\n';
 
-// Helper: parse and regenerate
+// ─────────────────────────────────────────────
+// Parametrized testcases: name → [node, expectedYuiCode]
+// ─────────────────────────────────────────────
+// NOTE: JS yui syntax has word-segmenter:" " so spaces appear between tokens.
+// Python yui.json has no word-segmenter so Python generates e.g. "1+2"; JS generates "1 + 2".
+const testcases = {
+    // ConstNode
+    'null':  [new ConstNode(null),  '値なし'],
+    'true':  [new ConstNode(true),  '真'],
+    'false': [new ConstNode(false), '偽'],
+    // NumberNode
+    '123': [new NumberNode(123), '123'],
+    // StringNode
+    '"hello"': [new StringNode('hello'), '"hello"'],
+    // ArrayNode — word-segmenter adds space after comma
+    '[1,2,3]': [new ArrayNode([new NumberNode(1), new NumberNode(2), new NumberNode(3)]), '[1, 2, 3]'],
+    // ObjectNode — same
+    '{"a":1,"b":"two"}': [new ObjectNode([
+        new StringNode('a'), new NumberNode(1),
+        new StringNode('b'), new StringNode('two'),
+    ]), '{"a": 1, "b": "two"}'],
+    // MinusNode — unary-minus: "-" is in no-space set
+    '-5': [new MinusNode(new NumberNode(5)), '-5'],
+    // ArrayLenNode — property-accessor "の" gets space before it
+    'arr.length': [new ArrayLenNode(new NameNode('arr')), 'arr の 大きさ'],
+    // GetIndexNode — "[" is in no-space set
+    'arr[2]': [new GetIndexNode(new NameNode('arr'), new NumberNode(2)), 'arr[2]'],
+    // PrintExpressionNode with inspection — "👀" gets space before expression
+    'inspect(a)': [new PrintExpressionNode(new NameNode('a'), true), '👀 a'],
+    // BinaryNode — binary-infix symbols get spaces from word-segmenter
+    '1+2':     [new BinaryNode(new NumberNode(1), '+', new NumberNode(2)), '1 + 2'],
+    '3*4':     [new BinaryNode(new NumberNode(3), '*', new NumberNode(4)), '3 * 4'],
+    '1+2*3':   [new BinaryNode(new NumberNode(1), '+', new BinaryNode(new NumberNode(2), '*', new NumberNode(3))), '1 + 2 * 3'],
+    '(1+2)*3': [new BinaryNode(new BinaryNode(new NumberNode(1), '+', new NumberNode(2)), '*', new NumberNode(3)), '(1 + 2) * 3'],
+    '1-2-3':   [new BinaryNode(new BinaryNode(new NumberNode(1), '-', new NumberNode(2)), '-', new NumberNode(3)), '1 - 2 - 3'],
+    '1-(2-3)': [new BinaryNode(new NumberNode(1), '-', new BinaryNode(new NumberNode(2), '-', new NumberNode(3))), '1 - (2 - 3)'],
+    // AssignmentNode — assignment-infix "=" gets spaces
+    'x=10': [new AssignmentNode(new NameNode('x'), new NumberNode(10)), 'x = 10'],
+    // IncrementNode
+    'x++': [new IncrementNode(new NameNode('x')), 'x を増やす'],
+    // DecrementNode
+    'x--': [new DecrementNode(new NameNode('x')), 'x を減らす'],
+    // AppendNode
+    'arr.push(10)': [new AppendNode(new NameNode('arr'), new NumberNode(10)), 'arr に 10 を追加する'],
+    // BreakNode
+    'break': [new BreakNode(), 'くり返しを抜ける'],
+    // ReturnNode
+    'return result': [new ReturnNode(new NameNode('result')), 'result が答え'],
+    // PrintExpressionNode (print-begin/end both empty in yui)
+    'print "Hello, World!"': [new PrintExpressionNode(new StringNode('Hello, World!')), '"Hello, World!"'],
+    // BlockNode
+    '{ x=1; y=2; }': [new BlockNode([
+        new AssignmentNode(new NameNode('x'), new NumberNode(1)),
+        new AssignmentNode(new NameNode('y'), new NumberNode(2)),
+    ], true), 'x = 1\ny = 2'],
+};
+
+describe('CodingVisitor', () => {
+    test.each(Object.entries(testcases))('%s', (name, [node, expected]) => {
+        const visitor = new CodingVisitor('yui');
+        expect(visitor.emit(node)).toBe(expected);
+    });
+});
+
+// ─────────────────────────────────────────────
+// Roundtrip and execution tests
+// ─────────────────────────────────────────────
+
 function roundtrip(source, syntax = 'yui') {
     const parser = new YuiParser(syntax);
     const ast = parser.parse(source);
@@ -19,66 +89,11 @@ function roundtrip(source, syntax = 'yui') {
     return visitor.emit(ast);
 }
 
-// Helper: regenerate from AST and then execute
 function execGenerated(source) {
     const rt = new YuiRuntime();
     rt.exec(source, 'yui', 30, false);
     return rt.environments[rt.environments.length - 1];
 }
-
-describe('CodingVisitor', () => {
-    test('null literal', () => {
-        const node = new ConstNode(null);
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('値なし');
-    });
-
-    test('true literal', () => {
-        const node = new ConstNode(true);
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('真');
-    });
-
-    test('false literal', () => {
-        const node = new ConstNode(false);
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('偽');
-    });
-
-    test('integer literal', () => {
-        const node = new NumberNode(42);
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('42');
-    });
-
-    test('string literal', () => {
-        const node = new StringNode('hello');
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('"hello"');
-    });
-
-    test('array literal', () => {
-        const node = new ArrayNode([new NumberNode(1), new NumberNode(2), new NumberNode(3)]);
-        const visitor = new CodingVisitor('yui');
-        const result = visitor.emit(new BlockNode([new AssignmentNode('x', node)], true));
-        expect(result).toContain('[1, 2, 3]');
-    });
-
-    test('function definition', () => {
-        const body = new BlockNode([new ReturnNode(new NameNode('n'))]);
-        const func = new FuncDefNode('identity', ['n'], body);
-        const visitor = new CodingVisitor('yui');
-        const code = visitor.emit(new BlockNode([func], true));
-        expect(code).toContain('入力');
-        expect(code).toContain('に対し');
-        expect(code).toContain('identity');
-    });
-});
 
 describe('roundtrip (parse → generate → execute)', () => {
     test('simple assignment', () => {
@@ -96,13 +111,27 @@ describe('roundtrip (parse → generate → execute)', () => {
     });
 
     test('stdlib usage', () => {
-        // Roundtrip generates `x = 和(3, 4)` (spaces around =), which re-parses correctly.
         const source = STDLIB + 'x = 和(3, 4)';
         const generated = roundtrip(source);
         expect(generated).toContain('標準ライブラリを使う');
         expect(generated).toContain('和');
         const env = execGenerated(generated);
         expect(env['x']?.native ?? env['x']).toBe(7);
+    });
+
+    test('1-2-3 roundtrip (left-associative)', () => {
+        const generated = roundtrip('x = 1-2-3');
+        expect(generated).toBe('x = 1 - 2 - 3');
+    });
+
+    test('1-(2-3) roundtrip (grouping preserved)', () => {
+        const generated = roundtrip('x = 1-(2-3)');
+        expect(generated).toBe('x = 1 - (2 - 3)');
+    });
+
+    test('(1+2)*3 roundtrip (grouping preserved)', () => {
+        const generated = roundtrip('x = (1+2)*3');
+        expect(generated).toBe('x = (1 + 2) * 3');
     });
 });
 
@@ -131,8 +160,7 @@ describe('sexpr syntax', () => {
     });
 
     test('binary expression', () => {
-        // sexpr binary: (set! x + 1 2)) — the ( comes from assignment-begin, ) closes binary then assignment
-        const env = execSexpr('(set! x + 1 2))');
+        const env = execSexpr('(set! x (+ 1 2) )');
         expect(env('x')).toBe(3);
     });
 
@@ -142,7 +170,7 @@ describe('sexpr syntax', () => {
     });
 
     test('function definition and call', () => {
-        const src = '(define (succ n) (begin (return + n 1))))\n(set! x (succ 5))';
+        const src = '(define (succ n) (begin (return (+ n 1))))\n(set! x (succ 5))';
         const env = execSexpr(src);
         expect(env('x')).toBe(6);
     });

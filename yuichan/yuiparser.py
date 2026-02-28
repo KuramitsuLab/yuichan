@@ -485,30 +485,30 @@ LITERALS = ["@Number","@String","@Array","@Object","@Boolean"]
 class TermParser(ParserCombinator):
     def match(self, source: Source):
         opening_pos = source.pos
-        if source.is_("grouping-begin"):
-            expression_node = source.parse("@Expression")
-            source.require_("grouping-end", opening_pos=opening_pos)
-            return source.p(PrintExpressionNode(expression_node, grouping=True), start_pos=opening_pos)
-        if source.is_("length-begin"):
-            expression_node = source.parse("@Expression")
-            source.require_("length-end", opening_pos=opening_pos)
-            return source.p(ArrayLenNode(expression_node), start_pos=opening_pos)
-        if source.is_("minus-begin"):
-            expression = source.parse("@Expression", BK=False)
-            if source.is_("minus-end"):
-                return source.p(MinusNode(expression), start_pos=opening_pos)
-            source.pos = opening_pos
-        if source.is_("catch-begin"):
-            opening_pos = source.pos - len(source.matched_string)
-            expression = source.parse("@Expression", BK=False)
-            source.require_("catch-end", opening_pos=opening_pos)
-            return source.p(CatchNode(expression), start_pos=opening_pos)
         if source.is_("array-indexer-begin"):
             expression = source.parse("@Expression")
             source.require_("array-indexer-infix")
             index = source.parse("@Expression")
             source.require_("array-indexer-end", opening_pos=opening_pos)
             return source.p(GetIndexNode(expression, index), start_pos=opening_pos)
+        if source.is_("minus-begin"):
+            expression = source.parse("@Expression", BK=False)
+            if source.is_("minus-end"):
+                return source.p(MinusNode(expression), start_pos=opening_pos)
+            source.pos = opening_pos
+        if source.is_("length-begin"):
+            expression_node = source.parse("@Expression")
+            source.require_("length-end", opening_pos=opening_pos)
+            return source.p(ArrayLenNode(expression_node), start_pos=opening_pos)
+        if source.is_("catch-begin"):
+            opening_pos = source.pos - len(source.matched_string)
+            expression = source.parse("@Expression", BK=False)
+            source.require_("catch-end", opening_pos=opening_pos)
+            return source.p(CatchNode(expression), start_pos=opening_pos)
+        if source.is_("grouping-begin"):
+            expression_node = source.parse("@Expression")
+            source.require_("grouping-end", opening_pos=opening_pos)
+            return source.p(PrintExpressionNode(expression_node, grouping=True), start_pos=opening_pos)
         if source.is_defined("binary-infix-prefix-begin"):
             if source.is_("binary-infix-prefix", suffixes=["+","-","*","/","%","==","!=","<=",">=","<",">","in","notin"]):
                 operator = source.matched_suffix
@@ -584,17 +584,16 @@ class MultiplicativeParser(ParserCombinator):
     def match(self, source: Source):
         start_pos = source.pos
         left_node = source.parse("@Primary", BK=True)
-        saved_pos = source.pos
-        saved_indent = source.current_indent
+        saved = source.save()
         try:
-            if source.is_("binary-infix", suffixes=["*","/","%"]):
+            while source.is_("binary-infix", suffixes=["*","/","%"]):
                 operator = source.matched_suffix
-                right_node = source.parse("@Multiplicative")
-                return source.p(BinaryNode(operator, left_node, right_node), start_pos=start_pos)
+                right_node = source.parse("@Primary")
+                left_node = source.p(BinaryNode(operator, left_node, right_node), start_pos=start_pos)
+                saved = source.save()
         except YuiError:
             pass
-        source.pos = saved_pos #Backtracking
-        source.current_indent = saved_indent
+        source.backtrack(saved)
         return left_node
 
 NONTERMINALS["@Multiplicative"] = MultiplicativeParser()
@@ -603,17 +602,16 @@ class AdditiveParser(ParserCombinator):
     def match(self, source: Source):
         start_pos = source.pos
         left_node = source.parse("@Multiplicative", BK=True)
-        saved_pos = source.pos
-        saved_indent = source.current_indent
+        saved = source.save()
         try:
-            if source.is_("binary-infix", suffixes=["+","-"]):
+            while source.is_("binary-infix", suffixes=["+","-"]):
                 operator = source.matched_suffix
-                right_node = source.parse("@Additive")
-                return source.p(BinaryNode(operator, left_node, right_node), start_pos=start_pos)
+                right_node = source.parse("@Multiplicative")
+                left_node = source.p(BinaryNode(operator, left_node, right_node), start_pos=start_pos)
+                saved = source.save()
         except YuiError:
             pass
-        source.pos = saved_pos #Backtracking
-        source.current_indent = saved_indent
+        source.backtrack(saved)
         return left_node
 
 NONTERMINALS["@Additive"] = AdditiveParser()
@@ -633,7 +631,7 @@ class ComparativeParser(ParserCombinator):
         source.backtrack(saved)
         return left_node
 
-NONTERMINALS["@Comparative"] = ComparativeParser()
+#NONTERMINALS["@Comparative"] = ComparativeParser()
 
 NONTERMINALS["@Expression"] = ComparativeParser()
 
@@ -775,7 +773,7 @@ class IfParser(ParserCombinator):
                 operator = str(left_node.operator)
                 right_node = left_node.right_node
                 left_node = left_node.left_node
-            elif source.is_("if-infix", ['!=', '<=', '<', '>=', '>', 'notin', 'in', '==']):
+            elif source.is_("if-infix", ['notin', 'in', '!=', '<=', '<', '>=', '>', '==']):
                 operator = source.matched_suffix
                 BK=False
                 right_node = source.parse("@Expression", BK=BK)
@@ -826,11 +824,11 @@ class FuncDefParser(ParserCombinator):
         if not source.is_('funcdef-noarg'): # 引数なし
             source.require_('funcdef-args-begin', BK=BK) # 入力
             while not source.is_('funcdef-args-end', unconsumed=True):
-                arguments.append(source.parse("@Name"))
+                arguments.append(source.parse("@Name", BK=BK))
                 if source.is_('funcdef-arg-separator', if_undefined=True):
                     continue
                 break
-            source.require_('funcdef-args-end', BK=False)
+            source.require_('funcdef-args-end', BK=BK)
 
         source.require_('funcdef-block', BK=BK) # に対し
         body_node = source.parse("@Block", BK=False)

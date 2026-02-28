@@ -492,15 +492,12 @@ const LITERALS = ['@Number', '@String', '@Array', '@Object', '@Boolean'];
 class TermParser extends ParserCombinator {
     match(source, pc) {
         const openingPos = source.pos;
-        if (source.isMatch('grouping-begin')) {
+        if (source.isMatch('array-indexer-begin', { ifUndefined: false })) {
             const exprNode = parse('@Expression', source, pc);
-            source.tryMatch('grouping-end', { openingPos });
-            return exprNode;
-        }
-        if (source.isMatch('length-begin')) {
-            const exprNode = parse('@Expression', source, pc);
-            source.tryMatch('length-end', { openingPos });
-            return source.p({ node: new ArrayLenNode(exprNode), startPos: openingPos });
+            source.tryMatch('array-indexer-separator');
+            const indexNode = parse('@Expression', source, pc);
+            source.tryMatch('array-indexer-end', { openingPos });
+            return source.p({ node: new GetIndexNode(exprNode, indexNode), startPos: openingPos });
         }
         if (source.isMatch('minus-begin', { ifUndefined: false })) {
             const exprNode = parse('@Expression', source, pc);
@@ -509,14 +506,14 @@ class TermParser extends ParserCombinator {
             }
             source.pos = openingPos;
         }
-        if (source.isMatch('array-indexer-begin', { ifUndefined: false })) {
+        if (source.isMatch('length-begin')) {
             const exprNode = parse('@Expression', source, pc);
-            source.tryMatch('array-indexer-separator');
-            const indexNode = parse('@Expression', source, pc);
-            source.tryMatch('array-indexer-end', { openingPos });
-            return source.p({ node: new GetIndexNode(exprNode, indexNode), startPos: openingPos });
+            source.tryMatch('length-end', { openingPos });
+            return source.p({ node: new ArrayLenNode(exprNode), startPos: openingPos });
         }
         if (source.isDefined('binary-infix-prefix-begin')) {
+            const savedBeginPos = source.pos;
+            source.isMatch('binary-infix-prefix-begin', { ifUndefined: false }); // optional: consume '(' if present
             const prefixOp = source.findMatch('binary-infix-prefix', ['+', '-', '*', '/', '%', '==', '!=', '<=', '>=', '<', '>', 'notin', 'in']);
             if (prefixOp !== null) {
                 const leftNode = parse('@Expression', source, pc);
@@ -524,6 +521,7 @@ class TermParser extends ParserCombinator {
                 source.tryMatch('binary-infix-prefix-end', { openingPos });
                 return source.p({ node: new BinaryNode(leftNode, prefixOp, rightNode), startPos: openingPos });
             }
+            source.pos = savedBeginPos;
         }
         const savedPos = source.pos;
         if (source.isMatch('funcapp-begin', { ifUndefined: false })) {
@@ -544,6 +542,12 @@ class TermParser extends ParserCombinator {
                 }
             }
         }
+        if (source.isMatch('grouping-begin')) {
+            const exprNode = parse('@Expression', source, pc);
+            source.tryMatch('grouping-end', { openingPos });
+            exprNode.endPos = source.pos;
+            return exprNode;
+        }
         for (const literal of LITERALS) {
             if (NONTERMINALS[literal].quickCheck(source)) {
                 source.pos = openingPos;
@@ -562,7 +566,7 @@ class PrimaryParser extends ParserCombinator {
             const node = parse('@Primary', source, pc);
             return source.p({ node: new MinusNode(node), startPos });
         }
-        if (source.isMatch('unary-inspection', { ifUndefined: false })) {
+        if (source.isMatch('unary-inspect', { ifUndefined: false })) {
             const node = parse('@Primary', source, pc);
             return source.p({ node: new PrintExpressionNode(node, true), startPos });
         }
@@ -610,22 +614,21 @@ NONTERMINALS['@Primary'] = new PrimaryParser();
 class MultiplicativeParser extends ParserCombinator {
     match(source, pc) {
         const startPos = source.pos;
-        const leftNode = parse('@Primary', source, pc, { BK: true });
+        let leftNode = parse('@Primary', source, pc, { BK: true });
+        let saved = leftNode.endPos;
         try {
-            if (source.isMatch('binary-infix*', { ifUndefined: false })) {
-                const rightNode = parse('@Multiplicative', source, pc);
-                return source.p({ node: new BinaryNode(leftNode, '*', rightNode), startPos });
-            }
-            if (source.isMatch('binary-infix/', { ifUndefined: false })) {
-                const rightNode = parse('@Multiplicative', source, pc);
-                return source.p({ node: new BinaryNode(leftNode, '/', rightNode), startPos });
-            }
-            if (source.isMatch('binary-infix%', { ifUndefined: false })) {
-                const rightNode = parse('@Multiplicative', source, pc);
-                return source.p({ node: new BinaryNode(leftNode, '%', rightNode), startPos });
+            while (true) {
+                let op = null;
+                if (source.isMatch('binary-infix*', { ifUndefined: false })) op = '*';
+                else if (source.isMatch('binary-infix/', { ifUndefined: false })) op = '/';
+                else if (source.isMatch('binary-infix%', { ifUndefined: false })) op = '%';
+                if (op === null) break;
+                const rightNode = parse('@Primary', source, pc);
+                leftNode = source.p({ node: new BinaryNode(leftNode, op, rightNode), startPos });
+                saved = leftNode.endPos;
             }
         } catch {}
-        source.pos = leftNode.endPos;
+        source.pos = saved;
         return leftNode;
     }
 }
@@ -634,18 +637,20 @@ NONTERMINALS['@Multiplicative'] = new MultiplicativeParser();
 class AdditiveParser extends ParserCombinator {
     match(source, pc) {
         const startPos = source.pos;
-        const leftNode = parse('@Multiplicative', source, pc, { BK: true });
+        let leftNode = parse('@Multiplicative', source, pc, { BK: true });
+        let saved = leftNode.endPos;
         try {
-            if (source.isMatch('binary-infix+', { ifUndefined: false })) {
-                const rightNode = parse('@Additive', source, pc);
-                return source.p({ node: new BinaryNode(leftNode, '+', rightNode), startPos });
-            }
-            if (source.isMatch('binary-infix-', { ifUndefined: false })) {
-                const rightNode = parse('@Additive', source, pc);
-                return source.p({ node: new BinaryNode(leftNode, '-', rightNode), startPos });
+            while (true) {
+                let op = null;
+                if (source.isMatch('binary-infix+', { ifUndefined: false })) op = '+';
+                else if (source.isMatch('binary-infix-', { ifUndefined: false })) op = '-';
+                if (op === null) break;
+                const rightNode = parse('@Multiplicative', source, pc);
+                leftNode = source.p({ node: new BinaryNode(leftNode, op, rightNode), startPos });
+                saved = leftNode.endPos;
             }
         } catch {}
-        source.pos = leftNode.endPos;
+        source.pos = saved;
         return leftNode;
     }
 }
@@ -841,7 +846,7 @@ class IfParser extends ParserCombinator {
                 rightNode = leftNode.rightNode;
                 leftNode = leftNode.leftNode;
             } else {
-                operator = source.findMatch('if-infix', ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']);
+                operator = source.findMatch('if-infix', ['notin', 'in', '!=', '<=', '<', '>=', '>', '==']);
                 if (!operator) {
                     source.tryMatch('if-infix', { BK });
                 }
@@ -901,12 +906,12 @@ class FuncDefParser extends ParserCombinator {
         if (!source.isMatch('funcdef-noarg')) {
             source.tryMatch('funcdef-args-begin', { BK });
             while (!source.isMatch('funcdef-args-end', { unconsumed: true })) {
-                const argNode = parse('@Name', source, pc);
+                const argNode = parse('@Name', source, pc, { BK });
                 args.push(argNode);
                 if (!source.isDefined('funcdef-arg-separator') || source.isMatch('funcdef-arg-separator')) continue;
                 break;
             }
-            source.tryMatch('funcdef-args-end', { BK: false });
+            source.tryMatch('funcdef-args-end', { BK });
         }
 
         pc = { ...pc, indent: source.captureIndent() };

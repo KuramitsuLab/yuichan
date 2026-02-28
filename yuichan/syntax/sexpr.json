@@ -69,6 +69,9 @@
     "funcapp-separator": "",
     "funcapp-end": "\\)",
 
+    "grouping-begin": "",
+    "grouping-end": "",
+
     "import-standard": "\\(require-standard\\)",
     "import-begin": "\\(require\\s+",
     "import-end": "\\)",

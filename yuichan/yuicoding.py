@@ -89,8 +89,9 @@ class CodingVisitor(YuiSyntax):
                 self.string(' ')
         else:
             if self.random_seed is not None:
-                if random.random() < 0.5:
-                    self.string(' ')
+                if self.last_char() not in no_spaece_if_last_chars:
+                    if random.random() < 0.5:
+                        self.string(' ')
 
     def terminal(self, terminal: str, if_undefined = None, linefeed_before=False):
         if terminal == 'linefeed':
@@ -122,9 +123,14 @@ class CodingVisitor(YuiSyntax):
                 self.string(f' {line}')
                 self.linefeed()
 
-    def expression(self, node: ASTNode):
+    def expression(self, node: ASTNode, grouping=None):
         self.word_segment()
-        node.visit(self)
+        if grouping and self.is_defined('grouping-begin') and self.is_defined('grouping-end'):
+            self.terminal('grouping-begin')
+            node.visit(self)
+            self.terminal('grouping-end')
+        else:
+            node.visit(self)
 
     def statement(self, node: ASTNode):
         node.visit(self)
@@ -261,11 +267,31 @@ class CodingVisitor(YuiSyntax):
             self.expression(node.right_node)
             self.terminal('binary-infix-prefix-end')
         else:
-            self.expression(node.left_node)
+            self.expression(node.left_node, grouping=self.check_left_grouping(node, node.left_node))
             self.word_segment()
             self.terminal(f"binary-infix{symbol}")
             self.word_segment()
-            self.expression(node.right_node)
+            self.expression(node.right_node, grouping=self.check_right_grouping(node, node.right_node))
+
+    def check_left_grouping(self, parent: BinaryNode, child: ASTNode) -> bool:
+        if not isinstance(child, BinaryNode):
+            return False
+        parent_prec = parent.operator.precedence
+        child_prec = child.operator.precedence
+        #print(f"check_left_grouping: parent {parent.operator.symbol} (prec {parent_prec}), child {child.operator.symbol} (prec {child_prec})" )
+        if child_prec <= parent_prec:
+            return False
+        return True
+
+    def check_right_grouping(self, parent: BinaryNode, child: ASTNode) -> bool:
+        if not isinstance(child, BinaryNode):
+            return False
+        parent_prec = parent.operator.precedence
+        child_prec = child.operator.precedence
+        #print(f"check_right_grouping: parent {parent.operator.symbol} (prec {parent_prec}), child {child.operator.symbol} (prec {child_prec})" )
+        if child_prec < parent_prec:
+            return False
+        return True
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         if self.is_defined('property-length'):
@@ -349,8 +375,9 @@ class CodingVisitor(YuiSyntax):
             self.terminal('grouping-begin')
             self.expression(node.expression)
             self.terminal('grouping-end')
-        elif node.inspection and self.is_defined('unary-inspection'):
-            self.terminal('unary-inspection')
+            return
+        if node.inspection:
+            self.terminal('unary-inspect')
             self.expression(node.expression)
         else:
             self.terminal('print-begin')

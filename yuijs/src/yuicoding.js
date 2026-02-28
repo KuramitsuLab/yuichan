@@ -107,9 +107,25 @@ export class CodingVisitor extends YuiSyntax {
         }
     }
 
-    expression(node) {
+    expression(node, grouping = false) {
         this.wordSegment();
-        node.visit(this);
+        if (grouping && this.isDefined('grouping-begin') && this.isDefined('grouping-end')) {
+            this.terminal('grouping-begin');
+            node.visit(this);
+            this.terminal('grouping-end');
+        } else {
+            node.visit(this);
+        }
+    }
+
+    checkLeftGrouping(parent, child) {
+        if (!(child && child.operator)) return false;
+        return child.operator.precedence > parent.operator.precedence;
+    }
+
+    checkRightGrouping(parent, child) {
+        if (!(child && child.operator)) return false;
+        return child.operator.precedence >= parent.operator.precedence;
     }
 
     statement(node) {
@@ -265,11 +281,11 @@ export class CodingVisitor extends YuiSyntax {
             this.expression(node.rightNode);
             this.terminal('binary-infix-prefix-end');
         } else {
-            this.expression(node.leftNode);
+            this.expression(node.leftNode, this.checkLeftGrouping(node, node.leftNode));
             this.wordSegment();
             this.terminal(`binary-infix${symbol}`);
             this.wordSegment();
-            this.expression(node.rightNode);
+            this.expression(node.rightNode, this.checkRightGrouping(node, node.rightNode));
         }
     }
 
@@ -359,8 +375,10 @@ export class CodingVisitor extends YuiSyntax {
             this.terminal('grouping-begin');
             this.expression(node.expression);
             this.terminal('grouping-end');
-        } else if (node.inspection && this.isDefined('unary-inspection')) {
-            this.terminal('unary-inspection');
+            return;
+        }
+        if (node.inspection) {
+            this.terminal('unary-inspect');
             this.expression(node.expression);
         } else {
             this.terminal('print-begin');
