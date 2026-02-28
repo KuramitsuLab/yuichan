@@ -16,17 +16,37 @@ from .yuisyntax import load_syntax, YuiSyntax
 
 class CodingVisitor(YuiSyntax):
 
-    def __init__(self, syntax_json: Union[str, Dict[str, str]]):
+    def __init__(self, syntax_json: Union[str, Dict[str, str]], function_language=None):
         if isinstance(syntax_json, str):
             syntax_json = load_syntax(syntax_json)
         super().__init__(syntax_json)
         self.buffer = []
-        self.indent = 0
+        self.indent_string = "   "
+        self.indent_level = 0
         self.just_linefeeded = False
+        self.funcnamemap = {}
+        self.load_functionmap(function_language)
 
-    def emit(self, node: ASTNode, random_seed=None) -> str:
+    def load_functionmap(self, function_language=None) -> bool:
+        from .yuistdlib import standard_lib
+        if function_language is None:
+            self.funcnamemap = {}
+            return
+        targets, modules = standard_lib([])
+        targets = targets.lower().split('|')
+        index = targets.index(function_language)
+        if index < 0:
+            raise ValueError(f"Name '{function_language}' not found in standard library targets: {targets}")
+        for names, _ in modules:
+            names = names.split('|')
+            for name in names:
+                self.funcnamemap[name] = names[index]
+        return True
+
+    def emit(self, node: ASTNode, indent_string="   ", random_seed=None) -> str:
         self.buffer = []
-        self.indent = 0
+        self.indent_level = 0
+        self.indent_string = indent_string
         self.just_linefeeded = True
         self.random_seed = random_seed
         if not isinstance(node, StatementNode) and self.is_defined('print-begin'):
@@ -42,7 +62,10 @@ class CodingVisitor(YuiSyntax):
 
     def linefeed(self):
         if not self.just_linefeeded:
-            self.buffer.append('\n' + '  ' * self.indent)
+            if self.indent_string:
+                self.buffer.append('\n' + self.indent_string * self.indent_level)
+            else:
+                self.buffer.append(' ')
             self.just_linefeeded = True
 
     def string(self, text: str):
@@ -77,11 +100,11 @@ class CodingVisitor(YuiSyntax):
             return
         token = self.for_example(terminal)
         if token == "": 
-            print(f"Warning: terminal '{terminal}' is empty string")
+            #print(f"Warning: terminal '{terminal}' is empty string")
             return
         if linefeed_before:
             self.linefeed()
-        if token[0] not in ",()[]{}:\"'.":
+        if token[0] not in ",()[]{}:;\"'.":
             # avoid unnecessary word segmentation before terminals
             self.word_segment()
         self.string(token)
@@ -91,7 +114,7 @@ class CodingVisitor(YuiSyntax):
             return
         if self.is_defined('comment-begin') and self.is_defined('comment-end'):
             self.terminal('comment-begin')
-            self.string(comment)
+            self.string(f' {comment}')
             self.terminal('comment-end')
         elif self.is_defined('line-comment-begin'):
             for line in comment.splitlines():
@@ -172,14 +195,14 @@ class CodingVisitor(YuiSyntax):
             self.string(content)
             return
         self.terminal('array-begin')
-        self.indent += 1
+        self.indent_level += 1
         self.linefeed()
         for i, element in enumerate(node.elements):
             if i > 0:
                 self.terminal('array-separator')
                 self.linefeed()
             self.expression(element)
-        self.indent -= 1
+        self.indent_level -= 1
         self.linefeed()        
         self.terminal('array-end')
         
@@ -202,7 +225,7 @@ class CodingVisitor(YuiSyntax):
             self.string(content)
             return
         self.terminal('object-begin')
-        self.indent += 1
+        self.indent_level += 1
         self.linefeed()
         for i in range(0, len(node.elements), 2):
             if i > 0:
@@ -213,7 +236,7 @@ class CodingVisitor(YuiSyntax):
             self.expression(key_node)
             self.terminal('key-value-separator')
             self.expression(value_node)
-        self.indent -= 1
+        self.indent_level -= 1
         self.linefeed()
         self.terminal('object-end')
 
@@ -260,20 +283,26 @@ class CodingVisitor(YuiSyntax):
     def visitGetIndexNode(self, node: GetIndexNode):
         self.terminal('array-indexer-begin')
         self.expression(node.collection)
+        self.terminal('array-indexer-infix')
         self.terminal('array-indexer-suffix')
         self.expression(node.index_node)
         self.terminal('array-indexer-end')
     
     def visitFuncAppNode(self, node: FuncAppNode):
         self.terminal('funcapp-begin')
-        self.expression(node.name_node)
-        self.terminal('funcapp-args-begin')
-        for i, arg in enumerate(node.arguments):
-            if i > 0:
-                self.terminal('funcapp-separator')
-            self.expression(arg)
-        self.terminal('funcapp-args-end')
-        self.terminal('funcapp-end')
+        name = self.funcnamemap.get(node.name_node.name, node.name_node.name)
+        self.string(name)
+
+        if self.is_defined('funcapp-noarg') and len(node.arguments) == 0:
+            self.terminal('funcapp-noarg')
+        else:
+            self.terminal('funcapp-args-begin')
+            for i, arg in enumerate(node.arguments):
+                if i > 0:
+                    self.terminal('funcapp-separator')
+                self.expression(arg)
+            self.terminal('funcapp-args-end')
+            self.terminal('funcapp-end')
 
     def visitAssignmentNode(self, node: AssignmentNode):
         self.terminal('assignment-begin')
@@ -407,7 +436,7 @@ class CodingVisitor(YuiSyntax):
         if not node.top_level:
             self.terminal('block-begin-prefix')
             self.terminal('block-begin')
-            self.indent += 1
+            self.indent_level += 1
             self.linefeed()
 
         if len(node.statements) == 0:
@@ -422,13 +451,14 @@ class CodingVisitor(YuiSyntax):
                     statement.visit(self)
                 if isinstance(statement, FuncDefNode):
                     self.linefeed()
-                self.terminal("block-separator")
+                if not self.just_linefeeded:
+                    self.terminal("statement-separator")
                 if isinstance(statement, PassNode):
                     self.linefeed()
                 self.comment(statement.comment)
 
         if not node.top_level:
-            self.indent -= 1
+            self.indent_level -= 1
             self.just_linefeeded = False  # indent 変化後に正しいインデントで linefeed させる
             self.terminal('block-end', linefeed_before=True)
 

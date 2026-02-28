@@ -350,17 +350,16 @@ class NumberParser(ParserCombinator):
         return source.is_("number-first-char", unconsumed=True)
     
     def match(self, source: Source):
-        saved_pos = source.pos
+        start_pos = source.pos
         if source.is_("number-first-char"):
             source.require_("number-chars", lskip_ws=False)
             if source.is_("number-dot-char", lskip_ws=False):
-                source.require_("number-first-char", lskip_ws=False)
-                source.require_("number-chars", lskip_ws=False)
-                number = source.source[saved_pos:source.pos]
-                return source.p(NumberNode(float(number)), start_pos=saved_pos)
+                source.is_("number-chars", lskip_ws=False)
+                number = source.source[start_pos:source.pos]
+                return source.p(NumberNode(float(number)), start_pos=start_pos)
             else:
-                number = source.source[saved_pos:source.pos]
-            return source.p(NumberNode(int(number)), start_pos=saved_pos)
+                number = source.source[start_pos:source.pos]
+            return source.p(NumberNode(int(number)), start_pos=start_pos)
         raise YuiError(("expected-number",), source.p(length=1), BK=True)
 
 NONTERMINALS["@Number"] = NumberParser()
@@ -506,7 +505,7 @@ class TermParser(ParserCombinator):
             return source.p(CatchNode(expression), start_pos=opening_pos)
         if source.is_("array-indexer-begin"):
             expression = source.parse("@Expression")
-            source.require_("array-indexer-separator")
+            source.require_("array-indexer-infix")
             index = source.parse("@Expression")
             source.require_("array-indexer-end", opening_pos=opening_pos)
             return source.p(GetIndexNode(expression, index), start_pos=opening_pos)
@@ -552,12 +551,16 @@ class PrimaryParser(ParserCombinator):
         node = source.parse("@Term", BK=True)
         while source.has_next():
             opening_pos = source.pos
+            if source.is_("funcapp-noarg"):
+                node = source.p(FuncAppNode(node, []), start_pos=start_pos)
+                continue
             if source.is_("funcapp-args-begin"):
                 arguments = []
                 while not source.is_("funcapp-args-end", unconsumed=True):
                     arguments.append(source.parse("@Expression", lskip_lf=True))
                     if source.is_("funcapp-separator"):
                         continue
+                    break
                 source.require_("funcapp-args-end", opening_pos=opening_pos)
                 node = source.p(FuncAppNode(node, arguments), start_pos=start_pos)
                 continue
@@ -749,7 +752,7 @@ class RepeatParser(ParserCombinator):
         source.require_('repeat-times', BK=BK)
         source.require_('repeat-block', BK=BK)
         block_node = source.parse("@Block")
-        source.require_('repeat-end', BK=False)
+        source.require_('repeat-end', lskip_lf=True, BK=False)
         return source.p(RepeatNode(times_node, block_node), start_pos=start_pos, end_pos=block_node.end_pos)
 
 NONTERMINALS["@Repeat"] = RepeatParser()
@@ -772,7 +775,7 @@ class IfParser(ParserCombinator):
                 operator = str(left_node.operator)
                 right_node = left_node.right_node
                 left_node = left_node.left_node
-            elif source.is_("if-infix", ['==', '!=', '<=', '<', '>=', '>', 'notin', 'in']):
+            elif source.is_("if-infix", ['!=', '<=', '<', '>=', '>', 'notin', 'in', '==']):
                 operator = source.matched_suffix
                 BK=False
                 right_node = source.parse("@Expression", BK=BK)
@@ -785,7 +788,7 @@ class IfParser(ParserCombinator):
                     operator = "=="
         source.require_('if-condition-end', BK=BK)
 
-        source.require_('if-then', BK=False) # ならば                
+        source.require_('if-then', BK=BK) # ならば
         then_node = source.parse("@Block", BK=False)
         else_end_pos = source.pos
         node_end_pos = then_node.end_pos
@@ -804,7 +807,7 @@ class IfParser(ParserCombinator):
         else:
             source.pos = else_end_pos
             else_node = None
-        source.require_('if-end', BK=False)
+        source.require_('if-end', lskip_lf=True, BK=False)
         return source.p(IfNode(left_node, operator, right_node, then_node, else_node), start_pos=start_pos, end_pos=node_end_pos)
 
 NONTERMINALS["@If"] = IfParser()
@@ -831,7 +834,7 @@ class FuncDefParser(ParserCombinator):
 
         source.require_('funcdef-block', BK=BK) # に対し
         body_node = source.parse("@Block", BK=False)
-        source.require_('funcdef-end', BK=False)
+        source.require_('funcdef-end', lskip_lf=True, BK=False)
         return source.p(FuncDefNode(name_node, arguments, body_node), start_pos=start_pos, end_pos=body_node.end_pos)
 
 NONTERMINALS["@FuncDef"] = FuncDefParser()

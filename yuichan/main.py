@@ -98,6 +98,12 @@ Error message languages (--lang):
                         help='Display BNF grammar for the specified syntax (requires --syntax)')
     parser.add_argument('--lang', type=str, metavar='LANG', default='ja',
                         help='Error message language (default: ja)')
+    parser.add_argument('--random-seed', type=int, metavar='N', default=None,
+                        help='Random seed for code generation (used with --convert-to, --show-examples, --make-examples)')
+    parser.add_argument('--indent-string', type=str, metavar='STR', default=None,
+                        help='Indentation string for code generation (default: "   ")')
+    parser.add_argument('--function-language', type=str, metavar='LANG', default=None,
+                        help='Function name language for code generation (e.g. "yui", "python")')
     parser.add_argument('file', nargs='*', help='Yui file(s) to execute')
 
     args = parser.parse_args(argv)
@@ -158,7 +164,10 @@ Error message languages (--lang):
                 print("Error: --syntax option is required", file=sys.stderr)
                 print("Example: yui --syntax yui --show-examples", file=sys.stderr)
                 sys.exit(1)
-            show_examples(args.example, args.syntax)
+            show_examples(args.example, args.syntax,
+                          random_seed=args.random_seed,
+                          indent_string=args.indent_string,
+                          function_language=args.function_language)
             return
 
         # Example generation mode
@@ -171,7 +180,10 @@ Error message languages (--lang):
                 print("  - pylike   (Python style)", file=sys.stderr)
                 print("  - emoji.json       (Emoji style)", file=sys.stderr)
                 sys.exit(1)
-            make_examples(args.example, args.syntax)
+            make_examples(args.example, args.syntax,
+                          random_seed=args.random_seed,
+                          indent_string=args.indent_string,
+                          function_language=args.function_language)
             return
 
         # Required syntax file check (execution, interactive, conversion modes)
@@ -215,7 +227,10 @@ Error message languages (--lang):
                 print("Error: --convert-to requires at least one input file", file=sys.stderr)
                 sys.exit(1)
             for filename in args.file:
-                convert_and_save(filename, syntax, args.convert_to)
+                convert_and_save(filename, syntax, args.convert_to,
+                                 random_seed=args.random_seed,
+                                 indent_string=args.indent_string,
+                                 function_language=args.function_language)
             return
 
         # Execute file(s)
@@ -328,19 +343,26 @@ def interactive_mode(env: Dict[str, Any], syntax: str = 'yui'):
                 pass
 
 
-def convert_and_save(input_file: str, source_syntax: str, target_syntax: str):
+def convert_and_save(input_file: str, source_syntax: str, target_syntax: str,
+                     random_seed=None, indent_string=None, function_language=None):
     """Convert a file to target syntax and save in <target_syntax>_examples/ directory"""
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
     # Convert first, then save
     if input_file.endswith('.md'):
-        converted = convert_markdown_to_string(content, source_syntax, target_syntax)
+        converted = convert_markdown_to_string(content, source_syntax, target_syntax,
+                                               random_seed=random_seed,
+                                               indent_string=indent_string,
+                                               function_language=function_language)
     else:
         parser = YuiParser(source_syntax)
         ast = parser.parse(content)
-        visitor = CodingVisitor(target_syntax)
-        converted = visitor.emit(ast)
+        visitor = CodingVisitor(target_syntax, function_language=function_language)
+        emit_kwargs = dict(random_seed=random_seed)
+        if indent_string is not None:
+            emit_kwargs['indent_string'] = indent_string
+        converted = visitor.emit(ast, **emit_kwargs)
 
     # Derive short name for directory (strip path and .json if given)
     target_name = os.path.basename(target_syntax)
@@ -356,7 +378,8 @@ def convert_and_save(input_file: str, source_syntax: str, target_syntax: str):
     print(f"Converted: {input_file} -> {out_filename}")
 
 
-def convert_markdown_to_string(content: str, source_syntax: str, target_syntax: str) -> str:
+def convert_markdown_to_string(content: str, source_syntax: str, target_syntax: str,
+                               random_seed=None, indent_string=None, function_language=None) -> str:
     """Convert code blocks in Markdown content and return as string"""
     lines = content.split('\n')
     out_lines = []
@@ -378,8 +401,11 @@ def convert_markdown_to_string(content: str, source_syntax: str, target_syntax: 
                 try:
                     parser = YuiParser(source_syntax)
                     ast = parser.parse(code)
-                    visitor = CodingVisitor(target_syntax)
-                    out_lines.append(visitor.emit(ast))
+                    visitor = CodingVisitor(target_syntax, function_language=function_language)
+                    emit_kwargs = dict(random_seed=random_seed)
+                    if indent_string is not None:
+                        emit_kwargs['indent_string'] = indent_string
+                    out_lines.append(visitor.emit(ast, **emit_kwargs))
                 except Exception as e:
                     out_lines.append(f"# Conversion error: {e}")
                     out_lines.append(code)
@@ -468,12 +494,16 @@ def find_syntax(files: list, syntax_dir: str = None):
         print("No syntax matched all files.")
 
 
-def show_examples(example_name: str = None, syntax: str = 'yui'):
+def show_examples(example_name: str = None, syntax: str = 'yui',
+                  random_seed=None, indent_string=None, function_language=None):
     """サンプルコードを標準出力に表示する。
 
     Args:
         example_name: 特定のサンプル名（None の場合は全サンプル）
         syntax: 使用する構文ファイル
+        random_seed: コード生成の乱数シード
+        indent_string: インデント文字列
+        function_language: 関数名の言語
     """
     examples = yuiexample.get_samples()
 
@@ -487,16 +517,22 @@ def show_examples(example_name: str = None, syntax: str = 'yui'):
         if i > 0:
             print()
         print(f"# {example.name}: {example.description}")
-        print(example.generate(syntax, include_asserts=False))
+        print(example.generate(syntax, include_asserts=False,
+                               random_seed=random_seed, indent_string=indent_string,
+                               function_language=function_language))
 
 
-def make_examples(example_name: str = None, syntax: str = 'yui'):
+def make_examples(example_name: str = None, syntax: str = 'yui',
+                  random_seed=None, indent_string=None, function_language=None):
     """
     Generate sample code files
 
     Args:
         example_name: Specific example name (all examples if None)
         syntax: Syntax file to use
+        random_seed: Random seed for code generation
+        indent_string: Indentation string
+        function_language: Function name language
     """
     examples = yuiexample.get_samples()
 
@@ -518,7 +554,8 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
                 print(f"  - {ex.name}")
             sys.exit(1)
 
-        code = example.generate(syntax)
+        code = example.generate(syntax, random_seed=random_seed,
+                                indent_string=indent_string, function_language=function_language)
         filename = os.path.join(examples_dir, f"{example.name}.yui")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(code)
@@ -527,7 +564,8 @@ def make_examples(example_name: str = None, syntax: str = 'yui'):
 
     # Generate all examples
     for example in examples:
-        code = example.generate(syntax)
+        code = example.generate(syntax, random_seed=random_seed,
+                                indent_string=indent_string, function_language=function_language)
         filename = os.path.join(examples_dir, f"{example.name}.yui")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(code)

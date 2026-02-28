@@ -89,10 +89,10 @@
     "break": "break",
     "pass": "pass",
 
-    "return-begin": "return\\s+",
+    "return-begin": "return\\s",
     "return-end": "",
 
-    "repeat-begin": "while\\s+times\\(",
+    "repeat-begin": "while\\s+times\\s*\\(",
     "repeat-times": "\\)",
     "repeat-block": "",
     "repeat-end": "",

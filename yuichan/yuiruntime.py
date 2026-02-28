@@ -378,6 +378,8 @@ class YuiRuntime(object):
     def visitBlockNode(self, node: BlockNode):
         value = YuiValue.NullValue
         for statement in node.statements:
+            if isinstance(statement, PassNode):
+                continue
             value =statement.visit(self)
         return value
 

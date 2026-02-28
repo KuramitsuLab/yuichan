@@ -341,3 +341,5 @@ def standard_lib(modules: list):
             return value
         return YuiValue(types.unbox(value))
     modules.append((f'{TY_ARRAY}|配列化|toarray', yui_toarray))
+
+    return 'emoji|ja|en', modules

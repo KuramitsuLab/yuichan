@@ -51,10 +51,14 @@ class YuiExample:
         self.ast_node = ast_node
         self.kind = kind
 
-    def generate(self, syntax: str = 'yui', include_asserts: bool = True) -> str:
+    def generate(self, syntax: str = 'yui', include_asserts: bool = True,
+                 random_seed=None, indent_string=None, function_language=None) -> str:
         node = self.ast_node if include_asserts else _strip_asserts(self.ast_node)
-        visitor = CodingVisitor(syntax)
-        return visitor.emit(node)
+        visitor = CodingVisitor(syntax, function_language=function_language)
+        emit_kwargs = dict(random_seed=random_seed)
+        if indent_string is not None:
+            emit_kwargs['indent_string'] = indent_string
+        return visitor.emit(node, **emit_kwargs)
 
 def example_hello_world():
     statements = [

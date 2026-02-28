@@ -32,6 +32,8 @@ def get_example_from_pattern(pattern: str, random_seed=None) -> str:
             processed += get_example_from_pattern_inner(pattern)
             break
         e_pos = pattern.find(')', s_pos+1)
+        if e_pos == -1:
+            raise ValueError(f"Unmatched parentheses in pattern: `{original_pattern}`")
         processed += get_example_from_pattern_inner(pattern[:s_pos])
         inner = pattern[s_pos+1:e_pos]
         pattern = pattern[e_pos+1:]
@@ -158,7 +160,7 @@ DEFAULT_SYNTAX_JSON = {
 
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
-    "number-dot-char": "[\\.]",
+    "number-dot-char": "[\\.][0-9]",
 
     "name-first-char": "[A-Za-z_]",
     "name-chars": "[A-Za-z0-9_]*",
@@ -189,6 +191,13 @@ DEFAULT_SYNTAX_JSON = {
     "unary-inspect": "👀",
     "catch-begin": "🧤",
     "catch-end": "🧤",
+
+    "print-begin": "",
+    "print-end": "",
+
+    "assert-begin": ">>>\\s+",
+    "assert-infix": "[\\n]",
+    "assert-end": "",
 
 }
 
@@ -518,6 +527,7 @@ class YuiSyntax(object):
             pattern = self.terminals[terminal]
             if not isinstance(pattern, str):
                 pattern = pattern.pattern
+            #print(f"@for_example: terminal `{terminal}` with pattern `{pattern}`")  # デバッグ用
             example = get_example_from_pattern(pattern, random_seed=self.random_seed)
             return example
         return ""
