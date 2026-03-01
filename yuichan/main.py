@@ -22,6 +22,7 @@ from .yuisyntax import load_syntax, generate_bnf, list_syntax_names, find_matchi
 from .yuiruntime import YuiRuntime
 from .yuitypes import YuiError
 from .yuiast import IncrementNode, NameNode
+from .yuierror import set_verbose
 from . import yuiexample
 from . import message as _message
 
@@ -93,6 +94,8 @@ Error message languages (--lang):
                         help='Display BNF grammar for the specified syntax (requires --syntax)')
     parser.add_argument('--lang', type=str, metavar='LANG', default='ja',
                         help='Error message language (default: ja)')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='Enable verbose output (printed to stderr)')
     parser.add_argument('--random-seed', type=int, metavar='N', default=None,
                         help='Random seed for code generation (used with --convert-to, --show-examples, --make-examples)')
     parser.add_argument('--indent-string', type=str, metavar='STR', default=None,
@@ -104,6 +107,7 @@ Error message languages (--lang):
     args = parser.parse_args(argv)
 
     _message.set_language(args.lang)
+    set_verbose(args.verbose)
 
     try:
         # List examples

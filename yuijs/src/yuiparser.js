@@ -12,21 +12,7 @@ import {
 
 import { YuiValue, YuiType, YuiError } from './yuitypes.js';
 import { YuiSyntax, loadSyntax } from './yuisyntax.js';
-
-// ─────────────────────────────────────────────
-// Identifier extraction helpers
-// ─────────────────────────────────────────────
-
-function extractIdentifiers(text) {
-    const identifiers = [];
-    const pattern1 = /\n\s*([^\s\]\[\(\)"]+)\s*=(?!=)/g;
-    let m;
-    while ((m = pattern1.exec(text)) !== null) identifiers.push(m[1]);
-    const pattern2 = /([^\s\]\[\(\)"]+)\s*\(/g;
-    while ((m = pattern2.exec(text)) !== null) identifiers.push(m[1]);
-    const withUnicode = identifiers.filter(id => /[^\x00-\x7F]/.test(id));
-    return [...new Set(withUnicode)];
-}
+import { vprint } from './yuierror.js';
 
 // ─────────────────────────────────────────────
 // SourceNode (dummy node for error reporting)
@@ -49,7 +35,7 @@ class Source extends YuiSyntax {
         this.pos = pos;
         this.length = source.length;
         this.specialNames = [];
-        this.addSpecialNames(extractIdentifiers(source));
+        this.extractSpecialNames(source);
         this.memos = new Map();
     }
 
@@ -193,9 +179,31 @@ class Source extends YuiSyntax {
         }
     }
 
-    addSpecialNames(names) {
-        const combined = new Set([...this.specialNames, ...names]);
-        this.specialNames = [...combined].sort((a, b) => b.length - a.length);
+    extractSpecialNames(text) {
+        const names = this.isDefined('special-names')
+            ? (this.terminals['special-names'] ?? '').split('|')
+            : [];
+
+        const namePattern = this.terminals['special-name-pattern'] ?? '[^\\s\\[\\]\\(\\)",]+';
+
+        // 1. 変数定義のパターン（例: `name =` だが `==` は除外）
+        let varPat = (this.terminals['special-name-variable'] ?? '\\n\\s*({name_pattern})\\s*=(?!=)')
+            .replace('{name_pattern}', namePattern);
+        const re1 = new RegExp(varPat, 'gu');
+        let m;
+        while ((m = re1.exec(text)) !== null) names.push(m[1]);
+
+        // 2. 関数名のパターン（例: `name(` ）
+        let funcPat = (this.terminals['special-name-funcname'] ?? '({name_pattern})\\s*[\\(]')
+            .replace('{name_pattern}', namePattern);
+        const re2 = new RegExp(funcPat, 'gu');
+        while ((m = re2.exec(text)) !== null) names.push(m[1]);
+
+        const filtered = [...new Set(
+            names.map(n => n.trim()).filter(n => /[^\x00-\x7F]/.test(n))
+        )];
+        vprint('@extracted special names:', filtered);
+        this.specialNames = filtered.sort((a, b) => b.length - a.length);
     }
 
     matchSpecialName({ unconsumed = false } = {}) {

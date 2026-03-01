@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any, Union
 import re
 
 from .yuiast import (
-    ASTNode,
+    ASTNode, 
     ConstNode, NameNode, StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
@@ -14,42 +14,9 @@ from .yuiast import (
     AssertNode, CatchNode, ImportNode,
 )
 
-from .yuitypes import YuiValue, YuiType, YuiError
+from .yuitypes import YuiValue, YuiType, YuiError, vprint
 from .yuisyntax import YuiSyntax, load_syntax
 
-def is_all_alnum(s: str) -> bool:
-    for ch in s:
-        if not (('a' <= ch <= 'z') or ('A' <= ch <= 'Z') or ('0' <= ch <= '9') or (ch == '_')):
-            return False
-    return True
-
-def extract_identifiers(text):
-    identifiers = []
-    
-    # 識別子のパターン: アルファベットまたはアンダースコアで始まり、
-    # その後に英数字とアンダースコアが続く
-    identifier_pattern = r'[^\s\]\[\(\)"]+'
-    
-    # 1. 改行と= の間（==は除外）
-    pattern1 = rf'\n\s*({identifier_pattern})\s*=(?!=)'
-    matches1 = re.findall(pattern1, text)
-    identifiers.extend(matches1)
-    
-    # 2. 関数名のパターン
-    pattern2 = rf'({identifier_pattern})\s*[\(]'
-    matches2 = re.findall(pattern2, text)
-    identifiers.extend(matches2)
-    
-    def has_unicode(s):
-        for ch in s:
-            if ord(ch) > 127:
-                return True
-        return False
-
-    # Unicode文字を含む文字列のみ
-    identifiers = list(set(id for id in identifiers if has_unicode(id)))
-    # print(f"@Extracted identifiers: {identifiers}")  
-    return list(set(identifiers))
 
 @dataclass
 class SourceNode(ASTNode):
@@ -67,7 +34,7 @@ class Source(YuiSyntax):
         self.pos = pos
         self.length = len(source)
         self.special_names = []
-        self.add_special_names(extract_identifiers(source))
+        self.extract_special_names(source)
         self.current_indent = ""     
         self.memos = {}
     
@@ -232,9 +199,32 @@ class Source(YuiSyntax):
             return not pattern.search(captured)
         return True
 
-    def add_special_names(self, names: List[str]):
-        special_names = set(self.special_names + names)
-        self.special_names = sorted(special_names, key=len, reverse=True)
+    def extract_special_names(self, text: str) -> List[str]:
+        ...
+        if self.is_defined("special-names"):
+            names = self.terminals.get("special-names", "").split("|")
+        else:
+            names = []        
+    
+        name_pattern = self.terminals.get("special-name-pattern", r'[^\s\[\]\(\)",]+')
+        
+        # 1. 変数定義のパターン（例: `name =` だが `==` は除外）
+        var_pattern = self.terminals.get("special-name-variable", r'\n\s*({name_pattern})\s*=(?!=)')
+        var_pattern = var_pattern.replace("{name_pattern}", name_pattern)
+        matches1 = re.findall(var_pattern, text)
+        names.extend(matches1)
+        
+        # 2. 関数名のパターン（例: `name(` ）
+        funcapp_pattern = self.terminals.get("special-name-funcname", r'({name_pattern})\s*[\(]')
+        funcapp_pattern = funcapp_pattern.replace("{name_pattern}", name_pattern)
+        matches2 = re.findall(funcapp_pattern, text)
+        names.extend(matches2)
+
+
+        # Unicode文字を含む文字列のみ
+        names = list(set(name.strip() for name in names if not _is_alnum(name)))
+        vprint(f"@extracted special names: {names}")  
+        self.special_names = sorted(names, key=len, reverse=True)
 
     def match_special_name(self, unconsumed=False) -> Optional[str]:
         for name in self.special_names:
@@ -315,6 +305,12 @@ class Source(YuiSyntax):
         linenum, col, line = self.p(start_pos=self.pos).extract()
         print(f"@debug {message} at pos={self.pos} line={linenum} col={col}")
         print(f"{line}\n{' '*(col-1)}^")
+
+def _is_alnum(s: str) -> bool:
+    for ch in s:
+        if not (('a' <= ch <= 'z') or ('A' <= ch <= 'Z') or ('0' <= ch <= '9') or (ch == '_')):
+            return False
+    return True
 
 NONTERMINALS = {}
 
@@ -837,21 +833,41 @@ class FuncDefParser(ParserCombinator):
 
 NONTERMINALS["@FuncDef"] = FuncDefParser()
 
+yui_syntax = load_syntax("yui")
+
 class AssertParser(ParserCombinator):
     def match(self, source: Source):
         start_pos = source.pos
         BK = source.can_backtrack('assert-lookahead')
         source.require_('assert-begin', BK=BK)
         if BK: BK = source.pos == start_pos
-        test_node = source.parse("@Expression", BK=BK)
-        if isinstance(test_node, BinaryNode) and test_node.comparative:
-            reference_node = test_node.right_node
-            test_node = test_node.left_node
-        else:
+        saved = source.save()
+        try:
+            test_node = source.parse("@Expression", BK=BK)
+            if isinstance(test_node, BinaryNode) and test_node.comparative:
+                reference_node = test_node.right_node
+                test_node = test_node.left_node
+            else:
+                source.require_('assert-infix', BK=BK)
+                reference_node = source.parse("@Expression", BK=BK)
+            source.require_('assert-end', BK=BK)
+            return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
+        except YuiError as e:
+            source.backtrack(saved)
+        saved = source.terminals
+        try:
+            # Yuiの構文で再度試す
+            global yui_syntax
+            source.terminals = yui_syntax
+            test_node = source.parse("@Expression", BK=BK)
             source.require_('assert-infix', BK=BK)
             reference_node = source.parse("@Expression", BK=BK)
-        source.require_('assert-end', BK=BK)
-        return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
+            source.require_('assert-end', BK=BK)
+            return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
+        except YuiError:
+            raise e
+        finally:
+            source.terminals = saved
 
 NONTERMINALS["@Assert"] = AssertParser()
 

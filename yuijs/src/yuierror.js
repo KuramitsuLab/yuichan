@@ -3,6 +3,22 @@
 import { ASTNode } from './yuiast.js';
 
 // ─────────────────────────────────────────────
+// Verbose logging
+// ─────────────────────────────────────────────
+let _verbose = true;
+
+export function setVerbose(flag) {
+    _verbose = flag;
+}
+
+/** verbose モード時だけ stderr (Node.js) / console.error (browser) に出力する */
+export function vprint(...args) {
+    if (_verbose) {
+        console.error(...args);
+    }
+}
+
+// ─────────────────────────────────────────────
 // エラーメッセージ辞書
 // ─────────────────────────────────────────────
 export const ERROR_MESSAGES = {

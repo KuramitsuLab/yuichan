@@ -1,5 +1,21 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Any
+import sys
+
+# ─────────────────────────────────────────────
+# Verbose logging
+# ─────────────────────────────────────────────
+_verbose: bool = False
+
+def set_verbose(flag: bool) -> None:
+    """Enable or disable verbose output (called from main.py)."""
+    global _verbose
+    _verbose = flag
+
+def vprint(*args, **kwargs) -> None:
+    """Print only when verbose mode is on. Usage: vprint('msg', var)"""
+    if _verbose:
+        print(*args, file=sys.stderr, **kwargs)
 
 ERROR_MESSAGES = {
     # パーサーエラー
@@ -53,39 +69,23 @@ def _format_messages(messages: tuple) -> str:
     return f"{display} {rest}".strip() if rest else display
 
 
-def _normalize_messages(messages) -> tuple:
-    """非絵文字の連続する文字列を '-' で結合する。絵文字（ord > 127）で始まる文字列は独立要素として残す。"""
-    if isinstance(messages, str):
-        messages = (messages,)
-    result = []
-    parts: list = []
-    for msg in messages:
-        if msg and ord(msg[0]) > 127:
-            if parts:
-                result.append('-'.join(parts))
-                parts = []
-            result.append(msg)
-        else:
-            parts.append(msg)
-    if parts:
-        result.append('-'.join(parts))
-    return tuple(result)
-
-
 class YuiError(RuntimeError):
     """Yui言語のエラーを表現するクラス"""
     messages: tuple
-    error_node: Optional[ASTNode]
+    error_node: Optional[Any] # ASTNode であることが期待されるが、型ヒントにすると循環参照になるため Any としている
     BK: bool
 
-    def __init__(self, messages: tuple, error_node: Optional[ASTNode] = None,
-                 BK: bool = False):
+    def __init__(self, messages: tuple, error_node: Any = None, BK: bool = False):
         """YuiErrorを初期化する"""
+        from .yuiast import ASTNode as _ASTNode
         self.messages = _normalize_messages(messages)
         super().__init__(' '.join(self.messages))
-        from .yuiast import ASTNode as _ASTNode
         self.error_node = error_node if isinstance(error_node, _ASTNode) else None
         self.BK = BK
+
+    def add_message(self, message: str):
+        """エラーメッセージを追加する"""
+        self.messages += (message,)
 
     @property
     def lineno(self) -> int:
@@ -122,3 +122,21 @@ class YuiError(RuntimeError):
             indent = " " * (col - 1)
             message = f"{message} line {line + lineoffset}, column {col}:\n{prefix}{snippet}\n{prefix}{indent}{make_pointer}"
         return f"[構文エラー/SyntaxError] {message}"
+
+def _normalize_messages(messages) -> tuple:
+    """非絵文字の連続する文字列を '-' で結合する。絵文字（ord > 127）で始まる文字列は独立要素として残す。"""
+    if isinstance(messages, str):
+        messages = (messages,)
+    result = []
+    parts: list = []
+    for msg in messages:
+        if msg and ord(msg[0]) > 127:
+            if parts:
+                result.append('-'.join(parts))
+                parts = []
+            result.append(msg)
+        else:
+            parts.append(msg)
+    if parts:
+        result.append('-'.join(parts))
+    return tuple(result)

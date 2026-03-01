@@ -10,6 +10,7 @@ import { YuiValue, YuiType, YuiError,
          YuiStringType, YuiArrayType, YuiObjectType,
          OPERATORS, TYPES } from './yuitypes.js';
 import { loadSyntax, YuiSyntax } from './yuisyntax.js';
+import { setVerbose, vprint } from './yuierror.js';
 
 export * from './yuiast.js';
 export { YuiValue, YuiType, YuiError, YuiNullType, YuiBooleanType,
@@ -20,6 +21,7 @@ export { YuiRuntime, YuiBreakException, YuiReturnException,
 export { YuiParser };
 export { CodingVisitor };
 export { loadSyntax, YuiSyntax };
+export { setVerbose, vprint };
 
 /**
  * High-level Yui language API for browser use.
