@@ -752,7 +752,6 @@ class AppendParser extends ParserCombinator {
         const lvalueNode = parse('@Expression', source, pc, { BK });
         source.tryMatch('append-infix', { BK });
         const valueNode = parse('@Expression', source, pc, { BK });
-        source.tryMatch('append-suffix', { BK });
         source.tryMatch('append-end', { BK });
         return source.p({ node: new AppendNode(lvalueNode, valueNode), startPos });
     }

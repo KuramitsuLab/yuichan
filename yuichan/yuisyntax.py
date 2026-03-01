@@ -118,39 +118,6 @@ def get_example_from_pattern_inner(pattern: str)-> str:
     heading_char, remaining = split_heading_char(pattern)
     return heading_char + get_example_from_pattern_inner(remaining)
 
-def is_all_alnum(s: str) -> bool:
-    for ch in s:
-        if not (('a' <= ch <= 'z') or ('A' <= ch <= 'Z') or ('0' <= ch <= '9') or (ch == '_')):
-            return False
-    return True
-
-def extract_identifiers(text):
-    identifiers = []
-    
-    # 識別子のパターン: アルファベットまたはアンダースコアで始まり、
-    # その後に英数字とアンダースコアが続く
-    identifier_pattern = r'[^\s\]\[\(\)"]+'
-    
-    # 1. 改行と= の間（==は除外）
-    pattern1 = rf'\n\s*({identifier_pattern})\s*=(?!=)'
-    matches1 = re.findall(pattern1, text)
-    identifiers.extend(matches1)
-    
-    # 2. 関数名のパターン
-    pattern2 = rf'({identifier_pattern})\s*[\(]'
-    matches2 = re.findall(pattern2, text)
-    identifiers.extend(matches2)
-    
-    def has_unicode(s):
-        for ch in s:
-            if ord(ch) > 127:
-                return True
-        return False
-
-    # Unicode文字を含む文字列のみ
-    identifiers = list(set(id for id in identifiers if has_unicode(id)))
-    # print(f"@Extracted identifiers: {identifiers}")  
-    return list(set(identifiers))
 
 DEFAULT_SYNTAX_JSON = {
     "whitespace": "[ \\t\\r　]",
@@ -231,22 +198,13 @@ def load_syntax(filepath: Optional[str] = None) -> Dict[str, str]:
         string_end = terminals.get('string-end', r'\"')
         terminals['string-content-end'] = f"{escape}|{interpolation}|{string_end}"
 
-    if 'identifiers' not in terminals:
-        identifiers = extract_identifiers(json.dumps(terminals))
-        terminals['identifiers'] = identifiers
+    # if 'identifiers' not in terminals:
+    #     identifiers = extract_identifiers(json.dumps(terminals))
+    #     terminals['identifiers'] = identifiers
 
-    # if 'keywords' not in terminals:
-    #     keywords = set()
-    #     for key, pattern in terminals.items():
-    #         word = get_example_from_pattern(pattern).strip()
-    #         if is_all_alnum(word):
-    #             if word not in keywords:
-    #                 keywords.add(word)
-    #     terminals['keywords'] = keywords        
     return terminals
 
 _DEFAULT_SYNTAX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'syntax')
-
 
 def list_syntax_names(syntax_dir: Optional[str] = None) -> List[str]:
     """syntax ディレクトリにある syntax 名の一覧を返す（.json 拡張子なし、ソート済み）。"""
@@ -409,7 +367,7 @@ def generate_bnf(terminals: dict) -> str:
     r('Decrement',
       ex('decrement-begin'), E, ex('decrement-infix'), ex('decrement-end'))
     r('Append',
-      ex('append-begin'), E, ex('append-infix'), E, ex('append-suffix'), ex('append-end'))
+      ex('append-begin'), E, ex('append-infix'), E, ex('append-end'))
 
     if ex('break'):    r('Break',    ex('break'))
     if ex('continue'): r('Continue', ex('continue'))
@@ -515,6 +473,12 @@ class YuiSyntax(object):
     def update_syntax(self, **kwargs):
         self.terminals.update(kwargs)
 
+    def get(self, terminal: str):
+        pattern = self.terminals.get(terminal, "")
+        if not isinstance(pattern, str):
+            return pattern.pattern
+        return pattern
+
     def get_pattern(self, terminal: str, if_undefined = "") -> re.Pattern:
         pattern = self.terminals.get(terminal, if_undefined)
         if isinstance(pattern, str):
@@ -534,4 +498,5 @@ class YuiSyntax(object):
             example = get_example_from_pattern(pattern, random_seed=self.random_seed)
             return example
         return ""
+
 

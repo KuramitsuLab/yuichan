@@ -486,7 +486,8 @@ class TermParser(ParserCombinator):
             source.require_("array-indexer-infix")
             index = source.parse("@Expression")
             source.require_("array-indexer-end", opening_pos=opening_pos)
-            return source.p(GetIndexNode(expression, index), start_pos=opening_pos)
+            order_policy = source.get("array-indexer-order")
+            return source.p(GetIndexNode(expression, index, order_policy=order_policy), start_pos=opening_pos)
         if source.is_("minus-begin"):
             expression = source.parse("@Expression", BK=False)
             if source.is_("minus-end"):
@@ -565,12 +566,9 @@ class PrimaryParser(ParserCombinator):
                 source.require_("array-indexer-end", opening_pos=opening_pos)
                 node = source.p(GetIndexNode(node, index_node), start_pos=start_pos)
                 continue
-            save_pos = source.pos
-            if source.is_("property-accessor"):
-                if source.is_("property-length"):
-                    node = source.p(ArrayLenNode(node), start_pos=start_pos)
-                    continue
-                source.pos = save_pos
+            if source.is_("property-length"):
+                node = source.p(ArrayLenNode(node), start_pos=start_pos)
+                continue
             break
         return node
     
@@ -621,7 +619,7 @@ class ComparativeParser(ParserCombinator):
             if source.is_("binary-infix", suffixes=["==","!=","<=",">=","<",">","in","notin"]):
                 operator = source.matched_suffix
                 right_node = source.parse("@Additive")
-                return source.p(BinaryNode(operator, left_node, right_node, comparative=True), start_pos=start_pos)
+                return source.p(BinaryNode(operator, left_node, right_node), start_pos=start_pos)
         except YuiError:
             pass
         source.backtrack(saved)
@@ -643,7 +641,8 @@ class AssignmentParser(ParserCombinator):
         source.require_('assignment-infix', BK=BK)
         right_node = source.parse("@Expression", BK=BK)
         source.require_('assignment-end', BK=BK)
-        return source.p(AssignmentNode(left_node, right_node), start_pos=start_pos)
+        order_policy = source.get('assignment-order')
+        return source.p(AssignmentNode(left_node, right_node, order_policy=order_policy), start_pos=start_pos)
     
 NONTERMINALS["@Assignment"] = AssignmentParser()
 
@@ -680,9 +679,9 @@ class AppendParser(ParserCombinator):
         lvalue_node = source.parse("@Expression", BK=BK)
         source.require_('append-infix', BK=BK)
         value = source.parse("@Expression", BK=BK)
-        source.require_('append-suffix', BK=BK)
         source.require_('append-end', BK=BK)
-        return source.p(AppendNode(lvalue_node, value), start_pos=start_pos)
+        order_policy = source.get('append-order')
+        return source.p(AppendNode(lvalue_node, value, order_policy=order_policy), start_pos=start_pos)
 
 NONTERMINALS["@Append"] = AppendParser()
 
@@ -747,7 +746,8 @@ class RepeatParser(ParserCombinator):
         source.require_('repeat-block', BK=BK)
         block_node = source.parse("@Block")
         source.require_('repeat-end', lskip_lf=True, BK=False)
-        return source.p(RepeatNode(times_node, block_node), start_pos=start_pos, end_pos=block_node.end_pos)
+        order_policy = source.get('repeat-order')
+        return source.p(RepeatNode(times_node, block_node, order_policy=order_policy), start_pos=start_pos, end_pos=block_node.end_pos)
 
 NONTERMINALS["@Repeat"] = RepeatParser()
 
@@ -851,7 +851,8 @@ class AssertParser(ParserCombinator):
                 source.require_('assert-infix', BK=BK)
                 reference_node = source.parse("@Expression", BK=BK)
             source.require_('assert-end', BK=BK)
-            return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
+            order_policy = source.get('assert-order')
+            return source.p(AssertNode(test_node, reference_node, order_policy=order_policy), start_pos=start_pos)
         except YuiError as e:
             source.backtrack(saved)
         saved = source.terminals
@@ -863,7 +864,8 @@ class AssertParser(ParserCombinator):
             source.require_('assert-infix', BK=BK)
             reference_node = source.parse("@Expression", BK=BK)
             source.require_('assert-end', BK=BK)
-            return source.p(AssertNode(test_node, reference_node), start_pos=start_pos)
+            order_policy = source.get('assert-order')
+            return source.p(AssertNode(test_node, reference_node, order_policy=order_policy), start_pos=start_pos)
         except YuiError:
             raise e
         finally:

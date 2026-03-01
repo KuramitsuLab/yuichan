@@ -67,8 +67,7 @@
 
     "append-begin": "",
     "append-infix": "に",
-    "append-suffix": "を?",
-    "append-end": "入れとく",
+    "append-end": "を?入れとく",
 
     "print-begin": "",
     "print-end": "",

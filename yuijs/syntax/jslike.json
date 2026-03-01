@@ -69,8 +69,7 @@
  
     "append-begin": "",
     "append-infix": ".push\\s*\\(",
-    "append-suffix": "\\)",
-    "append-end": "",
+    "append-end": "\\)",
 
 
     "import-begin": "import\\s",
