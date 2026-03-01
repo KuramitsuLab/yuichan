@@ -184,7 +184,7 @@ class Source extends YuiSyntax {
             ? (this.terminals['special-names'] ?? '').split('|')
             : [];
 
-        const namePattern = this.terminals['special-name-pattern'] ?? '[^\\s\\[\\]\\(\\)",]+';
+        const namePattern = this.terminals['special-name-pattern'] ?? '[^\\s\\[\\]\\(\\)",\\.+*/%=!<>-]+';
 
         // 1. 変数定義のパターン（例: `name =` だが `==` は除外）
         let varPat = (this.terminals['special-name-variable'] ?? '\\n\\s*({name_pattern})\\s*=(?!=)')
@@ -200,7 +200,7 @@ class Source extends YuiSyntax {
         while ((m = re2.exec(text)) !== null) names.push(m[1]);
 
         const filtered = [...new Set(
-            names.map(n => n.trim()).filter(n => /[^\x00-\x7F]/.test(n))
+            names.map(n => n.trim()).filter(n => n !== '' && /[^a-zA-Z0-9_]/.test(n))
         )];
         vprint('@extracted special names:', filtered);
         this.specialNames = filtered.sort((a, b) => b.length - a.length);

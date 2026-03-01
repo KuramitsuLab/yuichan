@@ -206,7 +206,7 @@ class Source(YuiSyntax):
         else:
             names = []        
     
-        name_pattern = self.terminals.get("special-name-pattern", r'[^\s\[\]\(\)",]+')
+        name_pattern = self.terminals.get("special-name-pattern", r'[^\s\[\]\(\)",\.+*/%=!<>-]+')
         
         # 1. 変数定義のパターン（例: `name =` だが `==` は除外）
         var_pattern = self.terminals.get("special-name-variable", r'\n\s*({name_pattern})\s*=(?!=)')
@@ -221,8 +221,8 @@ class Source(YuiSyntax):
         names.extend(matches2)
 
 
-        # Unicode文字を含む文字列のみ
-        names = list(set(name.strip() for name in names if not _is_alnum(name)))
+        # Unicodeなど特殊な名前をあらかじめ抽出しておく（例: `λ` など）。ただし、英数字とアンダースコアのみで構成される名前は除外する。
+        names = list(set(name.strip() for name in names if not _is_alnum(name) and name.strip() != ""))
         vprint(f"@extracted special names: {names}")  
         self.special_names = sorted(names, key=len, reverse=True)
 
