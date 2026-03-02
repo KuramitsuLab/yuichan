@@ -41,6 +41,9 @@ class ASTNode(ABC):
         visit = getattr(visitor, method_name, visitor.visitASTNode)
         return visit(self)
     
+    def parsed(self, order_policy: str = ""):
+        pass
+
     def extract(self) -> tuple:
         """ソースコード内の位置をエラー表示用の情報に変換する
 
@@ -110,7 +113,6 @@ class ConstNode(ExpressionNode):
     def visit(self, visitor):
         return visitor.visitConstNode(self)
 
-
 @dataclass
 class NumberNode(ExpressionNode):
     """数値リテラルを表すノード"""
@@ -142,7 +144,7 @@ class MinusNode(ExpressionNode):
 
     def __init__(self, element: ExpressionNode):
         super().__init__()
-        self.element = element
+        self.element = _node(element)
 
     def visit(self, visitor):
         return visitor.visitMinusNode(self)
@@ -205,8 +207,10 @@ class GetIndexNode(ASTNode):
     collection: ExpressionNode
     index_node: ExpressionNode
 
-    def __init__(self, collection: ExpressionNode, index: ExpressionNode):
+    def __init__(self, collection: ExpressionNode, index: ExpressionNode, order_policy=""):
         super().__init__()
+        if order_policy == "reversed":
+            collection, index = index, collection
         self.collection = _node(collection)
         self.index_node = _node(index)
 
@@ -227,12 +231,12 @@ class BinaryNode(ASTNode):
     operator: Operator
     comparative: bool
 
-    def __init__(self, operator: str, left: ExpressionNode, right: ExpressionNode, comparative: bool = False):
+    def __init__(self, operator: str, left: ExpressionNode, right: ExpressionNode):
         super().__init__()
         self.operator = OPERATORS[operator]
         self.left_node = _node(left)
         self.right_node = _node(right)
-        self.comparative = comparative
+        self.comparative = self.operator.comparative
 
     def visit(self, visitor):
         return visitor.visitBinaryNode(self)
@@ -244,8 +248,10 @@ class FuncAppNode(ExpressionNode):
     arguments: List[ExpressionNode]
     snippet: str
 
-    def __init__(self, name: ExpressionNode, arguments: List[ExpressionNode]):
+    def __init__(self, name: ExpressionNode, arguments: List[ExpressionNode], order_policy=""):
         super().__init__()
+        if order_policy == "reversed":
+            name, arguments = arguments, name
         self.name_node = NameNode(name) if isinstance(name, str) else _node(name)
         self.arguments = [_node(arg) for arg in arguments]
         self.snippet = str(self)
@@ -266,9 +272,11 @@ class AssignmentNode(StatementNode):
     variable: NameNode
     expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, expression: ExpressionNode):
+    def __init__(self, variable: NameNode, expression: ExpressionNode, order_policy=""):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        if order_policy == "reversed":
+            variable, expression = expression, variable
+        self.variable = _node(variable)
         self.expression = _node(expression)
 
     def visit(self, visitor):
@@ -281,7 +289,7 @@ class IncrementNode(StatementNode):
 
     def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        self.variable = _node(variable)
 
     def visit(self, visitor):
         return visitor.visitIncrementNode(self)
@@ -293,7 +301,7 @@ class DecrementNode(StatementNode):
 
     def __init__(self, variable: NameNode):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        self.variable = _node(variable)
 
     def visit(self, visitor):
         return visitor.visitDecrementNode(self)
@@ -301,12 +309,14 @@ class DecrementNode(StatementNode):
 @dataclass
 class AppendNode(StatementNode):
     """配列への追加（変数の末尾に 値 を追加する）を表すノード"""
-    variable: NameNode
+    variable: ExpressionNode
     expression: ExpressionNode
 
-    def __init__(self, variable: NameNode, expression: ExpressionNode):
+    def __init__(self, variable: ExpressionNode, expression: ExpressionNode, order_policy=""):
         super().__init__()
-        self.variable = NameNode(variable) if isinstance(variable, str) else _node(variable)
+        if order_policy == "reversed":
+            variable, expression = expression, variable
+        self.variable = _node(variable)
         self.expression = _node(expression)
 
     def visit(self, visitor):
@@ -374,10 +384,12 @@ class RepeatNode(StatementNode):
     count: ExpressionNode
     body: BlockNode
 
-    def __init__(self, count_node: ExpressionNode, block_node: BlockNode):
+    def __init__(self, count_node: ExpressionNode, block_node: BlockNode, order_policy=""):
         super().__init__()
+        if order_policy == "reversed":
+            count_node, block_node = block_node, count_node
         self.count_node = _node(count_node)    
-        self.block_node = block_node
+        self.block_node = _node(block_node)
 
     def visit(self, visitor):
         return visitor.visitRepeatNode(self)
@@ -415,20 +427,19 @@ class FuncDefNode(StatementNode):
 
     def __init__(self, name_node: NameNode, parameters: List[NameNode], body: BlockNode):
         super().__init__()
-        self.name_node = NameNode(name_node) if isinstance(name_node, str) else _node(name_node)
-        self.parameters = [NameNode(param) if isinstance(param, str) else _node(param) for param in parameters]
-        self.body = body
+        self.name_node = _node(name_node)
+        self.parameters = [_node(param) for param in parameters]
+        self.body = _node(body)
 
     def visit(self, visitor):
         return visitor.visitFuncDefNode(self)
-
 
 @dataclass
 class PrintExpressionNode(StatementNode):
     """式の出力（単独で書かれた式）を表すノード"""
     expression: ExpressionNode
     inspection: bool
-    grouping: bool = False
+    grouping: bool
 
     def __init__(self, expression: ExpressionNode, inspection: bool = False, grouping: bool = False):
         super().__init__()
@@ -445,8 +456,10 @@ class AssertNode(StatementNode):
     test: ExpressionNode
     reference: ExpressionNode
 
-    def __init__(self, test: ExpressionNode, reference: ExpressionNode):
+    def __init__(self, test: ExpressionNode, reference: ExpressionNode, order_policy=""):
         super().__init__()
+        if order_policy == "reversed":
+            test, reference = reference, test
         self.test = _node(test)
         self.reference = _node(reference)
 

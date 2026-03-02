@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Any, Union
 from abc import ABC, abstractmethod
 
-from .yuierror import YuiError
+from .yuierror import YuiError, vprint
 
 TY_NULL = '⛔'
 TY_BOOLEAN = '🔘'

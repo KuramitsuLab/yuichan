@@ -9,6 +9,8 @@
     "indent": "  ",
     "comment-begin": "",
     "comment-end": "",
+    "special-name-pattern": "[^\\s\\[\\]\\(\\)\",\\+\\-\\*\\/\\%\\=\\!\\<\\>]+",
+    "special-name-variable": "({name_pattern})\\s+⬅️",
 
     "number-first-char": "[0-9]",
     "number-chars": "[0-9]*",
@@ -43,12 +45,12 @@
 
     "unary-minus": "-",
     "unary-length": "📐",
-    "unary-inspect": "👀",
+
     "binary-infix+": "➕|\\+|＋",
     "binary-infix-": "➖|\\-|－",
     "binary-infix*": "✖️|\\*|×",
     "binary-infix/": "➗|/|÷",
-    "binary-infix%": "🍕|%|％",
+    "binary-infix%": "💔|%|％",
     "binary-infix==": "⚖️|==",
     "binary-infix!=": "🚫⚖️|!=",
     "binary-infix<=": "📈⚖️|<=",
@@ -125,12 +127,7 @@
     "funcdef-block": "",
     "funcdef-end": "",
 
-    "assert-begin": "🧪",
-    "assert-infix": "✅",
-    "assert-end": "",
-
     "import-standard": "🗝️\\s+📚",
-    "import-operator": "🗝️\\s+➕➖✖️➗",
     "import-begin": "🗝️",
     "import-end": ""
 }

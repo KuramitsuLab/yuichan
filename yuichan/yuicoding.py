@@ -296,7 +296,6 @@ class CodingVisitor(YuiSyntax):
     def visitArrayLenNode(self, node: ArrayLenNode):
         if self.is_defined('property-length'):
             self.expression(node.element)
-            self.terminal('property-accessor')
             self.terminal('property-length')
         elif self.is_defined('unary-length'):
             self.terminal('unary-length')
@@ -307,11 +306,14 @@ class CodingVisitor(YuiSyntax):
             self.terminal('length-end')
 
     def visitGetIndexNode(self, node: GetIndexNode):
+        collection, index = node.collection, node.index_node
+        if self.get('array-indexer-order') == 'reversed':
+            collection, index = index, collection
         self.terminal('array-indexer-begin')
-        self.expression(node.collection)
+        self.expression(collection)
         self.terminal('array-indexer-infix')
         self.terminal('array-indexer-suffix')
-        self.expression(node.index_node)
+        self.expression(index)
         self.terminal('array-indexer-end')
     
     def visitFuncAppNode(self, node: FuncAppNode):
@@ -326,15 +328,19 @@ class CodingVisitor(YuiSyntax):
             for i, arg in enumerate(node.arguments):
                 if i > 0:
                     self.terminal('funcapp-separator')
-                self.expression(arg)
+                self.expression(arg, grouping=(isinstance(arg, FuncAppNode) and not self.is_defined(f'funcapp-args-end')))
             self.terminal('funcapp-args-end')
             self.terminal('funcapp-end')
 
     def visitAssignmentNode(self, node: AssignmentNode):
+        variable, expression = node.variable, node.expression
+        if self.get('assignment-order') == 'reversed':
+            variable, expression = expression, variable
+
         self.terminal('assignment-begin')
-        self.expression(node.variable)
+        self.expression(variable)
         self.terminal('assignment-infix')
-        self.expression(node.expression)
+        self.expression(expression)
         self.terminal('assignment-end')
     
     def visitIncrementNode(self, node: IncrementNode):
@@ -348,10 +354,14 @@ class CodingVisitor(YuiSyntax):
         self.terminal('decrement-end')
 
     def visitAppendNode(self, node: AppendNode):
+        variable, expression = node.variable, node.expression
+        if self.get('assignment-order') == 'reversed':
+            variable, expression = expression, variable
+
         self.terminal('append-begin')
-        self.expression(node.variable)
+        self.expression(variable)
         self.terminal('append-infix')
-        self.expression(node.expression)
+        self.expression(expression)
         self.terminal('append-end')
 
     def visitBreakNode(self, node: BreakNode):
@@ -419,11 +429,15 @@ class CodingVisitor(YuiSyntax):
         self.terminal('if-end', linefeed_before=True)
 
     def visitRepeatNode(self, node: RepeatNode):
+        count_node, block_node = node.count_node, node.block_node
+        if self.get('repeat-order') == 'reversed':
+            count_node, block_node = block_node, count_node
+
         self.terminal('repeat-begin')
-        self.expression(node.count_node)
+        self.expression(count_node)
         self.terminal('repeat-times')
         self.terminal('repeat-block')
-        self.block(node.block_node)
+        self.block(block_node)
         self.terminal('repeat-end', linefeed_before=True)
 
     def visitFuncDefNode(self, node: FuncDefNode):
@@ -448,10 +462,13 @@ class CodingVisitor(YuiSyntax):
         self.terminal('import-standard')
 
     def visitAssertNode(self, node: AssertNode):
+        test_node, reference_node = node.test, node.reference
+        if self.get('assert-order') == 'reversed':
+            test_node, reference_node = reference_node, test_node   
         self.terminal('assert-begin')
-        self.expression(node.test)
+        self.expression(test_node)
         self.terminal('assert-infix')
-        self.expression(node.reference)
+        self.expression(reference_node)
         self.terminal('assert-end')
 
     def visitCatchNode(self, node: CatchNode):

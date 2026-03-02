@@ -272,6 +272,9 @@ Error message languages (--lang):
 
 def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[str, Any]:
     """Execute a file"""
+    if filename.endswith('.md'):
+        return run_markdown_file(filename, env, syntax)
+
     with open(filename, 'r', encoding='utf-8') as f:
         code = f.read()
 
@@ -282,6 +285,54 @@ def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[st
     runtime.exec(code, syntax, eval_mode=False)
 
     # Return environment (from last scope)
+    result_env = {}
+    if runtime.environments:
+        result_env = runtime.environments[-1].copy()
+
+    return result_env
+
+
+def run_markdown_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[str, Any]:
+    """Extract and run ```yui``` code blocks from a Markdown file using a shared runtime"""
+    with open(filename, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    runtime = YuiRuntime()
+    for key, value in env.items():
+        runtime.setenv(key, value)
+
+    lines = content.split('\n')
+    in_code_block = False
+    current_block = []
+    block_num = 0
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith("```yui") and not in_code_block:
+            in_code_block = True
+            current_block = []
+            continue
+
+        if stripped.startswith("```") and in_code_block:
+            code = '\n'.join(current_block)
+            if code.strip():
+                block_num += 1
+                try:
+                    runtime.exec(code, syntax, eval_mode=False)
+                except YuiError as e:
+                    e.runtime = runtime
+                    print(f"\n[Block {block_num}] Error:", file=sys.stderr)
+                    print(e.formatted_message("| "), file=sys.stderr)
+                except Exception as e:
+                    print(f"\n[Block {block_num}] Error: {e}", file=sys.stderr)
+            in_code_block = False
+            current_block = []
+            continue
+
+        if in_code_block:
+            current_block.append(line)
+
     result_env = {}
     if runtime.environments:
         result_env = runtime.environments[-1].copy()

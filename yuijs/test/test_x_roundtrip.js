@@ -66,3 +66,9 @@ describe('roundtrip sexpr', () => {
         runRoundtrip('sexpr', name);
     });
 });
+
+describe('roundtrip bridget', () => {
+    test.each(Object.keys(testcases))('%s', (name) => {
+        runRoundtrip('bridget', name);
+    });
+});

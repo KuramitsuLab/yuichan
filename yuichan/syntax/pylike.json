@@ -123,10 +123,6 @@
     "funcdef-block": "",
     "funcdef-end": "",
 
-    "assert-begin": "assert\\s",
-    "assert-infix": "==",
-    "assert-end": "",
-
     "import-standard": "import\\s+stdlib",
     "import-begin": "import\\s",
     "import-end": ""

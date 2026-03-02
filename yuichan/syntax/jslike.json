@@ -103,10 +103,6 @@
     "funcdef-arg-separator": ",",
     "funcdef-args-end": "\\)",
     "funcdef-block": "",
-    "funcdef-end": "",
-
-    "assert-begin": "(console.assert|assert)\\s*\\(",
-    "assert-infix": "==",
-    "assert-end": "\\)"
+    "funcdef-end": ""
 
 }

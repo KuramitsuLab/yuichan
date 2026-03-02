@@ -58,8 +58,7 @@
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
-    "property-accessor": "の",
-    "property-length": "大きさ",
+    "property-length": "の大きさ",
     
     "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
@@ -145,9 +144,6 @@
     "funcdef-args-end": "",
     "funcdef-noarg": "入力なし",
     "funcdef-block": "に対し[て]?[、]?",
-    "funcdef-end": "",
+    "funcdef-end": ""
 
-    "assert-begin": ">>>\\s+",
-    "assert-infix": "[\\n]",
-    "assert-end": ""
 }

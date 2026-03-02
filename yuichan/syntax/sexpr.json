@@ -11,6 +11,10 @@
     "indent": "", 
     "keywords" : "begin\\b|require\\b|inc\\b|dec\\b|append\\b|set\\b|aref\\b|if\\b|repeat\\b|break\\b|print\\b|assert\\b|define\\b|return\\b",
 
+    "special-name-pattern": "[^\\s\\[\\]\\(\\)\",]+",
+    "special-name-funcname": "\\(({name_pattern})\\s",
+    "special-name-variable": "\\(set\\!\\s+({name_pattern})\\s",
+
     "null": "nil|null",
     "boolean-true": "true",
     "boolean-false": "false",
