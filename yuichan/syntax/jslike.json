@@ -1,5 +1,7 @@
 {
     "syntax": "javascript-like",
+    "function-language": "en",
+
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",

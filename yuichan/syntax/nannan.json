@@ -1,5 +1,6 @@
 {
     "syntax": "なんなん？",
+    "function-language": "ja",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
@@ -36,8 +37,7 @@
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
-    "property-accessor": "の",
-    "property-length": "大きさ",
+    "property-length": "の大きさ",
     
     "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",

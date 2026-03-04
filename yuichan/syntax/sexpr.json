@@ -1,5 +1,6 @@
 {
     "syntax": "s-expression",
+    "function-language": "en",
 
     "whitespace": "[ \\t\\r\\n　]",
     "whitespaces": "[ \\t\\r\\n　]+",

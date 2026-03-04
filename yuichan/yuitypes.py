@@ -4,14 +4,14 @@ from abc import ABC, abstractmethod
 
 from .yuierror import YuiError, vprint
 
-TY_NULL = '⛔'
-TY_BOOLEAN = '🔘'
-TY_INT = '💯'
+TY_NULL = '🚫'
+TY_BOOLEAN = '🎭'
+TY_INT = '🔢'
 TY_FLOAT = '📊'
 TY_NUMBER = '🔢'
 TY_ARRAY = '🍡'
 TY_OBJECT = '🗂️'
-TY_STRING = '💬'
+TY_STRING = '🔤'
 
 @dataclass
 class YuiType(ABC):
@@ -218,7 +218,7 @@ class YuiFloatType(YuiType):
         s = ''.join(str(d) for d in num_digits)
         if len(s) <= 6:
             # 整数部なし（小数点以下のみ）
-            value = int(s)
+            value = float("0." + s.zfill(6))
         else:
             # 小数点を6桁前に挿入
             value = float(s[:-6] + '.' + s[-6:])

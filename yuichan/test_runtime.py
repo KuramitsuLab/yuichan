@@ -387,8 +387,9 @@ class TestBinaryOpsUnlock:
             rt.exec("x = 1 + 2", 'yui', eval_mode=False)
 
     def test_still_locked_after_func_and_assert(self):
-        """allow_binary_ops=False のままでは関数定義 + アサート通過後も二項演算子は使えない"""
+        """関数定義 + アサート通過でも二項演算子はロックされたまま"""
         rt = YuiRuntime()
         rt.exec(self.FUNC_AND_ASSERT, 'yui', eval_mode=False)
+        assert rt.allow_binary_ops is False
         with pytest.raises(YuiError):
             rt.exec("x = 1 + 2", 'yui', eval_mode=False)

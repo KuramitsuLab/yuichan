@@ -1,6 +1,7 @@
 {
     "syntax": "cryptic zup",
     "description": "Zup is a programming language designed to be deliberately opaque to anyone unfamiliar with its specification. All keywords follow a strict CVC (Consonant-Vowel-Consonant) syllable structure, drawn from a constrained phoneme set that avoids common patterns found in natural languages — making the vocabulary impossible to guess by intuition alone.",
+    "function-language": "emoji",
 
     "word-segmenter": " ",
     "comment-begin": "",
@@ -26,7 +27,7 @@
     "binary-infix>": "pep",
     "binary-infixin": "kag",
 
-    "property-length": "\\.kez",
+    "property-length": "\\@kez",
     
     "import-standard": "Nav rem vaz",
     "import-begin": "Nav",

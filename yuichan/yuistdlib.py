@@ -4,9 +4,9 @@ import json
 from typing import List, Any
 
 from .yuitypes import (
-    YuiValue, YuiType, YuiError, types,
-    TY_INT, TY_FLOAT, TY_STRING, TY_ARRAY, TY_OBJECT,
-    IntType, NumberType,
+    YuiValue, YuiError, types,
+    TY_INT, TY_FLOAT, TY_STRING, TY_ARRAY, TY_OBJECT, TY_BOOLEAN,
+    IntType, NumberType, FloatType
 )
 
 
@@ -18,7 +18,6 @@ def standard_lib(modules: list):
     - 絶対値(x): 絶対値
     - 平方根(x): 平方根（少数を返す）
     - 乱数(): ランダムな少数
-    - 乱整数(x): 0以上x未満のランダムな整数
     - 和(x, y, ...): 要素の合計
     - 差(x, y, ...): 要素の差
     - 積(x, y, ...): 要素の積
@@ -26,13 +25,6 @@ def standard_lib(modules: list):
     - 剰余(x, y): 剰余
     - 最大値(x, y, ...): 最大値
     - 最小値(x, y, ...): 最小値
-
-    - 論理積(x, y, ...): ビット単位の論理積
-    - 論理和(x, y, ...): ビット単位の論理和
-    - 排他的論理和(x, y, ...): ビット単位の排他的論理和
-    - ビット反転(x): ビット単位の反転
-    - 左シフト(x, n): xをnビット左シフト
-    - 右シフト(x, n): xをnビット右シフト
 
     - 配列化(x): 配列に変換
     - 文字列化(x): 文字列に変換
@@ -48,127 +40,127 @@ def standard_lib(modules: list):
         modules: (名前, 関数) のペアを追加するリスト
     """
 
-    def check_number_of_args(nodeargs: List[Any], expected: int) -> None:
+    def check_number_of_args(args: List[Any], expected: int) -> None:
         """関数の引数の数をチェックする"""
         if expected == -1: #少なくとも一つの引数が必要
-            if len(nodeargs) < 1:
-                raise YuiError(("mismatch-argument", f"❌{len(nodeargs)}", f"✅>0"))
+            if len(args) < 1:
+                raise YuiError(("mismatch-argument", f"❌{len(args)}", f"✅>0"))
             return
-        if len(nodeargs) != expected:
-            last = nodeargs[-1] if nodeargs else None
-            raise YuiError(("mismatch-argument", f"✅{expected}", f"❌{len(nodeargs)}"), last)
+        if len(args) != expected:
+            last = args[-1] if args else None
+            raise YuiError(("mismatch-argument", f"✅{expected}", f"❌{len(args)}"), last)
 
-    def array_to_varargs(nodeargs:list) -> list:
+    def array_to_varargs(args:list) -> list:
         """引数が配列1つの場合、その要素を展開して返す"""
-        if len(nodeargs) == 1 and isinstance(nodeargs[0], YuiValue):
-            return nodeargs[0].array
-        return nodeargs
+        if len(args) == 1 and isinstance(args[0], YuiValue):
+            return args[0].array
+        return args
 
-    def yui_abs(*nodeargs: Any) -> Any:
+    def yui_abs(*args: Any) -> Any:
         """絶対値を返す"""
-        check_number_of_args(nodeargs, 1)
-        NumberType.match_or_raise(nodeargs[0])
-        value = types.unbox(nodeargs[0])
+        check_number_of_args(args, 1)
+        NumberType.match_or_raise(args[0])
+        value = types.unbox(args[0])
         return YuiValue(abs(value))
     modules.append(('📏|絶対値|abs', yui_abs))
 
-    def yui_sqrt(*nodeargs: Any) -> Any:
+    def yui_sqrt(*args: Any) -> Any:
         """平方根を返す（少数）"""
-        check_number_of_args(nodeargs, 1)
-        NumberType.match_or_raise(nodeargs[0])
-        value = types.unbox(nodeargs[0])
+        check_number_of_args(args, 1)
+        NumberType.match_or_raise(args[0])
+        value = types.unbox(args[0])
         if value < 0:
             raise YuiError(("not-negative-number", f"❌{value}", f"✅>=0"))
         return YuiValue(math.sqrt(value))
     modules.append(('√|平方根|sqrt', yui_sqrt))
 
-    def yui_random(*nodeargs: Any) -> Any:
-        """ランダムな整数を返す"""
-        check_number_of_args(nodeargs, 0)
+    def yui_random(*args: Any) -> Any:
+        """ランダムな少数を返す"""
+        check_number_of_args(args, 0)
         return YuiValue(random.random())
-    modules.append((f'🎲{TY_FLOAT}|乱数|random', yui_random))
+    modules.append((f'🎲|乱数|random', yui_random))
 
-    def yui_randint(*nodeargs: Any) -> Any:
-        """0以上x未満のランダムな整数を返す"""
-        check_number_of_args(nodeargs, 1)
-        IntType.match_or_raise(nodeargs[0])
-        x = types.unbox(nodeargs[0])
-        if x <= 0:
-            raise YuiError(("not-negative-number", f"❌{x}", f"✅>0"))
-        return YuiValue(random.randint(0, x - 1))
-    modules.append((f'🎲{TY_FLOAT}|乱整数|randint', yui_randint))
+    # def yui_randint(*args: Any) -> Any:
+    #     """0以上x未満のランダムな整数を返す"""
+    #     check_number_of_args(args, 1)
+    #     IntType.match_or_raise(args[0])
+    #     x = types.unbox(args[0])
+    #     if x <= 0:
+    #         raise YuiError(("not-negative-number", f"❌{x}", f"✅>0"))
+    #     return YuiValue(random.randint(0, x - 1))
+    # modules.append((f'🎲{TY_FLOAT}|乱整数|randint', yui_randint))
 
-    def has_float_or_raise(nodeargs: List[Any]) -> bool:
+    def has_float_or_raise(args: List[Any]) -> bool:
         """引数リストに少数が含まれているかどうかを判定する"""
-        for nodearg in nodeargs:
+        for nodearg in args:
             NumberType.match_or_raise(nodearg)
             if types.is_float(nodearg):
                 return True
         return False
 
-    def yui_sum(*nodeargs: Any) -> Any:
+    def yui_sum(*args: Any) -> Any:
         """要素の合計を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        if has_float_or_raise(nodeargs):
-            total = float(types.unbox(nodeargs[0]))
-            for nodearg in nodeargs[1:]:
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        if has_float_or_raise(args):
+            total = float(types.unbox(args[0]))
+            for nodearg in args[1:]:
                 total += float(types.unbox(nodearg))
             return YuiValue(total)
         else:
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 total += types.unbox(nodearg)
             return YuiValue(total)
     modules.append(('🧮|和|sum', yui_sum))
 
-    def yui_sub(*nodeargs: Any) -> Any:
+    def yui_sub(*args: Any) -> Any:
         """要素の差を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        if has_float_or_raise(nodeargs):
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        if has_float_or_raise(args):
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 total -= types.unbox(nodearg)
             return YuiValue(total)
         else:
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 total -= types.unbox(nodearg)
             return YuiValue(total)
-    modules.append(('➖|差|diff', yui_sub))
+    modules.append(('⛓️‍💥|差|diff', yui_sub))
 
-    def yui_product(*nodeargs: Any) -> Any:
+    def yui_product(*args: Any) -> Any:
         """要素の積を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        if has_float_or_raise(nodeargs):
-            total = float(types.unbox(nodeargs[0]))
-            for nodearg in nodeargs[1:]:
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        if has_float_or_raise(args):
+            total = float(types.unbox(args[0]))
+            for nodearg in args[1:]:
                 total *= types.unbox(nodearg)
             return YuiValue(total)
         else:
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 total *= types.unbox(nodearg)
             return YuiValue(total)
-    modules.append(('✖️|積|product', yui_product))
+    modules.append(('💰|積|product', yui_product))
 
-    def yui_div(*nodeargs: Any) -> Any:
+    def yui_div(*args: Any) -> Any:
         """要素の商を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        if has_float_or_raise(nodeargs):
-            total = float(types.unbox(nodeargs[0]))
-            for nodearg in nodeargs[1:]:
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        if has_float_or_raise(args):
+            total = float(types.unbox(args[0]))
+            for nodearg in args[1:]:
                 d = float(types.unbox(nodearg))
                 if d == 0.0:
                     raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total /= d
             return YuiValue(total)
         else:
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 d = types.unbox(nodearg)
                 if d == 0:
                     raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
@@ -176,21 +168,21 @@ def standard_lib(modules: list):
             return YuiValue(total)
     modules.append(('✂️|商|quotient', yui_div))
 
-    def yui_mod(*nodeargs: Any) -> Any:
+    def yui_mod(*args: Any) -> Any:
         """剰余を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        if has_float_or_raise(nodeargs):
-            total = float(types.unbox(nodeargs[0]))
-            for nodearg in nodeargs[1:]:
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        if has_float_or_raise(args):
+            total = float(types.unbox(args[0]))
+            for nodearg in args[1:]:
                 d = float(types.unbox(nodearg))
                 if d == 0.0:
                     raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
                 total %= d
             return YuiValue(total)
         else:
-            total = types.unbox(nodeargs[0])
-            for nodearg in nodeargs[1:]:
+            total = types.unbox(args[0])
+            for nodearg in args[1:]:
                 d = types.unbox(nodearg)
                 if d == 0:
                     raise YuiError((f"division-by-zero", f"❌{d}"), nodearg)
@@ -198,148 +190,168 @@ def standard_lib(modules: list):
             return YuiValue(total)
     modules.append(('🍕|剰余|remainder', yui_mod))
 
-    def yui_and(*nodeargs: Any) -> YuiValue:
-        """論理積を返す"""
-        total = types.unbox(nodeargs[0])
-        for nodearg in nodeargs[1:]:
-            total &= types.unbox(nodearg)
-        return YuiValue(total)
-    modules.append(('💡✖️|論理積|and', yui_and))
+    # def yui_and(*args: Any) -> YuiValue:
+    #     """論理積を返す"""
+    #     total = types.unbox(args[0])
+    #     for nodearg in args[1:]:
+    #         total &= types.unbox(nodearg)
+    #     return YuiValue(total)
+    # modules.append(('💡✖️|論理積|and', yui_and))
 
-    def yui_or(*nodeargs: Any) -> YuiValue:
-        """論理和を返す"""
-        total = types.unbox(nodeargs[0])
-        for nodearg in nodeargs[1:]:
-            total |= types.unbox(nodearg)
-        return YuiValue(total)
-    modules.append(('💡➕|論理和|or', yui_or))
+    # def yui_or(*args: Any) -> YuiValue:
+    #     """論理和を返す"""
+    #     total = types.unbox(args[0])
+    #     for nodearg in args[1:]:
+    #         total |= types.unbox(nodearg)
+    #     return YuiValue(total)
+    # modules.append(('💡➕|論理和|or', yui_or))
 
-    def yui_xor(*nodeargs: Any) -> YuiValue:
-        """排他的論理和を返す"""
-        total = types.unbox(nodeargs[0])
-        for nodearg in nodeargs[1:]:
-            total ^= types.unbox(nodearg)
-        return YuiValue(total)
-    modules.append(('💡🔀|排他的論理和|xor', yui_xor))
+    # def yui_xor(*args: Any) -> YuiValue:
+    #     """排他的論理和を返す"""
+    #     total = types.unbox(args[0])
+    #     for nodearg in args[1:]:
+    #         total ^= types.unbox(nodearg)
+    #     return YuiValue(total)
+    # modules.append(('💡🔀|排他的論理和|xor', yui_xor))
 
-    def yui_not(*nodeargs: Any) -> YuiValue:
-        """ビット反転を返す"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue(~(types.unbox(nodeargs[0])))
-    modules.append(('💡🔄|ビット反転|not', yui_not))
+    # def yui_not(*args: Any) -> YuiValue:
+    #     """ビット反転を返す"""
+    #     check_number_of_args(args, 1)
+    #     return YuiValue(~(types.unbox(args[0])))
+    # modules.append(('💡🔄|ビット反転|not', yui_not))
 
-    def yui_left_shift(*nodeargs: Any) -> YuiValue:
-        """左シフトを返す"""
-        check_number_of_args(nodeargs, 2)
-        return YuiValue(types.unbox(nodeargs[0]) << types.unbox(nodeargs[1]))
-    modules.append(('💡⬅️|左シフト|shl', yui_left_shift))
+    # def yui_left_shift(*args: Any) -> YuiValue:
+    #     """左シフトを返す"""
+    #     check_number_of_args(args, 2)
+    #     return YuiValue(types.unbox(args[0]) << types.unbox(args[1]))
+    # modules.append(('💡⬅️|左シフト|shl', yui_left_shift))
 
-    def yui_right_shift(*nodeargs: Any) -> YuiValue:
-        """右シフトを返す"""
-        check_number_of_args(nodeargs, 2)
-        return YuiValue(types.unbox(nodeargs[0]) >> types.unbox(nodeargs[1]))
-    modules.append(('💡➡️|右シフト|shr', yui_right_shift))
+    # def yui_right_shift(*args: Any) -> YuiValue:
+    #     """右シフトを返す"""
+    #     check_number_of_args(args, 2)
+    #     return YuiValue(types.unbox(args[0]) >> types.unbox(args[1]))
+    # modules.append(('💡➡️|右シフト|shr', yui_right_shift))
 
-    def yui_max(*nodeargs: Any) -> Any:
+    def yui_max(*args: Any) -> Any:
         """最大値を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        result = max(types.unbox(nodearg) for nodearg in nodeargs)
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        result = max(types.unbox(nodearg) for nodearg in args)
         return YuiValue(int(result) if isinstance(result, int) else result)
     modules.append(('👑|最大値|max', yui_max))
 
-    def yui_min(*nodeargs: Any) -> Any:
+    def yui_min(*args: Any) -> Any:
         """最小値を返す"""
-        check_number_of_args(nodeargs, -1)
-        nodeargs = array_to_varargs(nodeargs)
-        result = min(types.unbox(nodearg) for nodearg in nodeargs)
+        check_number_of_args(args, -1)
+        args = array_to_varargs(args)
+        result = min(types.unbox(nodearg) for nodearg in args)
         return YuiValue(int(result) if isinstance(result, int) else result)
     modules.append(('🐜|最小値|min', yui_min))
 
-    def yui_isint(*nodeargs: Any) -> YuiValue:
+    def yui_isbool(*args: Any) -> YuiValue:
+        """ブールか判定する"""
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_bool(args[0]) else YuiValue.FalseValue
+    modules.append((f'{TY_BOOLEAN}❓|ブール判定|isbool', yui_isbool))
+
+    def yui_isint(*args: Any) -> YuiValue:
         """整数か判定する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue.TrueValue if types.is_int(nodeargs[0]) else YuiValue.FalseValue
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_int(args[0]) else YuiValue.FalseValue
     modules.append((f'{TY_INT}❓|整数判定|isint', yui_isint))
 
-    def yui_toint(*nodeargs: Any) -> YuiValue:
-        """整数化する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue(int(types.unbox(nodeargs[0])))
-    modules.append((f'{TY_INT}|整数化|toint', yui_toint))
-
-    def yui_isfloat(*nodeargs: Any) -> YuiValue:
+    def yui_isfloat(*args: Any) -> YuiValue:
         """小数か判定する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue.TrueValue if types.is_float(nodeargs[0]) else YuiValue.FalseValue
-    modules.append((f'{TY_FLOAT}❓|少数判定|isfloat', yui_isfloat))
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_float(args[0]) else YuiValue.FalseValue
+    modules.append((f'{TY_FLOAT}❓|小数判定|isfloat', yui_isfloat))
 
-    def yui_tofloat(*nodeargs: Any) -> Any:
-        """小数化する"""
-        check_number_of_args(nodeargs, 1)
-        value = nodeargs[0]
-        if types.is_string(value):
-            string_value = types.unbox(value)
-            try:
-                return YuiValue(float(string_value))
-            except ValueError:
-                raise YuiError((f"float-conversion", f"❌{string_value}"))
-        value = float(types.unbox(nodeargs[0]))
-        return YuiValue(value)
-    modules.append((f'{TY_FLOAT}|少数化|tofloat', yui_tofloat))
-
-    def yui_isstring(*nodeargs: Any) -> YuiValue:
+    def yui_isstring(*args: Any) -> YuiValue:
         """文字列か判定する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue.TrueValue if types.is_string(nodeargs[0]) else YuiValue.FalseValue
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_string(args[0]) else YuiValue.FalseValue
     modules.append((f'{TY_STRING}❓|文字列判定|isstring', yui_isstring))
 
-    def yui_tostring(*nodeargs: Any) -> Any:
-        """文字列に変換する"""
-        check_number_of_args(nodeargs, 1)
-        if types.is_float(nodeargs[0]):
-            v = types.unbox(nodeargs[0])
-            return YuiValue(f"{v:.6f}")
-        return YuiValue(str(nodeargs[0]))
-    modules.append((f'{TY_STRING}|文字列化|tostring', yui_tostring))
-
-    def yui_isobject(*nodeargs: Any) -> YuiValue:
-        """オブジェクトか判定する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue.TrueValue if types.is_object(nodeargs[0]) else YuiValue.FalseValue
-    modules.append((f'{TY_OBJECT}❓|オブジェクト判定|isobject', yui_isobject))
-
-    def yui_toobject(*nodeargs: Any) -> Any:
-        """オブジェクトに変換する"""
-        check_number_of_args(nodeargs, 1)
-        if types.is_object(nodeargs[0]):
-            return nodeargs[0]
-        if types.is_string(nodeargs[0]):
-            s = types.unbox(nodeargs[0])
-            if s.startswith('{'):
-                try:
-                    obj = json.loads(s)
-                    return YuiValue(obj)
-                except json.JSONDecodeError:
-                    pass
-        return YuiValue({})
-    modules.append((f'{TY_OBJECT}|オブジェクト化|toobject', yui_toobject))
-
-    def yui_isarray(*nodeargs: Any) -> YuiValue:
+    def yui_isarray(*args: Any) -> YuiValue:
         """配列か判定する"""
-        check_number_of_args(nodeargs, 1)
-        return YuiValue.TrueValue if types.is_array(nodeargs[0]) else YuiValue.FalseValue
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_array(args[0]) else YuiValue.FalseValue
     modules.append((f'{TY_ARRAY}❓|配列判定|isarray', yui_isarray))
 
-    def yui_toarray(*nodeargs: Any) -> Any:
+    def yui_isobject(*args: Any) -> YuiValue:
+        """オブジェクトか判定する"""
+        check_number_of_args(args, 1)
+        return YuiValue.TrueValue if types.is_object(args[0]) else YuiValue.FalseValue
+    modules.append((f'{TY_OBJECT}❓|オブジェクト判定|isobject', yui_isobject))
+
+    def yui_toint(*args: Any) -> YuiValue:
+        """整数化する"""
+        check_number_of_args(args, 1)
+        if types.is_int(args[0]):
+            return args[0]
+        unboxed_value = types.unbox(args[0])
+        if unboxed_value is None:
+            return YuiValue(0)
+        try:
+            if types.is_array(args[0]):
+                elements = args[0].array
+                return YuiValue(IntType.to_native(elements))
+            return YuiValue(int(float(unboxed_value)))
+        except Exception as e   :
+            raise YuiError(("int-conversion", f"❌{unboxed_value}", f"🔥{e}")) from e
+    modules.append((f'{TY_INT}|整数化|toint', yui_toint))
+
+    def yui_tofloat(*args: Any) -> Any:
+        """小数化する"""
+        check_number_of_args(args, 1)
+        if types.is_float(args[0]):
+            return args[0]
+        unboxed_value = types.unbox(args[0])
+        if unboxed_value is None:
+            return YuiValue(0.0)        
+        try:
+            if types.is_array(args[0]):
+                elements = args[0].array
+                return YuiValue(FloatType.to_native(elements))
+            return YuiValue(float(unboxed_value))
+        except Exception as e:
+            raise YuiError((f"float-conversion", f"❌{unboxed_value}", f"🔥{e}")) from e
+    modules.append((f'{TY_FLOAT}|小数化|tofloat', yui_tofloat))
+
+    def yui_tostring(*args: Any) -> Any:
+        """文字列に変換する"""
+        check_number_of_args(args, 1)
+        if types.is_string(args[0]):
+            return args[0]
+        if types.is_float(args[0]):
+            v = types.unbox(args[0])
+            return YuiValue(f"{v:.6f}")
+        return YuiValue(str(args[0]))
+    modules.append((f'{TY_STRING}|文字列化|tostring', yui_tostring))
+
+    def yui_toarray(*args: Any) -> Any:
         """配列に変換する"""
-        check_number_of_args(nodeargs, 1)
-        value = nodeargs[0]
-        if isinstance(value, YuiValue):
-            _ = value.array  # elements を先に確定させてから native_value を破棄
-            value.native_value = None
-            return value
-        return YuiValue(types.unbox(value))
+        check_number_of_args(args, 1)
+        value = args[0]
+        if types.is_object(value):
+            return YuiValue(list(value.native.keys()))
+        return YuiValue(value.array)
     modules.append((f'{TY_ARRAY}|配列化|toarray', yui_toarray))
+
+    # def yui_toobject(*args: Any) -> Any:
+    #     """オブジェクトに変換する"""
+    #     check_number_of_args(args, 1)
+    #     if types.is_object(args[0]):
+    #         return args[0]
+    #     if types.is_string(args[0]):
+    #         s = types.unbox(args[0])
+    #         if s.startswith('{'):
+    #             try:
+    #                 obj = json.loads(s)
+    #                 return YuiValue(obj)
+    #             except json.JSONDecodeError:
+    #                 pass
+    #     return YuiValue({})
+    # modules.append((f'{TY_OBJECT}|オブジェクト化|toobject', yui_toobject))
 
     return 'emoji|ja|en', modules

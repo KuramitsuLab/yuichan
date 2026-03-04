@@ -1,6 +1,6 @@
 import pytest
 
-from .test_x_yui import gen_roundtrip_test, generate_random_test, testcases
+from .test_yui import gen_roundtrip_test, generate_random_test, testcases
 
 SYNTAX_NAME = 'nannan'
 

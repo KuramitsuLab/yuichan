@@ -518,11 +518,19 @@ class TermParser(ParserCombinator):
             if source.is_("funcapp-begin"):
                 name = source.parse("@Name", BK=True)
                 arguments = []
-                while not source.is_("funcapp-end", unconsumed=True):
-                    source.require_("funcapp-separator")
-                    expression = source.parse("@Expression", BK=False)
-                    arguments.append(expression)
-                source.require_("funcapp-end")
+                if source.is_("funcapp-args-begin"):
+                    while not source.is_("funcapp-args-end", unconsumed=True):
+                        arguments.append(source.parse("@Expression", lskip_lf=True))
+                        if source.is_("funcapp-separator"):
+                            continue
+                        break
+                    source.require_("funcapp-args-end", opening_pos=opening_pos)
+                else:
+                    while not source.is_("funcapp-end", unconsumed=True):
+                        source.require_("funcapp-separator")
+                        expression = source.parse("@Expression", BK=False)
+                        arguments.append(expression)
+                    source.require_("funcapp-end")
                 return source.p(FuncAppNode(name, arguments), start_pos=opening_pos)
         except YuiError:
             source.backtrack(saved)

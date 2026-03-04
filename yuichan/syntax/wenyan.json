@@ -1,5 +1,5 @@
 {
-    "syntax": "Classic Chiniese Like",
+    "syntax": "Wenyan Like",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
@@ -55,7 +55,7 @@
     "funcapp-args-begin": "於",
     "funcapp-args-end": "",
     "funcapp-separator": "與",
-    "funcapp-noarg": "[^於\\s]",
+    "funcapp-noarg": "[^於]",
 
     "import-standard": "引標準庫",
     "import-begin": "引",
