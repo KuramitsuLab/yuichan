@@ -13,8 +13,7 @@ def get_example_from_pattern(pattern: str, random_seed=None) -> str:
     """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
     # エスケープされた文字を一時的に置換
     global _random_seed
-    if random_seed is not None:
-        _random_seed = random_seed
+    _random_seed = random_seed
     
     original_pattern = pattern
     ESC = [

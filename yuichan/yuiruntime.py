@@ -186,17 +186,18 @@ class YuiRuntime(object):
         """Python関数をYui関数として読み込む"""
         return NativeFunction(function)
 
-    def print(self, value: Any, node: ASTNode):
+    def print(self, value: Any, node: ASTNode = None):
         """値を出力する"""
-        linenum, _, snippet = node.extract()
-        if isinstance(node, NameNode):
-            value = value.stringfy(arrayview=True)
-        if self.interactive_mode or isinstance(node, StringNode):
-            print(f"{value}")
-        elif isinstance(node, FuncAppNode):
-            print(f">>> {node.snippet} 🔍{linenum}\n{value}")
+        if node is None:
+            print(f"{value.native}")
+            return
+        lineno, _, snippet = node.extract()
+        if self.interactive_mode and self.is_in_the_top_level():
+            print(f"{value.stringfy(inner_view=True)}")
+        elif self.is_in_the_top_level():
+            print(f">>> {node} #📍{lineno}\n{value.stringfy(inner_view=True)}")
         else:
-            print(f">>> {snippet.strip()} 🔍{linenum}\n{value}")
+            print(f"{lineno:4}: 👀{str(node):36} → {value.stringfy(inner_view=True)}")
 
     def start(self, timeout: int = 30):
         """実行を開始する"""
@@ -440,13 +441,12 @@ class YuiRuntime(object):
         return len(self.call_frames) == 0
 
     def visitPrintExpressionNode(self, node: PrintExpressionNode):
-        if not node.grouping and (self.is_in_the_top_level() or node.inspection):
-            if isinstance(node.expression, FuncAppNode):
-                node.expression.snippet = ''
-            value = node.expression.visit(self)
+        value = node.expression.visit(self)
+        if isinstance(node.expression, StringNode):
+            self.print(value) # 常にプリントする
+        elif node.inspection or (self.is_in_the_top_level() and not node.grouping): 
+            # トップレベルでグルーピングなしならプリントする
             self.print(value, node.expression)
-        else:
-            value = node.expression.visit(self)
         return value
 
     def visitAssertNode(self, node: AssertNode):

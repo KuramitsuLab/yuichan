@@ -1,12 +1,12 @@
 import pytest
 
-from .test_ast import testcases, init_runtime
+from ..test_ast import testcases, init_runtime
 
-from .yuiparser import BlockNode
-from .yuisyntax import load_syntax
-from .yuicoding import CodingVisitor
-from .yuiruntime import YuiRuntime, YuiError
-from .yuitypes import types
+from ..yuiparser import BlockNode
+from ..yuisyntax import load_syntax
+from ..yuicoding import CodingVisitor
+from ..yuiruntime import YuiRuntime, YuiError
+from ..yuitypes import types
 
 syntax = load_syntax('yui')
 

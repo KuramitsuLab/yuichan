@@ -1,6 +1,6 @@
 import pytest
 
-from .yuitypes import YuiError, YuiValue, YuiType, types
+from .yuitypes import YuiValue, types
 from .yuiruntime import YuiRuntime
 from .yuiast import (
     ConstNode, NumberNode, StringNode,

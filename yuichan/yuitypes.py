@@ -460,13 +460,15 @@ class YuiValue(object):
     type: YuiType
     elements: Optional[List[Any]]
     sign: int
+    inner_view: bool
 
     def __init__(self, native_value: Any, type: Optional[YuiType] = None):
         """YuiValueを初期化する"""
         self.native_value = native_value.native if isinstance(native_value, YuiValue) else native_value
+        self.type = _typing(native_value) if type is None else type
         self.elements = None
         self.sign = None
-        self.type = _typing(native_value) if type is None else type
+        self.inner_view = False
     
     @property
     def native(self) -> Any:
@@ -480,6 +482,7 @@ class YuiValue(object):
             self.elements = self.type.to_arrayview(self.native_value)
             self.sign = self.type.to_sign(self.native_value)
             self.native_value = None  # elements を使うので native キャッシュを無効化
+            self.inner_view = True
         return self.elements
 
     def get_item(self, index: Any, getindex_node=None) -> Any:
@@ -490,10 +493,11 @@ class YuiValue(object):
         
         IntType.match_or_raise(index, getindex_node)
         index = types.unbox(index)
+        elements = self.array
+        self.inner_view = True
+        # int type: implicit leading zeros for out-of-range
         if index < 0:
             raise YuiError(("index-error", f"✅>=0", f"❌{index}"), getindex_node)
-        elements = self.array
-        # int type: implicit leading zeros for out-of-range
         if isinstance(self.type, YuiIntType) and index >= len(elements):
             return types.box(0)
         if index >= len(elements):
@@ -517,6 +521,7 @@ class YuiValue(object):
         elements = self.array
         if index >= len(elements):
             raise YuiError(("index-error", f"✅<{len(elements)}", f"❌{index}", f"🔍{elements}"), getindex_node)
+        self.inner_view = True
         elements[index] = value
         try:
             self.type.to_native(elements, self.sign, getindex_node)
@@ -530,6 +535,7 @@ class YuiValue(object):
         if self.type.is_immutable():
             raise YuiError(("immutable-append", f"❌{self.type}"), append_node)
         self.array.append(value)
+        self.inner_view = True
         try:
             self.type.to_native(self.array, self.sign, append_node)
         except YuiError as e:
@@ -545,12 +551,12 @@ class YuiValue(object):
         """デバッグ用文字列表現を返す"""
         return str(self.native)
 
-    def stringfy(self, indent_prefix: str = "", arrayview: bool = False, width=80) -> str:
+    def stringfy(self, indent_prefix: str = "", inner_view=False, width=80) -> str:
         native_view = self.type.stringfy(self.native, indent_prefix=indent_prefix, width=width)
-        if arrayview and self.type.is_array_unboxed():
+        if inner_view == True and self.inner_view and self.type.is_array_unboxed():
             elements =self.array
             array_view = ArrayType.stringfy(elements, indent_prefix=None, comma= ",", width=width)
-            return f"{native_view} 🔍{array_view}"
+            return f"{native_view:12}   🔬{array_view}"
         return native_view
 
     def equals(self, other: Any) -> bool:
