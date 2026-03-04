@@ -24,7 +24,7 @@ from .yuitypes import YuiError
 from .yuiast import IncrementNode, NameNode
 from .yuierror import set_verbose
 from . import yuiexample
-from . import message as _message
+# from . import message as _message
 
 
 def main(argv=None):
@@ -106,7 +106,7 @@ Error message languages (--lang):
 
     args = parser.parse_args(argv)
 
-    _message.set_language(args.lang)
+    #_message.set_language(args.lang)
     set_verbose(args.verbose)
 
     try:
@@ -246,7 +246,8 @@ Error message languages (--lang):
                 save_env_to_json(env, args.output)
                 print(f"Environment saved: {args.output}")
 
-            return
+            if not args.interactive:
+                return
 
         # Interactive mode
         if args.interactive or not args.file:

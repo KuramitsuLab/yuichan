@@ -42,6 +42,8 @@ ERROR_MESSAGES = {
     "undefined-variable":       "変数が定義されていません",
     "undefined-function":       "関数が定義されていません",
     "type-error":               "データの種類（型）が違っています",
+    "value-error":              "データの値がおかしいです",
+    "array-value-error":        "値がおかしくて配列データが壊れます",
     "division-by-zero":         "ゼロで割ってしまいました",
     "error-index":              "配列のインデックスが範囲外です",
     "error-value":              "値エラーです",
@@ -53,7 +55,7 @@ ERROR_MESSAGES = {
     "not-negative-number":      "負の数は使えません",
     "float-conversion":         "少数への変換エラーです",
     "internal-error":           "内部エラーです",
-    "immutable":                "変更できません",
+    "append-immutable":         "変更できません",
     "array-format":             "配列フォーマットエラーです",
     "assertion-failed":         "テストを失敗",
 }

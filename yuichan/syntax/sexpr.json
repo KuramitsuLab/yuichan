@@ -42,10 +42,12 @@
     "object-separator": ",",
     "key-value-separator": ":",
 
-    "grouping-begin!": "",
-    "grouping-end!": "",
+    "grouping-begin": "",
+    "grouping-end": "",
+    "unary-minus": "",  
     "minus-begin": "\\(-\\s+",
     "minus-end": "\\)",
+
     "length-begin": "\\(len\\s+",
     "length-end": "\\)",
 
@@ -72,9 +74,6 @@
     "funcapp-args-end": "",
     "funcapp-separator": "",
     "funcapp-end": "\\)",
-
-    "grouping-begin": "",
-    "grouping-end": "",
 
     "import-standard": "\\(require-standard\\)",
     "import-begin": "\\(require\\s+",

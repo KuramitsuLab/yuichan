@@ -153,6 +153,7 @@ DEFAULT_SYNTAX_JSON = {
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
+    "unary-minus": "-",
     
     "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",

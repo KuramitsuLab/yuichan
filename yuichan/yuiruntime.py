@@ -126,7 +126,7 @@ class YuiRuntime(object):
         for i, (key, value) in enumerate(self.environments[stack].items()):
             if key.startswith("@"): continue 
             lines.append(f"{LF}{indent_prefix}  \"{key}\": ")
-            lines.append(f"{YuiValue.stringfy_value(value, inner_indent_prefix)}")
+            lines.append(f"{value.stringfy(indent_prefix=inner_indent_prefix)}")
             if i < len(self.environments[stack]) - 1:
                 lines.append(", ")
         lines.append(f"{LF}{indent_prefix}}}")
@@ -156,7 +156,7 @@ class YuiRuntime(object):
         if len(self.call_frames) == 0:
             return "global"
         call_frame = self.call_frames[stack]
-        args = ", ".join(YuiValue.stringfy_value(arg, indent_prefix=None) for arg in call_frame[1])
+        args = ", ".join(str(arg) for arg in call_frame[1])
         return f"{call_frame[0]}({args})]"
 
     def check_recursion_depth(self):
@@ -188,13 +188,15 @@ class YuiRuntime(object):
 
     def print(self, value: Any, node: ASTNode):
         """値を出力する"""
-        line, _, snippet = node.extract()
+        linenum, _, snippet = node.extract()
+        if isinstance(node, NameNode):
+            value = value.stringfy(arrayview=True)
         if self.interactive_mode or isinstance(node, StringNode):
             print(f"{value}")
         elif isinstance(node, FuncAppNode):
-            print(f"#line: {line} {snippet.strip()}\n>>> {node.snippet}\n{value}")
+            print(f">>> {node.snippet} 🔍{linenum}\n{value}")
         else:
-            print(f"#line: {line}\n>>> {snippet.strip()}\n{value}")
+            print(f">>> {snippet.strip()} 🔍{linenum}\n{value}")
 
     def start(self, timeout: int = 30):
         """実行を開始する"""
@@ -289,7 +291,7 @@ class YuiRuntime(object):
     def visitGetIndexNode(self, node: GetIndexNode):
         collection = node.collection.visit(self)
         index = node.index_node.visit(self)
-        return collection.get_item(index)
+        return collection.get_item(index, node)
 
     def visitArrayLenNode(self, node: ArrayLenNode):
         value = node.element.visit(self)
@@ -305,7 +307,7 @@ class YuiRuntime(object):
             raise YuiError(("unsupported-operator", f"🔍{node.operator.symbol}"), node)
         left = node.left_node.visit(self)
         right = node.right_node.visit(self)
-        return types.box(node.operator.evaluate(left, right))
+        return types.box(node.operator.evaluate(left, right, node))
 
     def visitFuncAppNode(self, node: FuncAppNode):
         name = f'@{node.name_node.name}'
@@ -361,14 +363,14 @@ class YuiRuntime(object):
         if types.is_string(array) and types.is_string(value):
             # 文字列への文字列追加: 各文字コードを順に追加
             for char_code in value.array:
-                array.append(YuiValue(char_code))
+                array.append(YuiValue(char_code), node)
         elif types.is_object(array) and types.is_string(value):
             # オブジェクトへのキー追加: 値は現在の要素数+1
             key = types.unbox(value)
             new_index = len(array.array) + 1
-            array.append(YuiValue([key, new_index]))
+            array.append(YuiValue([key, new_index]), node)
         else:
-            array.append(value)
+            array.append(value, node)
         return array
 
     # ──────────────────────────────────────────────────────────
@@ -386,7 +388,7 @@ class YuiRuntime(object):
     def visitIfNode(self, node: IfNode):
         left = node.left.visit(self)
         right = node.right.visit(self)
-        result = node.operator.evaluate(left, right)
+        result = node.operator.evaluate(left, right, node)
         self.count_compare()
         if result:
             return node.then_block.visit(self)

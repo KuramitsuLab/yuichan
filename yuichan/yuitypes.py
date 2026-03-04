@@ -50,7 +50,7 @@ class YuiType(ABC):
         return 1
 
     @abstractmethod
-    def to_native(self, elements: List[int], sign: int = 1) -> Any:
+    def to_native(self, elements: List[int], sign: int = 1, node=None) -> Any:
         pass
 
     @abstractmethod
@@ -141,11 +141,9 @@ class YuiIntType(YuiType):
     def to_arrayview(self, native_value: int) -> List[int]:
         """整数の絶対値を可変長LSBファースト配列に変換（0は空リスト）"""
         n_abs = abs(native_value)
-        if n_abs == 0:
-            return [0]
         bits = []
         while n_abs:
-            bits.append(n_abs & 1)
+            bits.append(int(n_abs & 1))
             n_abs >>= 1
         return bits
 
@@ -153,6 +151,9 @@ class YuiIntType(YuiType):
         """可変長LSBファースト配列を整数に変換"""
         n = 0
         for i, bit in enumerate(bits):
+            if bit not in (0, 1) or isinstance(bit, bool):
+                array = ArrayType.stringfy(bits, indent_prefix=None, comma=",")
+                raise YuiError(("array-value-error", f"❌{types.format_json(bit)}", f"✅0/1", f"🔍{array}"), node)
             n |= bit << i
         return sign * n
     
@@ -209,10 +210,11 @@ class YuiFloatType(YuiType):
             to_native([0, 0, 0, 0, 4, 1, 3], sign=1)  → 3.14
             to_native([0, 0, 0, 0, 4, 1, 3], sign=-1) → -3.14
         """
-        num_digits = list(reversed(digits))  # MSBファーストに戻す
-        for i, d in enumerate(num_digits):
+        for d in digits:
             if not (isinstance(d, int) and 0 <= d <= 9):
-                raise YuiError(("conversion-float", f"❌[{i}]{d}", f"✅0-9", f"🔍{digits}"), node)
+                array = ArrayType.stringfy(digits, indent_prefix=None, comma=",")
+                raise YuiError(("array-value-error", f"❌{types.format_json(d)}", f"✅0-9", f"🔍{array}"), node)
+        num_digits = list(reversed(digits))  # MSBファーストに戻す
         s = ''.join(str(d) for d in num_digits)
         if len(s) <= 6:
             # 整数部なし（小数点以下のみ）
@@ -270,11 +272,16 @@ class YuiStringType(YuiType):
         return [ord(ch) for ch in x]
 
     def to_native(self, elements: List[int], sign: int = 1, node=None) -> str:
-        return ''.join(chr(d) for d in elements)
+        contents = []
+        for d in elements:
+            if not (isinstance(d, int) and 0 <= d <= 0x10FFFF):
+                array = ArrayType.stringfy(elements, indent_prefix=None, comma=",")
+                raise YuiError(("array-value-error", f"❌{types.format_json(d)}", f"✅<文字コード>", f"🔍{array}"), node)
+            contents.append(chr(d))
+        return ''.join(contents)
 
     def stringfy(self, native_value: str, indent_prefix: str = "", width=80) -> str:
-        content = native_value.replace('"', '\\"').replace('\n', '\\n')
-        return f'"{content}"'
+        return types.format_json(native_value)
     
     def equals(self, left: Any, right: Any) -> bool:
         left_value = types.unbox(left)
@@ -315,11 +322,11 @@ class YuiArrayType(YuiType):
                 array.append(element)
         return array
     
-    def stringfy(self, elements: List[int], indent_prefix: str = "", width=80) -> str:
+    def stringfy(self, elements: List[int], indent_prefix: str = "", comma=", ", width=80) -> str:
         buffer = ["["]
         for i, element in enumerate(elements):
             if i > 0:
-                buffer.append(", ")
+                buffer.append(comma)
             buffer.append(f"{types.format_json(element)}")
         buffer.append("]")
         string_content = ''.join(buffer)
@@ -383,13 +390,13 @@ class YuiObjectType(YuiType):
         obj = {}
         for key_value in elements:
             if not isinstance(key_value, YuiValue):
-                raise YuiError((f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
+                raise YuiError((f"array-value-error", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
             key_value = key_value.native
             if not isinstance(key_value, list) or len(key_value) != 2:
-                raise YuiError((f"conversion-object", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
+                raise YuiError((f"array-value-error", f"❌{key_value}", f"✅[key, value]", f"🔍{elements}"), node)
             key = key_value[0]
             if not isinstance(key, str):
-                raise YuiError((f"conversion-object", f"❌{key}", f"✅<string>", f"🔍{key_value}"), node)
+                raise YuiError((f"array-value-error", f"❌{key}", f"✅<string>", f"🔍{key_value}"), node)
             value = key_value[1]
             obj[key] = value
         return obj
@@ -475,25 +482,25 @@ class YuiValue(object):
             self.native_value = None  # elements を使うので native キャッシュを無効化
         return self.elements
 
-    def get_item(self, index: Any, index_node=None) -> Any:
+    def get_item(self, index: Any, getindex_node=None) -> Any:
         if types.is_string(index) and types.is_object(self):
             key = types.unbox(index)
             obj = types.unbox(self)
             return types.box(obj.get(key, YuiValue.NullValue))
         
-        IntType.match_or_raise(index, index_node)
+        IntType.match_or_raise(index, getindex_node)
         index = types.unbox(index)
         if index < 0:
-            raise YuiError(("index-error", f"✅>=0", f"❌{index}"), index_node)
+            raise YuiError(("index-error", f"✅>=0", f"❌{index}"), getindex_node)
         elements = self.array
         # int type: implicit leading zeros for out-of-range
         if isinstance(self.type, YuiIntType) and index >= len(elements):
             return types.box(0)
         if index >= len(elements):
-            raise YuiError(("index-error", f"✅<{len(elements)}", f"❌{index}", f"🔍{elements}"), index_node)
+            raise YuiError(("index-error", f"✅<{len(elements)}", f"❌{index}", f"🔍{elements}"), getindex_node)
         return types.box(elements[index])
 
-    def set_item(self, index: Any, value: Any, index_node=None) -> Any:
+    def set_item(self, index: Any, value: Any, getindex_node=None) -> Any:
         value = types.array_unbox(value)
         if self.type.is_immutable():
             raise YuiError(("immutable-set", f"❌{self.type}"), None)
@@ -503,29 +510,32 @@ class YuiValue(object):
             obj[key] = value
             self.elements = None
             return
-        IntType.match_or_raise(index, index_node)
+        IntType.match_or_raise(index, getindex_node)
         index = types.unbox(index)
         if index < 0:
-            raise YuiError(("index-error", f"✅>=0", f"❌{index}"), index_node)
+            raise YuiError(("index-error", f"✅>=0", f"❌{index}"), getindex_node)
         elements = self.array
         if index >= len(elements):
-            raise YuiError(("index-error", f"✅<{len(elements)}", f"❌{index}", f"🔍{elements}"), index_node)
+            raise YuiError(("index-error", f"✅<{len(elements)}", f"❌{index}", f"🔍{elements}"), getindex_node)
         elements[index] = value
+        try:
+            self.type.to_native(elements, self.sign, getindex_node)
+        except YuiError as e:
+            self.type = ArrayType
+            raise e
         self.native_value = None
 
-    def append(self, value: Any) -> Any:
+    def append(self, value: Any, append_node=None) -> Any:
         value = types.array_unbox(value)
         if self.type.is_immutable():
-            raise YuiError(("immutable-append", f"❌{self.type}"), None)
+            raise YuiError(("immutable-append", f"❌{self.type}"), append_node)
         self.array.append(value)
+        try:
+            self.type.to_native(self.array, self.sign, append_node)
+        except YuiError as e:
+            self.type = ArrayType
+            raise e
         self.native_value = None
-
-    @staticmethod
-    def stringfy_value(value: Any, indent_prefix: str = "", width=80) -> str:
-        """YuiValue または任意の値を文字列に変換する（クラスメソッドとして呼び出し可能）"""
-        if isinstance(value, YuiValue):
-            return value.stringfy(indent_prefix=indent_prefix, width=width)
-        return str(value)
 
     def __str__(self):
         """文字列表現を返す"""
@@ -536,11 +546,12 @@ class YuiValue(object):
         return str(self.native)
 
     def stringfy(self, indent_prefix: str = "", arrayview: bool = False, width=80) -> str:
-        if arrayview:
+        native_view = self.type.stringfy(self.native, indent_prefix=indent_prefix, width=width)
+        if arrayview and self.type.is_array_unboxed():
             elements =self.array
-            return ArrayType.stringfy(elements, indent_prefix=indent_prefix, width=width)
-        else:
-            return self.type.stringfy(self.native, indent_prefix=indent_prefix, width=width)
+            array_view = ArrayType.stringfy(elements, indent_prefix=None, comma= ",", width=width)
+            return f"{native_view} 🔍{array_view}"
+        return native_view
 
     def equals(self, other: Any) -> bool:
         return self.type.equals(self, other)

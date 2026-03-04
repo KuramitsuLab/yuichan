@@ -221,7 +221,7 @@ class GetIndexNode(ASTNode):
         """変数の値を更新する"""
         collection = self.collection.visit(visitor)
         index = self.index_node.visit(visitor)
-        collection.set_item(index, value)
+        collection.set_item(index, value, self)
 
 @dataclass
 class BinaryNode(ASTNode):

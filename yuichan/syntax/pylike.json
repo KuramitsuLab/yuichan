@@ -41,7 +41,7 @@
     "grouping-begin": "\\(",
     "grouping-end": "\\)",
     "length-begin": "len\\s*\\(",
-    "length-end": "\\)  ",
+    "length-end": "\\)",
 
     "binary-infix+": "\\+",
     "binary-infix-": "\\-",

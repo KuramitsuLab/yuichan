@@ -148,7 +148,7 @@ class Source(YuiSyntax):
             return
         expected_token = self.for_example(terminal)
         if opening_pos is not None:
-            raise YuiError(("expected-closing", f"✅`{expected_token}`"), self.p(start_pos=opening_pos))
+            raise YuiError(("expected-closing", f"✅`{expected_token}`", f"🧬{terminal}"), self.p(start_pos=opening_pos))
         snippet = self.capture_line()
         raise YuiError(("expected-token", f"❌`{snippet}`", f"✅`{expected_token}`", f"🧬{terminal}"), self.p(length=1), BK=BK)
 
@@ -454,7 +454,7 @@ class NameParser(ParserCombinator):
             source.is_("name-chars", lskip_ws=False)
             if source.pos == saved_pos: #続かないとキーワード確定
                 raise YuiError(("keyword-name", f"❌`{matched_keyword}`"), source.p(start_pos=start_pos), BK=True)
-            source
+            source.pos = start_pos
         special_name = source.match_special_name()
         if special_name is not None:
             return source.p(NameNode(special_name), start_pos=source.pos-len(special_name))

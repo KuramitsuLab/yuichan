@@ -35,8 +35,7 @@
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
-    "property-accessor": "\\.",
-    "property-length": "length",
+    "property-length": "\\.length",
     "not-property-name": "push",
 
     "funcapp-args-begin": "\\(",
