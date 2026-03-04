@@ -187,17 +187,36 @@ Error message languages (--lang):
 
         # Required syntax file check (execution, interactive, conversion modes)
         if not args.syntax:
-            print("Error: --syntax option is required", file=sys.stderr)
-            print("\nUsage:", file=sys.stderr)
-            print("  yui --syntax <syntax-file> [options] [file]", file=sys.stderr)
-            print("\nExamples:", file=sys.stderr)
-            print("  yui --syntax yui file.yui", file=sys.stderr)
-            print("  yui --syntax pylike -i", file=sys.stderr)
-            print("\nAvailable syntax files:", file=sys.stderr)
-            print("  - yui  (Yui style)", file=sys.stderr)
-            print("  - pylike   (Python style)", file=sys.stderr)
-            print("  - emoji.json       (Emoji style)", file=sys.stderr)
-            sys.exit(1)
+            if args.file:
+                # ファイルが指定されていれば syntax を自動検出
+                sources = {}
+                for filename in args.file:
+                    try:
+                        with open(filename, 'r', encoding='utf-8') as f:
+                            sources[filename] = f.read()
+                    except FileNotFoundError:
+                        print(f"Error: File not found - {filename}", file=sys.stderr)
+                        sys.exit(1)
+                results = find_matching_syntaxes(sources, args.syntax_dir)
+                matched = [name for name, ok, _ in results if ok]
+                if len(matched) == 1:
+                    args.syntax = matched[0]
+                    print(f"Detected syntax: {args.syntax}", file=sys.stderr)
+                elif len(matched) > 1:
+                    print(f"Multiple syntaxes match: {', '.join(matched)}", file=sys.stderr)
+                    print("Use --syntax to specify one.", file=sys.stderr)
+                    sys.exit(1)
+                else:
+                    print("Error: No syntax matched the given files.", file=sys.stderr)
+                    sys.exit(1)
+            else:
+                print("Error: --syntax option is required", file=sys.stderr)
+                print("\nUsage:", file=sys.stderr)
+                print("  yui --syntax <syntax-file> [options] [file]", file=sys.stderr)
+                print("\nExamples:", file=sys.stderr)
+                print("  yui --syntax yui file.yui", file=sys.stderr)
+                print("  yui --syntax pylike -i", file=sys.stderr)
+                sys.exit(1)
 
         syntax = args.syntax
 
