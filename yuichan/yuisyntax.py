@@ -106,6 +106,8 @@ def get_example_from_pattern_inner(pattern: str)-> str:
     if "|" in pattern:
         choice = pattern.split("|")
         pattern = choice[_random(len(choice))]
+        if pattern == "":
+            return ""
 
     # 文字クラス [abc] の処理 
     if pattern.startswith("["):

@@ -6,7 +6,7 @@ poly = 入力 xs, x に対し {
     i = 0
     current_power = 1.0
     n回、くり返す {
-        coeff = 少数化(xs[i])
+        coeff = 小数化(xs[i])
         term = 積(coeff, current_power)
         result = 和(result, term)
         current_power = 積(current_power, x)

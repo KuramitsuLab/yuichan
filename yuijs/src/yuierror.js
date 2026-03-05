@@ -49,7 +49,7 @@ export const ERROR_MESSAGES = {
     'imcomparable':   'サポートされていない比較です',
     'mismatch-argument': '引数の数が合いません',
     'not-negative-number':      '負の数は使えません',
-    'float-conversion':         '少数への変換エラーです',
+    'float-conversion':         '小数への変換エラーです',
     'internal-error':           '内部エラーです',
     'immutable':                '変更できません',
     'array-format':             '配列フォーマットエラーです',

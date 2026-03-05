@@ -696,10 +696,10 @@ export function exampleMonteCarlo() {
             new ReturnNode(
                 new FuncAppNode(new NameNode('商'), [
                     new FuncAppNode(new NameNode('積'), [
-                        new FuncAppNode(new NameNode('少数化'), [new NameNode('hits')]),
+                        new FuncAppNode(new NameNode('小数化'), [new NameNode('hits')]),
                         new NumberNode(4),
                     ]),
-                    new FuncAppNode(new NameNode('少数化'), [new NameNode('n')]),
+                    new FuncAppNode(new NameNode('小数化'), [new NameNode('n')]),
                 ])
             ),
         ])

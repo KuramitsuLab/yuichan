@@ -15,7 +15,7 @@ tri = 入力 n に対し {
     差(n, 1)回、くり返す {
         remainder = 剰余(i, 2)
         もし remainder が 0 ならば {
-            i_float = 少数化(i)
+            i_float = 小数化(i)
             half = 商(i_float, 2.0)
             value = 和(half, 1.0)
             resultの末尾に value を追加する
@@ -25,7 +25,7 @@ tri = 入力 n に対し {
             prev2 = 差(i, 2)
             sum1 = 和(result[prev1], result[prev2])
             i_plus_3 = 和(i, 3)
-            i_plus_3_float = 少数化(i_plus_3)
+            i_plus_3_float = 小数化(i_plus_3)
             extra = 商(i_plus_3_float, 2.0)
             value = 和(sum1, extra)
             resultの末尾に value を追加する

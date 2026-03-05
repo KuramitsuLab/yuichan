@@ -1,14 +1,14 @@
 標準ライブラリを使う
 
 ceil = 入力 x に対し {
-    is_float = 少数判定(x)
+    is_float = 小数判定(x)
 
     もし is_float が 0 ならば {
         xが答え
     }
 
     int_part = 整数化(x)
-    float_int = 少数化(int_part)
+    float_int = 小数化(int_part)
 
     もし x が float_int ならば {
         int_partが答え

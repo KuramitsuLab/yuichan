@@ -53,7 +53,7 @@ ERROR_MESSAGES = {
     "imcomparable":             "両者は直接比較できません",
     "mismatch-argument":        "引数の数が合いません",
     "not-negative-number":      "負の数は使えません",
-    "float-conversion":         "少数への変換エラーです",
+    "float-conversion":         "小数への変換エラーです",
     "internal-error":           "内部エラーです",
     "append-immutable":         "変更できません",
     "array-format":             "配列フォーマットエラーです",

@@ -266,7 +266,7 @@ All predicates return `1` (true) or `0` (false).
 | Emoji | Japanese | English | Returns 1 when… |
 |-------|----------|---------|-----------------|
 | `💯❓` | `整数判定` | `isint` | argument is an int |
-| `📊❓` | `少数判定` | `isfloat` | argument is a float |
+| `📊❓` | `小数判定` | `isfloat` | argument is a float |
 | `💬❓` | `文字列判定` | `isstring` | argument is a string |
 | `🍡❓` | `配列判定` | `isarray` | argument is an array |
 | `🗂️❓` | `オブジェクト判定` | `isobject` | argument is an object |
@@ -285,7 +285,7 @@ isstring("hi") → 1
 | Emoji | Japanese | English | Description |
 |-------|----------|---------|-------------|
 | `💯` | `整数化` | `toint` | Convert to int (truncates toward zero) |
-| `📊` | `少数化` | `tofloat` | Convert to float (also accepts numeric strings) |
+| `📊` | `小数化` | `tofloat` | Convert to float (also accepts numeric strings) |
 | `💬` | `文字列化` | `tostring` | Convert to string |
 | `🍡` | `配列化` | `toarray` | Return the internal array view of a value |
 | `🗂️` | `オブジェクト化` | `toobject` | Convert JSON string to object; returns `{}` on failure |

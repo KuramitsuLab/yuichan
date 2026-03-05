@@ -13,6 +13,7 @@
     "keywords": "function|return|if|else|for|in|not|and|or|break|assert",
     "statement-separator": ";",
 
+
     "null": "null",
     "boolean-true": "true",
     "boolean-false": "false",
@@ -48,7 +49,7 @@
     "block-begin": "\\{",
     "block-end": "\\}",
 
-    "assignment-begin": "(var\\s|let\\s|const\\s)?",
+    "assignment-begin": "",
     "assignment-infix": "\\=",
     "assignment-end": "",
 

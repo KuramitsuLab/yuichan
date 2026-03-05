@@ -16,8 +16,8 @@ def standard_lib(modules: list):
 
     以下の関数が使用可能になります：
     - 絶対値(x): 絶対値
-    - 平方根(x): 平方根（少数を返す）
-    - 乱数(): ランダムな少数
+    - 平方根(x): 平方根（小数を返す）
+    - 乱数(): ランダムな小数
     - 和(x, y, ...): 要素の合計
     - 差(x, y, ...): 要素の差
     - 積(x, y, ...): 要素の積
@@ -28,10 +28,10 @@ def standard_lib(modules: list):
 
     - 配列化(x): 配列に変換
     - 文字列化(x): 文字列に変換
-    - 少数化(x): 少数に変換
+    - 小数化(x): 小数に変換
     - 整数化(x): 整数に変換
     - 整数判定(x): 整数かどうか
-    - 少数判定(x): 少数かどうか
+    - 小数判定(x): 小数かどうか
     - 文字列判定(x): 文字列かどうか
     - オブジェクト化(x): オブジェクトに変換
     - オブジェクト判定(x): オブジェクトかどうか
@@ -65,7 +65,7 @@ def standard_lib(modules: list):
     modules.append(('📏|絶対値|abs', yui_abs))
 
     def yui_sqrt(*args: Any) -> Any:
-        """平方根を返す（少数）"""
+        """平方根を返す（小数）"""
         check_number_of_args(args, 1)
         NumberType.match_or_raise(args[0])
         value = types.unbox(args[0])
@@ -75,7 +75,7 @@ def standard_lib(modules: list):
     modules.append(('√|平方根|sqrt', yui_sqrt))
 
     def yui_random(*args: Any) -> Any:
-        """ランダムな少数を返す"""
+        """ランダムな小数を返す"""
         check_number_of_args(args, 0)
         return YuiValue(random.random())
     modules.append((f'🎲|乱数|random', yui_random))
@@ -91,7 +91,7 @@ def standard_lib(modules: list):
     # modules.append((f'🎲{TY_FLOAT}|乱整数|randint', yui_randint))
 
     def has_float_or_raise(args: List[Any]) -> bool:
-        """引数リストに少数が含まれているかどうかを判定する"""
+        """引数リストに小数が含まれているかどうかを判定する"""
         for nodearg in args:
             NumberType.match_or_raise(nodearg)
             if types.is_float(nodearg):

@@ -265,7 +265,7 @@ export function standardLib(modules) {
         checkNumberOfArgs(nodeargs, 1);
         return types.isFloat(nodeargs[0]) ? YuiValue.TrueValue : YuiValue.FalseValue;
     }
-    modules.push(['📊❓|少数判定|isfloat', yuiIsfloat]);
+    modules.push(['📊❓|小数判定|isfloat', yuiIsfloat]);
 
     function yuiTofloat(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);
@@ -280,7 +280,7 @@ export function standardLib(modules) {
         // so we must force the type to distinguish float from int.
         return new YuiValue(parseFloat(YuiType.matchedNative(nodeargs[0])), FloatType);
     }
-    modules.push(['📊|少数化|tofloat', yuiTofloat]);
+    modules.push(['📊|小数化|tofloat', yuiTofloat]);
 
     function yuiIsstring(...nodeargs) {
         checkNumberOfArgs(nodeargs, 1);

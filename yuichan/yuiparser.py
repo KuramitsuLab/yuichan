@@ -34,7 +34,7 @@ class Source(YuiSyntax):
         self.pos = pos
         self.length = len(source)
         self.special_names = []
-        self.extract_special_names(source)
+        self.extract_special_names("\n"+source) #行頭の名前も抽出するために先頭に改行を追加
         self.current_indent = ""     
         self.memos = {}
     
@@ -209,7 +209,7 @@ class Source(YuiSyntax):
         name_pattern = self.terminals.get("special-name-pattern", r'[^\s\[\]\(\)",\.+*/%=!<>-]+')
         
         # 1. 変数定義のパターン（例: `name =` だが `==` は除外）
-        var_pattern = self.terminals.get("special-name-variable", r'\n\s*({name_pattern})\s*=(?!=)')
+        var_pattern = self.terminals.get("special-name-variable", r'(?:^|\n)\s*({name_pattern})\s*=(?!=)')
         var_pattern = var_pattern.replace("{name_pattern}", name_pattern)
         matches1 = re.findall(var_pattern, text)
         names.extend(matches1)
@@ -222,7 +222,7 @@ class Source(YuiSyntax):
 
 
         # Unicodeなど特殊な名前をあらかじめ抽出しておく（例: `λ` など）。ただし、英数字とアンダースコアのみで構成される名前は除外する。
-        names = list(set(name.strip() for name in names if not _is_alnum(name) and name.strip() != ""))
+        names = list(set(name.strip() for name in names if not _is_special_name(name) and name.strip() != ""))
         vprint(f"@extracted special names: {names}")  
         self.special_names = sorted(names, key=len, reverse=True)
 
@@ -306,7 +306,9 @@ class Source(YuiSyntax):
         print(f"@debug {message} at pos={self.pos} line={linenum} col={col}")
         print(f"{line}\n{' '*(col-1)}^")
 
-def _is_alnum(s: str) -> bool:
+def _is_special_name(s: str) -> bool:
+    if s[0] in "0123456789": # 数字で始まるのはスペシャルネーム
+        return False
     for ch in s:
         if not (('a' <= ch <= 'z') or ('A' <= ch <= 'Z') or ('0' <= ch <= '9') or (ch == '_')):
             return False
@@ -343,6 +345,8 @@ NONTERMINALS["@Boolean"] = ConstParser()
 class NumberParser(ParserCombinator):
 
     def quick_check(self, source: Source) -> bool:
+        if source.match_special_name(unconsumed=True) != None:
+            return False
         return source.is_("number-first-char", unconsumed=True)
     
     def match(self, source: Source):
@@ -525,6 +529,8 @@ class TermParser(ParserCombinator):
                             continue
                         break
                     source.require_("funcapp-args-end", opening_pos=opening_pos)
+                elif source.is_("funcapp-noarg"):
+                    pass  # 引数なし (例: 以虛) を消費
                 else:
                     while not source.is_("funcapp-end", unconsumed=True):
                         source.require_("funcapp-separator")

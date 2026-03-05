@@ -10,8 +10,8 @@
     "comment-end": "注終(。|)",
     "indent": "  ",
     "special-name-pattern": "[^\\s\\[\\]\\(\\)\",\\+\\-\\*\\/\\%\\=\\!\\<\\>]+",
-    "special-name-funcname": "施({name_pattern})於",
-    "special-name-variable": "名之曰({name_pattern})。",
+    "special-name-funcname": "施\\s*({name_pattern})\\s*於",
+    "special-name-variable": "名之曰\\s*({name_pattern})\\s*[。]",
 
     "null": "無|null",
     "boolean-true": "然|true",
@@ -55,7 +55,7 @@
     "funcapp-args-begin": "於",
     "funcapp-args-end": "",
     "funcapp-separator": "與",
-    "funcapp-noarg": "[^於]",
+    "funcapp-noarg": "以虛",
 
     "import-standard": "引標準庫",
     "import-begin": "引",
@@ -66,7 +66,7 @@
 
     "assignment-begin": "吾有一數(、|)曰",
     "assignment-infix": "(、|)名之曰",
-    "assignment-end": "(。|)",
+    "assignment-end": "。",
     "assignment-order": "reversed",
 
     "increment-begin": "(增|増)",
@@ -76,7 +76,7 @@
     "decrement-end": "以一(。|)",
 
     "append-begin": "納",
-    "append-infix": "於",
+    "append-infix": "入",
     "append-end": "(。|)",
     "append-order": "reversed",
 

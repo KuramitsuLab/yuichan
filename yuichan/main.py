@@ -102,6 +102,8 @@ Error message languages (--lang):
                         help='Indentation string for code generation (default: "   ")')
     parser.add_argument('--function-language', type=str, metavar='LANG', default=None,
                         help='Function name language for code generation (e.g. "yui", "python")')
+    parser.add_argument('-c', '--code', type=str, metavar='CODE',
+                        help='Execute code string directly (like python3 -c)')
     parser.add_argument('file', nargs='*', help='Yui file(s) to execute')
 
     args = parser.parse_args(argv)
@@ -251,6 +253,15 @@ Error message languages (--lang):
                                  function_language=args.function_language)
             return
 
+        # Execute inline code (-c option)
+        if args.code:
+            env = run_code(args.code, env, syntax)
+            if args.output:
+                save_env_to_json(env, args.output)
+                print(f"Environment saved: {args.output}")
+            if not args.interactive:
+                return
+
         # Execute file(s)
         if args.file:
             # If multiple files are provided, execute them sequentially
@@ -288,6 +299,18 @@ Error message languages (--lang):
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+
+def run_code(code: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[str, Any]:
+    """Execute a code string directly"""
+    runtime = YuiRuntime()
+    for key, value in env.items():
+        runtime.setenv(key, value)
+    runtime.exec(code, syntax, eval_mode=False)
+    result_env = {}
+    if runtime.environments:
+        result_env = runtime.environments[-1].copy()
+    return result_env
 
 
 def run_file(filename: str, env: Dict[str, Any], syntax: str = 'yui') -> Dict[str, Any]:

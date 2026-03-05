@@ -154,8 +154,8 @@ describe('standard library', () => {
         expect(val(env, 'x')).toBe(1);
     });
 
-    test('少数化 (tofloat)', () => {
-        const env = runStd('x = 少数化(3)');
+    test('小数化 (tofloat)', () => {
+        const env = runStd('x = 小数化(3)');
         expect(val(env, 'x')).toBeCloseTo(3.0);
     });
 
@@ -253,7 +253,7 @@ describe('binary operators', () => {
     test('divide int floor',() => expect(val(runBin('x = 10 / 3'),  'x')).toBe(3));
     test('modulo ints',     () => expect(val(runBin('x = 10 % 3'),  'x')).toBe(1));
 
-    // 少数算術
+    // 小数算術
     test('add floats',      () => expect(val(runBin('x = 1.5 + 2.5'), 'x')).toBeCloseTo(4.0));
     test('divide float',    () => expect(val(runBin('x = 10.0 / 4'),  'x')).toBeCloseTo(2.5));
     test('modulo float',    () => expect(val(runBin('x = 5.5 % 2.0'), 'x')).toBeCloseTo(1.5));

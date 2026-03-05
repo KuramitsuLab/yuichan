@@ -8,7 +8,7 @@
     "comment-end": "",
     "indent": "  ",
 
-    "special-name-variable": "Kem\\s+({name_pattern})\\s+paz",
+    "special-name-variable": "Kem\\s+({name_pattern})\\s+par",
 
     "null": "zup",
     "boolean-true": "vak",

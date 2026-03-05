@@ -39,7 +39,7 @@ compare_one = 入力 a, b に対し {
                         divisor = 積(divisor, 10.0)
                         jを増やす
                     }
-                    digit_f = 少数化(digit)
+                    digit_f = 小数化(digit)
                     frac = 商(digit_f, divisor)
                     a_frac = 和(a_frac, frac)
                 }
@@ -56,12 +56,12 @@ compare_one = 入力 a, b に対し {
             iを増やす
         }
 
-        a_int_f = 少数化(a_int)
+        a_int_f = 小数化(a_int)
         a_val = 和(a_int_f, a_frac)
     }
     そうでなければ {
         # It's a number - convert to float
-        a_val = 少数化(a)
+        a_val = 小数化(a)
     }
 
     # Parse b to float
@@ -102,7 +102,7 @@ compare_one = 入力 a, b に対し {
                         divisor = 積(divisor, 10.0)
                         jを増やす
                     }
-                    digit_f = 少数化(digit)
+                    digit_f = 小数化(digit)
                     frac = 商(digit_f, divisor)
                     b_frac = 和(b_frac, frac)
                 }
@@ -119,12 +119,12 @@ compare_one = 入力 a, b に対し {
             iを増やす
         }
 
-        b_int_f = 少数化(b_int)
+        b_int_f = 小数化(b_int)
         b_val = 和(b_int_f, b_frac)
     }
     そうでなければ {
         # It's a number - convert to float
-        b_val = 少数化(b)
+        b_val = 小数化(b)
     }
 
     # Compare values

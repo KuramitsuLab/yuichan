@@ -87,16 +87,6 @@ class TestNativeFunctionWrapping:
         assert isinstance(env['x'], YuiValue)
         assert val(env, 'x') == 2
 
-    def test_and_stores_yuivalue(self):
-        env = run_std("x = 論理積(12, 10)")
-        assert isinstance(env['x'], YuiValue)
-        assert val(env, 'x') == (12 & 10)
-
-    def test_or_stores_yuivalue(self):
-        env = run_std("x = 論理和(12, 10)")
-        assert isinstance(env['x'], YuiValue)
-        assert val(env, 'x') == (12 | 10)
-
     def test_isint_stores_yuivalue(self):
         env = run_std("x = 整数判定(42)")
         assert isinstance(env['x'], YuiValue)
@@ -112,6 +102,12 @@ class TestNativeFunctionWrapping:
         assert isinstance(env['x'], YuiValue)
         assert types.is_float(env['x'])
         assert abs(val(env, 'x') - 2.0) < 1e-6
+
+    def test_random_stores_yuivalue(self):
+        env = run_std("x = 乱数()")
+        assert isinstance(env['x'], YuiValue)
+        assert types.is_float(env['x'])
+        assert 0.0 <= val(env, 'x') <= 1.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -287,7 +283,7 @@ class TestBinaryOps:
     def test_modulo_ints(self):
         assert val(self.run_bin("x = 10 % 3"), 'x') == 1
 
-    # ── 少数算術 ──────────────────────────────────────────────
+    # ── 小数算術 ──────────────────────────────────────────────
     def test_add_floats(self):
         assert abs(val(self.run_bin("x = 1.5 + 2.5"), 'x') - 4.0) < 1e-6
 
@@ -297,7 +293,7 @@ class TestBinaryOps:
     def test_modulo_float(self):
         assert abs(val(self.run_bin("x = 5.5 % 2.0"), 'x') - 1.5) < 1e-6
 
-    # ── 型昇格: 整数 OP 少数 → 少数 ──────────────────────────
+    # ── 型昇格: 整数 OP 小数 → 小数 ──────────────────────────
     def test_int_plus_float_is_float(self):
         env = self.run_bin("x = 1 + 2.0")
         assert types.is_float(env['x'])

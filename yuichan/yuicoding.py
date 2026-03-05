@@ -105,7 +105,8 @@ class CodingVisitor(YuiSyntax):
             return
         if linefeed_before:
             self.linefeed()
-        if token[0] not in ",()[]{}:;\"'.":
+        _no_seg = {'string-end', 'string-interpolation-end', 'extra-name-end'}
+        if terminal not in _no_seg and token[0] not in ",()[]{}:;\"'.":
             # avoid unnecessary word segmentation before terminals
             self.word_segment()
         self.string(token)

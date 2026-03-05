@@ -791,7 +791,7 @@ get_type = 入力 value に対し {
         "integer"が答え
     }
 
-    is_float = 少数判定(value)
+    is_float = 小数判定(value)
     もし is_float が 1 ならば、{
         "float"が答え
     }
@@ -819,7 +819,7 @@ get_type = 入力 value に対し {
 
 convert_types = 入力 value に対し {
     as_int = 整数化(value)
-    as_float = 少数化(value)
+    as_float = 小数化(value)
     as_str = 文字列化(value)
 
     result = []

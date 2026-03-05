@@ -620,10 +620,10 @@ def example_monte_carlo():
             ReturnNode(
                 FuncAppNode(NameNode("商"), [
                     FuncAppNode(NameNode("積"), [
-                        FuncAppNode(NameNode("少数化"), [NameNode("hits")]),
+                        FuncAppNode(NameNode("小数化"), [NameNode("hits")]),
                         NumberNode(4),
                     ]),
-                    FuncAppNode(NameNode("少数化"), [NameNode("n")]),
+                    FuncAppNode(NameNode("小数化"), [NameNode("n")]),
                 ])
             ),
         ])

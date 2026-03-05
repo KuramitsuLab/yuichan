@@ -60,7 +60,7 @@ testcases = {
     "len(s)": (ArrayLenNode(NameNode("s")), 3),
     "len(P)": (ArrayLenNode(NameNode("P")), 3), 
     "len(M)": (ArrayLenNode(NameNode("M")), 2), 
-    "len(0)": (ArrayLenNode(0), 1),
+    "len(0)": (ArrayLenNode(0), 0),
     "len(11)": (ArrayLenNode(11), 4), # 11 = [1, 1, 0, 1]
     "len(true)": (ArrayLenNode(True), 1),
     "len(false)": (ArrayLenNode(False), 1),
@@ -132,6 +132,15 @@ testcases = {
     "x=42": (AssignmentNode(NameNode("x"), 42), ("x", 42)),
     "y=0": (AssignmentNode(NameNode("y"), 0), ("y", 0)),
     "\"s\"=\"hello\"": (AssignmentNode(StringNode("s"), "hello"), "💣expected-variable"),
+
+    # 特殊変数名
+    "2times=100": (AssignmentNode(NameNode("2times"), 22), ("2times", 22)),
+    "日本語変数名=100": (AssignmentNode(NameNode("日本語変数名"), 100), ("日本語変数名", 100)),
+    "あをによし=100": (AssignmentNode(NameNode("あをによし"), 100), ("あをによし", 100)),
+    "🐼=100": (AssignmentNode(NameNode("🐼"), 100), ("🐼", 100)),
+    "百=100": (AssignmentNode(NameNode("百"), 100), ("百", 100)),
+#    "a+1=100": (AssignmentNode(NameNode("a+1"), 100), "💣expected-variable"),
+
     # Increment/Decrement
     "a+=1": (IncrementNode(NameNode("a")), ("a", 2)),
     "a-=1": (DecrementNode(NameNode("a")), ("a", 0)),

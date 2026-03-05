@@ -30,7 +30,7 @@
 YuiNullType    → null (None)
 YuiBooleanType → true/false (bool) ← IntType より前に置くこと（bool は int のサブクラス）
 YuiIntType     → 整数 (int)
-YuiFloatType   → 少数 (float)
+YuiFloatType   → 小数 (float)
 YuiStringType  → 文字列 (str) ← 内部は文字コードの配列
 YuiArrayType   → 配列 (list)
 YuiObjectType  → オブジェクト (dict)
