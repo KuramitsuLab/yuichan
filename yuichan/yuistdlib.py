@@ -1,6 +1,5 @@
 import math
 import random
-import json
 from typing import List, Any
 
 from .yuitypes import (
@@ -79,16 +78,6 @@ def standard_lib(modules: list):
         check_number_of_args(args, 0)
         return YuiValue(random.random())
     modules.append((f'🎲|乱数|random', yui_random))
-
-    # def yui_randint(*args: Any) -> Any:
-    #     """0以上x未満のランダムな整数を返す"""
-    #     check_number_of_args(args, 1)
-    #     IntType.match_or_raise(args[0])
-    #     x = types.unbox(args[0])
-    #     if x <= 0:
-    #         raise YuiError(("not-negative-number", f"❌{x}", f"✅>0"))
-    #     return YuiValue(random.randint(0, x - 1))
-    # modules.append((f'🎲{TY_FLOAT}|乱整数|randint', yui_randint))
 
     def has_float_or_raise(args: List[Any]) -> bool:
         """引数リストに小数が含まれているかどうかを判定する"""
@@ -189,48 +178,6 @@ def standard_lib(modules: list):
                 total %= d
             return YuiValue(total)
     modules.append(('🍕|剰余|remainder', yui_mod))
-
-    # def yui_and(*args: Any) -> YuiValue:
-    #     """論理積を返す"""
-    #     total = types.unbox(args[0])
-    #     for nodearg in args[1:]:
-    #         total &= types.unbox(nodearg)
-    #     return YuiValue(total)
-    # modules.append(('💡✖️|論理積|and', yui_and))
-
-    # def yui_or(*args: Any) -> YuiValue:
-    #     """論理和を返す"""
-    #     total = types.unbox(args[0])
-    #     for nodearg in args[1:]:
-    #         total |= types.unbox(nodearg)
-    #     return YuiValue(total)
-    # modules.append(('💡➕|論理和|or', yui_or))
-
-    # def yui_xor(*args: Any) -> YuiValue:
-    #     """排他的論理和を返す"""
-    #     total = types.unbox(args[0])
-    #     for nodearg in args[1:]:
-    #         total ^= types.unbox(nodearg)
-    #     return YuiValue(total)
-    # modules.append(('💡🔀|排他的論理和|xor', yui_xor))
-
-    # def yui_not(*args: Any) -> YuiValue:
-    #     """ビット反転を返す"""
-    #     check_number_of_args(args, 1)
-    #     return YuiValue(~(types.unbox(args[0])))
-    # modules.append(('💡🔄|ビット反転|not', yui_not))
-
-    # def yui_left_shift(*args: Any) -> YuiValue:
-    #     """左シフトを返す"""
-    #     check_number_of_args(args, 2)
-    #     return YuiValue(types.unbox(args[0]) << types.unbox(args[1]))
-    # modules.append(('💡⬅️|左シフト|shl', yui_left_shift))
-
-    # def yui_right_shift(*args: Any) -> YuiValue:
-    #     """右シフトを返す"""
-    #     check_number_of_args(args, 2)
-    #     return YuiValue(types.unbox(args[0]) >> types.unbox(args[1]))
-    # modules.append(('💡➡️|右シフト|shr', yui_right_shift))
 
     def yui_max(*args: Any) -> Any:
         """最大値を返す"""
@@ -337,21 +284,5 @@ def standard_lib(modules: list):
             return YuiValue(list(value.native.keys()))
         return YuiValue(value.array)
     modules.append((f'{TY_ARRAY}|配列化|toarray', yui_toarray))
-
-    # def yui_toobject(*args: Any) -> Any:
-    #     """オブジェクトに変換する"""
-    #     check_number_of_args(args, 1)
-    #     if types.is_object(args[0]):
-    #         return args[0]
-    #     if types.is_string(args[0]):
-    #         s = types.unbox(args[0])
-    #         if s.startswith('{'):
-    #             try:
-    #                 obj = json.loads(s)
-    #                 return YuiValue(obj)
-    #             except json.JSONDecodeError:
-    #                 pass
-    #     return YuiValue({})
-    # modules.append((f'{TY_OBJECT}|オブジェクト化|toobject', yui_toobject))
 
     return 'emoji|ja|en', modules

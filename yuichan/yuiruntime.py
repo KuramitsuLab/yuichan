@@ -12,7 +12,7 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, CatchNode, ImportNode,
 )
-from .yuitypes import YuiValue, YuiError, types, IntType, NumberType, FloatType
+from .yuitypes import YuiValue, YuiError, types, IntType, NumberType
 from .yuierror import _format_messages
 from .yuistdlib import standard_lib
 from .yuiparser import YuiParser
@@ -58,7 +58,6 @@ class YuiRuntime(object):
     interactive_mode: bool
     source: str
     allow_binary_ops: bool
-    function_defined: bool
     increment_count: int
     decrement_count: int
     compare_count: int
@@ -76,7 +75,6 @@ class YuiRuntime(object):
         self.interactive_mode = False
         self.source = ""
         self.allow_binary_ops = False
-        self.function_defined = False
         self.reset_stats()
 
     def reset_stats(self):
@@ -113,7 +111,7 @@ class YuiRuntime(object):
         """現在の環境に変数を設定する"""
         return self.environments.pop()
     
-    def stringfy_env(self, stack=-1, indent_prefix: str = "") -> str:
+    def stringify_env(self, stack=-1, indent_prefix: str = "") -> str:
         """環境をJSON形式の文字列として出力する"""
         if indent_prefix is None:
             indent_prefix = ""
@@ -122,11 +120,11 @@ class YuiRuntime(object):
         else:
             inner_indent_prefix = indent_prefix + "  "
             LF = "\n"
-        lines = [f"{indent_prefix}<{self.stringfy_call_frames(stack=stack)}>{LF}{{"]
+        lines = [f"{indent_prefix}<{self.stringify_call_frames(stack=stack)}>{LF}{{"]
         for i, (key, value) in enumerate(self.environments[stack].items()):
             if key.startswith("@"): continue 
             lines.append(f"{LF}{indent_prefix}  \"{key}\": ")
-            lines.append(f"{value.stringfy(indent_prefix=inner_indent_prefix)}")
+            lines.append(f"{value.stringify(indent_prefix=inner_indent_prefix)}")
             if i < len(self.environments[stack]) - 1:
                 lines.append(", ")
         lines.append(f"{LF}{indent_prefix}}}")
@@ -140,7 +138,7 @@ class YuiRuntime(object):
             context = _format_source_context(error.error_node, prefix, marker, lineoffset)
             message = f"{message} {context}"
         if is_runtime:
-            return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringfy_env(stack=-1)}\n"
+            return f"[実行時エラー/RuntimeError] {message}\n[環境/Environment] {self.stringify_env(stack=-1)}\n"
         return f"[構文エラー/SyntaxError] {message}"
 
     def push_call_frame(self, func_name: str, args: List[Any], node):
@@ -151,7 +149,7 @@ class YuiRuntime(object):
         """関数呼び出しフレームをスタックから削除"""
         self.call_frames.pop()
 
-    def stringfy_call_frames(self, stack=-1)->str:
+    def stringify_call_frames(self, stack=-1)->str:
         """スタックトレースを文字列として出力する"""
         if len(self.call_frames) == 0:
             return "global"
@@ -193,11 +191,11 @@ class YuiRuntime(object):
             return
         lineno, _, snippet = node.extract()
         if self.interactive_mode and self.is_in_the_top_level():
-            print(f"{value.stringfy(inner_view=True)}")
+            print(f"{value.stringify(inner_view=True)}")
         elif self.is_in_the_top_level():
-            print(f">>> {node} #📍{lineno}\n{value.stringfy(inner_view=True)}")
+            print(f">>> {node} #📍{lineno}\n{value.stringify(inner_view=True)}")
         else:
-            print(f"{lineno:4}: 👀{str(node):36} → {value.stringfy(inner_view=True)}")
+            print(f"{lineno:4}: 👀{str(node):36} → {value.stringify(inner_view=True)}")
 
     def start(self, timeout: int = 30):
         """実行を開始する"""
@@ -425,11 +423,10 @@ class YuiRuntime(object):
         raise YuiReturnException(value, node)
 
     def visitFuncDefNode(self, node: FuncDefNode):
-        """LocalFunctionV を登録することで、関数本体も visitor チェーンで評価される"""
+        """LocalFunction を登録することで、関数本体も visitor チェーンで評価される"""
         params = [p.name for p in node.parameters]
-        function = LocalFunctionV(node.name_node.name, params, node.body)
+        function = LocalFunction(node.name_node.name, params, node.body)
         self.setenv(f'@{node.name_node.name}', function)
-        self.function_defined = True
         return function
 
     # ──────────────────────────────────────────────────────────
@@ -485,16 +482,7 @@ class YuiRuntime(object):
         try:
             return node.expression.visit(self)
         except YuiError as e:
-            return f"💣{e.messages[0]}"
-
-
-    # # ──────────────────────────────────────────────────────────
-    # # フォールバック
-    # # ──────────────────────────────────────────────────────────
-
-    # def visitASTNode(self, node: ASTNode):
-    #     """visitXxxNode が未定義のノードは evaluate にフォールバック"""
-    #     return node.evaluate(self)
+            return YuiValue(f"💣{e.messages[0]}")
 
 
 class YuiFunction(ABC):
@@ -507,8 +495,8 @@ class YuiFunction(ABC):
         pass
 
 class LocalFunction(YuiFunction):
-    """ユーザが関数の型"""
-    
+    """ユーザ定義関数。body.visit(runtime) で visitor チェーンで評価される。"""
+
     def __init__(self, name: str, parameters: List[str], body: ASTNode):
         super().__init__(name)
         self.parameters = parameters
@@ -517,32 +505,8 @@ class LocalFunction(YuiFunction):
     def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
         runtime.pushenv()
         if len(self.parameters) != len(arg_values):
-            raise YuiError(("mismatch-argument", f"✅{len(self.parameters)}", f"❌{len(arg_values)}"), node)
-        for param_name, value in zip(self.parameters, arg_values):
-            runtime.setenv(param_name, value)
-        try:
-            runtime.push_call_frame(self.name, arg_values, node)
-            runtime.check_recursion_depth()
-            self.body.evaluate(runtime)
-        except YuiBreakException as e:
-             raise YuiError(("unexpected-break", f"🔍{node}"), e.error_node)
-        except YuiReturnException as e:
-            if e.value is not None:
-                runtime.pop_call_frame()
-                runtime.popenv()
-                return e.value
-        runtime.pop_call_frame()
-        return YuiValue(runtime.popenv())
-
-
-class LocalFunctionV(LocalFunction):
-    """visitor パターン版 LocalFunction。body.visit(runtime) で実行する。"""
-
-    def call(self, arg_values: List[Any], node: ASTNode, runtime: 'YuiRuntime') -> YuiValue:
-        runtime.pushenv()
-        if len(self.parameters) != len(arg_values):
             raise YuiError(
-                ("mismatch", "arguments", f"✅{len(self.parameters)}", f"❌{len(arg_values)}"), node)
+                ("mismatch-argument", f"✅{len(self.parameters)}", f"❌{len(arg_values)}"), node)
         for param_name, value in zip(self.parameters, arg_values):
             runtime.setenv(param_name, value)
         try:

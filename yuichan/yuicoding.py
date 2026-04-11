@@ -11,7 +11,6 @@ from .yuiast import (
     IfNode, BreakNode, RepeatNode, FuncDefNode, ReturnNode,
     AssertNode, CatchNode, ImportNode,
 )
-from .yuitypes import YuiType, types
 from .yuisyntax import load_syntax, YuiSyntax
 
 class CodingVisitor(YuiSyntax):
@@ -83,13 +82,13 @@ class CodingVisitor(YuiSyntax):
         self.buffer.append(text)
         self.just_linefeeded = False
 
-    def word_segment(self, no_spaece_if_last_chars=' \n([{'):
+    def word_segment(self, no_space_if_last_chars=' \n([{'):
         if self.is_defined('word-segmenter'):
-            if self.last_char() not in no_spaece_if_last_chars:
+            if self.last_char() not in no_space_if_last_chars:
                 self.string(' ')
         else:
             if self.random_seed is not None:
-                if self.last_char() not in no_spaece_if_last_chars:
+                if self.last_char() not in no_space_if_last_chars:
                     if random.random() < 0.5:
                         self.string(' ')
 

@@ -49,7 +49,7 @@ YuiValue.FalseValue = YuiValue(False, type=BoolType)
 - `types.unbox(node_or_value)` — YuiValue → Python native 値
 - `YuiType.yui_to_native(value)` — 再帰的に native 変換（`exec()` の戻り値に使用）
 - `YuiType.native_to_yui(native)` — Python native → YuiValue
-- `YuiValue.stringfy_value(value, indent_prefix)` — 値を文字列表示（staticmethod）
+- `YuiValue.stringify(indent_prefix)` — 値を文字列表示（instance method）
 - `YuiValue.arrayview` — 内部配列表現（`.array` は `arrayview` の別名）
 
 ---
@@ -81,7 +81,7 @@ ConstNode(False)   # false
 ```python
 rt = YuiRuntime()
 rt.exec(source, syntax='yui', eval_mode=False)
-env = rt.enviroments[-1]  # ← typo: "enviroments"（e が1つ）
+env = rt.environments[-1]
 ```
 
 ### 標準ライブラリの読み込み
@@ -97,7 +97,7 @@ rt.exec(STDLIB + source)
 
 ## 既知の制限・注意事項
 
-- **`BinaryNode` は未実装**：`+`, `*` などの演算子は実行時エラーになる。標準ライブラリの `和()`, `積()` などを使う。
+- **`BinaryNode`**：`+`, `-`, `*`, `/`, `%` は実装済。ただしデフォルトでは無効で、`rt.allow_binary_ops = True` を明示的にセットしないと実行時エラーになる。標準ライブラリの `和()`, `積()` なども併用可能。
 - **文字列の内部表現**：`YuiStringType` の値は文字コード（int）の配列として格納される。
 - **配列の等値比較**：`_array_equal(a, b)` で再帰比較。文字コード配列と文字列の相互比較も対応。
 - **`NativeFunction.call()`** の戻り値は自動で `YuiValue` にラップされるが、stdlib 側でも明示的に返すこと。

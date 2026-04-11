@@ -1,8 +1,7 @@
-from dataclasses import dataclass
 from typing import List, Optional, Tuple, Any, Union
 from abc import ABC, abstractmethod
 
-from .yuierror import YuiError, vprint
+from .yuierror import YuiError
 
 TY_NULL = '🚫'
 TY_BOOLEAN = '🎭'
@@ -13,7 +12,6 @@ TY_ARRAY = '🍡'
 TY_OBJECT = '🗂️'
 TY_STRING = '🔤'
 
-@dataclass
 class YuiType(ABC):
     """Yui言語の型を表現するクラス"""
     name: str
@@ -54,7 +52,7 @@ class YuiType(ABC):
         pass
 
     @abstractmethod
-    def stringfy(self, native_value: Any, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: Any, indent_prefix: str = "", width=80) -> str:
         pass
     
     def equals(self, left: Any, right: Any) -> bool:
@@ -84,7 +82,7 @@ class YuiNullType(YuiType):
     def to_native(self, elements: List[int], sign: int = 1, node=None) -> None:
         return None
     
-    def stringfy(self, native_value: None, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: None, indent_prefix: str = "", width=80) -> str:
         return "null"
 
 
@@ -109,7 +107,7 @@ class YuiBooleanType(YuiType):
     def to_native(self, elements: List[int], sign: int = 1, node=None) -> bool:
         return bool(elements[0]) if elements else False
 
-    def stringfy(self, native_value: bool, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: bool, indent_prefix: str = "", width=80) -> str:
         return "true" if native_value else "false"
 
     def equals(self, left: Any, right: Any, binary_node=None) -> bool:
@@ -152,15 +150,15 @@ class YuiIntType(YuiType):
         n = 0
         for i, bit in enumerate(bits):
             if bit not in (0, 1) or isinstance(bit, bool):
-                array = ArrayType.stringfy(bits, indent_prefix=None, comma=",")
+                array = ArrayType.stringify(bits, indent_prefix=None, comma=",")
                 raise YuiError(("array-value-error", f"❌{types.format_json(bit)}", f"✅0/1", f"🔍{array}"), node)
             n |= bit << i
         return sign * n
     
-    def stringfy(self, native_value: int, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: int, indent_prefix: str = "", width=80) -> str:
         return f"{native_value}"
 
-    def stringfy_arrayview(self, arrayview: List[int], sign):
+    def stringify_arrayview(self, arrayview: List[int], sign):
         return f"{'-' if sign < 0 else ''}[{','.join(str(b) for b in arrayview)}]"
 
     def equals(self, left: Any, right: Any) -> bool:
@@ -212,7 +210,7 @@ class YuiFloatType(YuiType):
         """
         for d in digits:
             if not (isinstance(d, int) and 0 <= d <= 9):
-                array = ArrayType.stringfy(digits, indent_prefix=None, comma=",")
+                array = ArrayType.stringify(digits, indent_prefix=None, comma=",")
                 raise YuiError(("array-value-error", f"❌{types.format_json(d)}", f"✅0-9", f"🔍{array}"), node)
         num_digits = list(reversed(digits))  # MSBファーストに戻す
         s = ''.join(str(d) for d in num_digits)
@@ -224,7 +222,7 @@ class YuiFloatType(YuiType):
             value = float(s[:-6] + '.' + s[-6:])
         return sign * value
     
-    def stringfy(self, native_value: float, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: float, indent_prefix: str = "", width=80) -> str:
         return f"{native_value:.6f}"
 
     def equals(self, left: Any, right: Any) -> bool:
@@ -256,7 +254,7 @@ class YuiNumberType(YuiType):
     def to_native(self, elements, sign=1, node=None):
         raise NotImplementedError("NumberType is a union type; use IntType or FloatType")
 
-    def stringfy(self, native_value, indent_prefix="", width=80):
+    def stringify(self, native_value, indent_prefix="", width=80):
         raise NotImplementedError("NumberType is a union type; use IntType or FloatType")
 
 
@@ -275,12 +273,12 @@ class YuiStringType(YuiType):
         contents = []
         for d in elements:
             if not (isinstance(d, int) and 0 <= d <= 0x10FFFF):
-                array = ArrayType.stringfy(elements, indent_prefix=None, comma=",")
+                array = ArrayType.stringify(elements, indent_prefix=None, comma=",")
                 raise YuiError(("array-value-error", f"❌{types.format_json(d)}", f"✅<文字コード>", f"🔍{array}"), node)
             contents.append(chr(d))
         return ''.join(contents)
 
-    def stringfy(self, native_value: str, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: str, indent_prefix: str = "", width=80) -> str:
         return types.format_json(native_value)
     
     def equals(self, left: Any, right: Any) -> bool:
@@ -322,7 +320,7 @@ class YuiArrayType(YuiType):
                 array.append(element)
         return array
     
-    def stringfy(self, elements: List[int], indent_prefix: str = "", comma=", ", width=80) -> str:
+    def stringify(self, elements: List[int], indent_prefix: str = "", comma=", ", width=80) -> str:
         buffer = ["["]
         for i, element in enumerate(elements):
             if i > 0:
@@ -338,7 +336,7 @@ class YuiArrayType(YuiType):
         for i, element in enumerate(elements):
             buffer.append(f"{LF}{inner_indent_prefix}")
             if isinstance(element, YuiValue):
-                buffer.append(element.stringfy(inner_indent_prefix, width=width))
+                buffer.append(element.stringify(inner_indent_prefix, width=width))
             else:
                 buffer.append(f"{types.format_json(element)}")
             if i < len(elements) - 1:
@@ -401,7 +399,7 @@ class YuiObjectType(YuiType):
             obj[key] = value
         return obj
 
-    def stringfy(self, native_value: dict, indent_prefix: str = "", width=80) -> str:
+    def stringify(self, native_value: dict, indent_prefix: str = "", width=80) -> str:
         buffer = ["{"]
         for i, (key, value) in enumerate(native_value.items()):
             if i > 0:
@@ -418,7 +416,7 @@ class YuiObjectType(YuiType):
             buffer.append(f"{LF}{inner_indent_prefix}")
             buffer.append(f'"{key}": ')
             if isinstance(value, YuiValue):
-                buffer.append(value.stringfy(inner_indent_prefix, width=width))
+                buffer.append(value.stringify(inner_indent_prefix, width=width))
             else:
                 buffer.append(f'{types.format_json(value)}')
             if i < len(native_value) - 1:
@@ -545,17 +543,17 @@ class YuiValue(object):
 
     def __str__(self):
         """文字列表現を返す"""
-        return self.stringfy(indent_prefix=None)
+        return self.stringify(indent_prefix=None)
 
     def __repr__(self):
         """デバッグ用文字列表現を返す"""
         return str(self.native)
 
-    def stringfy(self, indent_prefix: str = "", inner_view=False, width=80) -> str:
-        native_view = self.type.stringfy(self.native, indent_prefix=indent_prefix, width=width)
+    def stringify(self, indent_prefix: str = "", inner_view=False, width=80) -> str:
+        native_view = self.type.stringify(self.native, indent_prefix=indent_prefix, width=width)
         if inner_view == True and self.inner_view and self.type.is_array_unboxed():
             elements =self.array
-            array_view = ArrayType.stringfy(elements, indent_prefix=None, comma= ",", width=width)
+            array_view = ArrayType.stringify(elements, indent_prefix=None, comma= ",", width=width)
             return f"{native_view:12}   🔬{array_view}"
         return native_view
 
@@ -667,7 +665,6 @@ class types:
 
     @staticmethod
     def compare(left_node_or_value, right_node_or_value: Any) -> int:
-        print(f"Comparing {left_node_or_value} and {right_node_or_value}")
         if types.is_number(left_node_or_value) and types.is_number(right_node_or_value):
             left_value = round(types.unbox(left_node_or_value), 6)
             right_value = round(types.unbox(right_node_or_value), 6)
@@ -693,7 +690,6 @@ def _compare(left, right) -> int:
 
 ## オペレーター
 
-@dataclass
 class Operator(ABC):
     symbol: str
     precedence: int
@@ -713,7 +709,6 @@ class Operator(ABC):
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> Any:
         pass
 
-@dataclass
 class Equals(Operator):
     def __init__(self, symbol: str = "=="):
         super().__init__(symbol, precedence=3)
@@ -721,7 +716,6 @@ class Equals(Operator):
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return left.equals(right)
 
-@dataclass
 class NotEquals(Operator):
     def __init__(self, symbol: str = "!="):
         super().__init__(symbol, precedence=3)
@@ -729,7 +723,6 @@ class NotEquals(Operator):
     def evaluate(self, left: YuiValue, right: YuiValue, binary_node=None) -> bool:
         return not left.equals(right)
 
-@dataclass
 class LessThan(Operator):
     def __init__(self, symbol: str = "<"):
         super().__init__(symbol, precedence=3)
@@ -738,7 +731,6 @@ class LessThan(Operator):
         return not left.equals(right) and \
             left.less_than(right, self.symbol, binary_node)
 
-@dataclass
 class GreaterThan(Operator):
     def __init__(self, symbol: str = ">"):
         super().__init__(symbol, precedence=3)
@@ -747,7 +739,6 @@ class GreaterThan(Operator):
         return not left.equals(right) and \
             not left.less_than(right, self.symbol, binary_node)
 
-@dataclass
 class LessThanEquals(Operator):
     def __init__(self, symbol: str = "<="):
         super().__init__(symbol, precedence=3)
@@ -756,7 +747,6 @@ class LessThanEquals(Operator):
         return left.equals(right) or \
             left.less_than(right, self.symbol, binary_node)
 
-@dataclass
 class GreaterThanEquals(Operator):
     def __init__(self, symbol: str = ">="):
         super().__init__(symbol, precedence=3)
@@ -765,7 +755,6 @@ class GreaterThanEquals(Operator):
         return left.equals(right) or \
             not left.less_than(right, self.symbol, binary_node)
 
-@dataclass
 class In(Operator):
     def __init__(self, symbol: str = "in"):
         super().__init__(symbol, precedence=3)
@@ -777,7 +766,6 @@ class In(Operator):
                 return True
         return False
 
-@dataclass
 class NotIn(Operator):
     def __init__(self, symbol: str = "notin"):
         super().__init__(symbol, precedence=3)
@@ -789,7 +777,6 @@ class NotIn(Operator):
                 return False
         return True
 
-@dataclass
 class Add(Operator):
     def __init__(self, symbol: str = "+"):
         super().__init__(symbol, precedence=2)
@@ -803,7 +790,6 @@ class Add(Operator):
         NumberType.match_or_raise(right, binary_node)
         return types.unbox(left) + types.unbox(right)
 
-@dataclass
 class Sub(Operator):
     def __init__(self, symbol: str = "-"):
         super().__init__(symbol, precedence=2)
@@ -813,7 +799,6 @@ class Sub(Operator):
         NumberType.match_or_raise(right, binary_node)
         return types.unbox(left) - types.unbox(right)
 
-@dataclass
 class Mul(Operator):
     def __init__(self, symbol: str = "*"):
         super().__init__(symbol, precedence=1)
@@ -823,7 +808,6 @@ class Mul(Operator):
         NumberType.match_or_raise(right, binary_node)
         return types.unbox(left) * types.unbox(right)
 
-@dataclass
 class Div(Operator):
     def __init__(self, symbol: str = "/"):
         super().__init__(symbol, precedence=1)
@@ -838,7 +822,6 @@ class Div(Operator):
             return l / r
         return l // r
 
-@dataclass
 class Mod(Operator):
     def __init__(self, symbol: str = "%"):
         super().__init__(symbol, precedence=1)

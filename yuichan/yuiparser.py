@@ -1,10 +1,8 @@
-# Source
-from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Any, Union
 import re
 
 from .yuiast import (
-    ASTNode, 
+    ASTNode,
     ConstNode, NameNode, StringNode, NumberNode, ArrayNode, ObjectNode,
     MinusNode, ArrayLenNode,
     FuncAppNode, GetIndexNode, BinaryNode,
@@ -14,11 +12,10 @@ from .yuiast import (
     AssertNode, CatchNode, ImportNode,
 )
 
-from .yuitypes import YuiValue, YuiType, YuiError, vprint
+from .yuierror import YuiError, vprint
 from .yuisyntax import YuiSyntax, load_syntax
 
 
-@dataclass
 class SourceNode(ASTNode):
     """null値（?）を表すノード"""
     def __init__(self):
@@ -847,7 +844,8 @@ class FuncDefParser(ParserCombinator):
 
 NONTERMINALS["@FuncDef"] = FuncDefParser()
 
-yui_syntax = load_syntax("yui")
+# Assert 内の式は Yui 標準構文でも解釈できるようフォールバック用に保持する
+_YUI_FALLBACK_SYNTAX = load_syntax("yui")
 
 class AssertParser(ParserCombinator):
     def match(self, source: Source):
@@ -869,11 +867,10 @@ class AssertParser(ParserCombinator):
             return source.p(AssertNode(test_node, reference_node, order_policy=order_policy), start_pos=start_pos)
         except YuiError as e:
             source.backtrack(saved)
-        saved = source.terminals
+        saved_terminals = source.terminals
         try:
-            # Yuiの構文で再度試す
-            global yui_syntax
-            source.terminals = yui_syntax
+            # Yui 構文で再度試す
+            source.terminals = _YUI_FALLBACK_SYNTAX
             test_node = source.parse("@Expression", BK=BK)
             source.require_('assert-infix', BK=BK)
             reference_node = source.parse("@Expression", BK=BK)
@@ -883,7 +880,7 @@ class AssertParser(ParserCombinator):
         except YuiError:
             raise e
         finally:
-            source.terminals = saved
+            source.terminals = saved_terminals
 
 NONTERMINALS["@Assert"] = AssertParser()
 

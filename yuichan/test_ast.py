@@ -259,7 +259,7 @@ testcases = {
             BlockNode([ReturnNode(MinusNode(MinusNode(NameNode("a"))))])
         ),
         FuncAppNode(NameNode("add"),[NumberNode(10)])
-    ]), "💣mismatch-arguments"),
+    ]), "💣mismatch-argument"),
     "function/too-many-recursion": (BlockNode([
         FuncDefNode(
             NameNode("add"),[NameNode("a"), NameNode("b")],

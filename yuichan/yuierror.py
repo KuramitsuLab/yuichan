@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Optional, Any
 import sys
 
@@ -26,9 +25,8 @@ ERROR_MESSAGES = {
     "expected-object":          "オブジェクトが必要です",
     "expected-boolean":         "真偽値が必要です",
     "expected-closing":         "閉じ括弧が必要です",
-    "expected-variable":        "変数が必要です",
-    "expected-expression":      "変数や値が必要です",
     "expected-variable":        "ここは変数が必要です",
+    "expected-expression":      "変数や値が必要です",
 
     "typo":                     "うっかり間違えてませんか？",
     "wrong-name":               "名前が不正です",
@@ -79,10 +77,10 @@ class YuiError(RuntimeError):
 
     def __init__(self, messages: tuple, error_node: Any = None, BK: bool = False):
         """YuiErrorを初期化する"""
-        from .yuiast import ASTNode as _ASTNode
         self.messages = _normalize_messages(messages)
         super().__init__(' '.join(self.messages))
-        self.error_node = error_node if isinstance(error_node, _ASTNode) else None
+        # ASTNode かどうかは pos 属性の有無で duck-type する（循環 import を避けるため）
+        self.error_node = error_node if (error_node is not None and hasattr(error_node, 'pos')) else None
         self.BK = BK
 
     def add_message(self, message: str):

@@ -1,20 +1,26 @@
-# Source
-from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Union
-from types import FunctionType
-from abc import ABC, abstractmethod
-from typing import Union, Any, List
+from typing import List, Optional, Dict
 import re
 import json
 import os
 import random
 
+class _Rng:
+    """シード付き乱数ジェネレータ。seed が None なら常に 0 を返す (決定的)。
+    global state を避けるためにインスタンス化して関数に渡す。"""
+    def __init__(self, seed):
+        self.seed = seed
+
+    def next_int(self, n: int) -> int:
+        if self.seed is None:
+            return 0
+        random.seed(self.seed)
+        self.seed += 1
+        return random.randint(0, n - 1)
+
+
 def get_example_from_pattern(pattern: str, random_seed=None) -> str:
     """正規表現パターンからそのパターンにマッチする文字列の例（最初の例）を取得する"""
-    # エスケープされた文字を一時的に置換
-    global _random_seed
-    _random_seed = random_seed
-    
+    rng = _Rng(random_seed)
     original_pattern = pattern
     ESC = [
         (r'\|', '▁｜'), (r'\[', '▁［'), (r'\]', '▁］'),
@@ -23,26 +29,24 @@ def get_example_from_pattern(pattern: str, random_seed=None) -> str:
     ]
     for a, b in ESC:
         pattern = pattern.replace(a, b)
-    #print(f"@pattern: `{original_pattern}` -> `{pattern}`")  # デバッグ用   
     processed = ''
     while len(pattern) > 0:
         s_pos = pattern.find('(') # シングルループだけ対応
         if s_pos == -1:
-            processed += get_example_from_pattern_inner(pattern)
+            processed += get_example_from_pattern_inner(pattern, rng)
             break
         e_pos = pattern.find(')', s_pos+1)
         if e_pos == -1:
             raise ValueError(f"Unmatched parentheses in pattern: `{original_pattern}`")
-        processed += get_example_from_pattern_inner(pattern[:s_pos])
+        processed += get_example_from_pattern_inner(pattern[:s_pos], rng)
         inner = pattern[s_pos+1:e_pos]
         pattern = pattern[e_pos+1:]
         if pattern.startswith('?'):
             pattern = pattern[1:]
-            if _random(2) != 0:
-                processed += get_example_from_pattern_inner(inner)
+            if rng.next_int(2) != 0:
+                processed += get_example_from_pattern_inner(inner, rng)
         else:
-            processed += get_example_from_pattern_inner(inner)
-    #print(f"@processed: `{pattern}` -> `{processed}`")  # デバッグ用
+            processed += get_example_from_pattern_inner(inner, rng)
     # 置換した文字を元に戻す
     ESC2 = [
         ('▁｜', r'|'), ('▁［', r'['), ('▁］', r']'), ('▁（', r'('),
@@ -53,17 +57,8 @@ def get_example_from_pattern(pattern: str, random_seed=None) -> str:
     assert '▁' not in processed, f"Unprocessed escape sequences remain in `{original_pattern}`: `{processed}`"
     return processed
 
-_random_seed = None
 
-def _random(n):
-    global _random_seed
-    if _random_seed is None:
-        return 0
-    random.seed(_random_seed)
-    _random_seed += 1
-    return random.randint(0, n - 1)
-
-def split_heading_char(s: str):
+def split_heading_char(s: str, rng: _Rng):
     if s.startswith("\\"):
         # エスケープシーケンスの処理
         remaining = s[2:]
@@ -94,30 +89,30 @@ def split_heading_char(s: str):
         heading_char = s[0]
         remaining = s[1:]
     if remaining.startswith("?"):
-        if _random(2) == 0:
+        if rng.next_int(2) == 0:
             return '', remaining[1:]
         return heading_char, remaining[1:]
     return heading_char, remaining
 
-def get_example_from_pattern_inner(pattern: str)-> str:
+def get_example_from_pattern_inner(pattern: str, rng: _Rng) -> str:
     if pattern == "":
         return ""
     # 選択肢（|）の処理：最初の選択肢を使用
     if "|" in pattern:
         choice = pattern.split("|")
-        pattern = choice[_random(len(choice))]
+        pattern = choice[rng.next_int(len(choice))]
         if pattern == "":
             return ""
 
-    # 文字クラス [abc] の処理 
+    # 文字クラス [abc] の処理
     if pattern.startswith("["):
         end_pos = pattern.find("]")
         if pattern.startswith('?', end_pos + 1):
-            return get_example_from_pattern_inner(pattern[end_pos+2:])
-        heading_char, _ = split_heading_char(pattern[1:end_pos])
-        return heading_char + get_example_from_pattern_inner(pattern[end_pos+1:])
-    heading_char, remaining = split_heading_char(pattern)
-    return heading_char + get_example_from_pattern_inner(remaining)
+            return get_example_from_pattern_inner(pattern[end_pos+2:], rng)
+        heading_char, _ = split_heading_char(pattern[1:end_pos], rng)
+        return heading_char + get_example_from_pattern_inner(pattern[end_pos+1:], rng)
+    heading_char, remaining = split_heading_char(pattern, rng)
+    return heading_char + get_example_from_pattern_inner(remaining, rng)
 
 
 DEFAULT_SYNTAX_JSON = {
