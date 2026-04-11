@@ -1,5 +1,6 @@
 {
     "syntax": "python-like",
+    "function-language": "en",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
@@ -9,6 +10,7 @@
     "comment-begin": "",
     "comment-end": "",
     "indent": "  ",
+    "keywords": "def|return|if|else|elif|for|in|not|and|or|break|pass|assert|import|True|False|None",
 
     "null": "None",
     "boolean-true": "True",
@@ -37,22 +39,27 @@
     "object-separator": ",",
     "key-value-separator": ":",
 
-    "grouping-begin!": "\\(",
-    "grouping-end!": "\\)",
+    "grouping-begin": "\\(",
+    "grouping-end": "\\)",
     "length-begin": "len\\s*\\(",
-    "length-end": "\\)  ",
+    "length-end": "\\)",
 
     "binary-infix+": "\\+",
-    "binary-infix-": "-",
+    "binary-infix-": "\\-",
     "binary-infix*": "\\*",
-    "binary-infix/": "/",
-    "binary-infix%": "%",
-    "unary-minus": "-",
+    "binary-infix/": "\\/",
+    "binary-infix%": "\\%",
+    "binary-infix==": "==",
+    "binary-infix!=": "!=",
+    "binary-infix<=": "<=",
+    "binary-infix>=": ">=",
+    "binary-infix<": "<",
+    "binary-infix>": ">",
+    "unary-minus": "\\-",
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
     "property-accessor": "\\.",
-    "property-type": "__class__.__name__",
     "not-property-name": "append",
     "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
@@ -60,7 +67,7 @@
 
     "block-begin": "\\:",
     "block-end": "",
-    "block-else": "else\\b|elif\\b|except\\b|finally\\b",
+    "block-else": "else|elif|except|finally",
     "block-line": "",
 
     "assignment-begin": "",
@@ -83,17 +90,17 @@
     "break": "break",
     "pass": "pass",
 
-    "return-begin": "return\\s+",
+    "return-begin": "return\\s",
     "return-end": "",
 
-    "repeat-begin": "for\\s+_\\s+in\\s+range\\s*\\(\\s*",
-    "repeat-times": "\\)\\s*",
+    "repeat-begin": "while\\s+times\\s*\\(",
+    "repeat-times": "\\)",
     "repeat-block": "",
     "repeat-end": "",
 
     "if-begin": "if\\s",
-    "if-condition-begin": "\\(?",
-    "if-condition-end": "\\)?",
+    "if-condition-begin": "",
+    "if-condition-end": "",
     "if-prefix": "",
     "if-infix==": "==",
     "if-infix!=": "!=",
@@ -116,11 +123,6 @@
     "funcdef-args-end": "\\)",
     "funcdef-block": "",
     "funcdef-end": "",
-
-    "assert-begin": "assert\\s",
-    "assert-infix": "==",
-    "assert-end": "",
-
 
     "import-standard": "import\\s+stdlib",
     "import-begin": "import\\s",

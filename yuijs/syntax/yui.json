@@ -1,5 +1,6 @@
 {
     "syntax": "Yui-Classic",
+    "function-language": "ja",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",
@@ -58,8 +59,7 @@
 
     "array-indexer-suffix": "\\[",
     "array-indexer-end": "\\]",
-    "property-accessor": "の",
-    "property-length": "大きさ",
+    "property-length": "の大きさ",
     
     "funcapp-args-begin": "\\(",
     "funcapp-args-end": "\\)",
@@ -70,6 +70,7 @@
     "import-begin": "",
     "import-end": "を使う",
 
+    "!block-begin": ":|：",
     "block-begin": "[\\{｛]",
     "block-end": "[\\}｝]",
     "block-line": "",
@@ -81,37 +82,51 @@
     "increment-begin": "",
     "increment-infix": "",
     "increment-end": "を増やす",
+    "!increment-end": "\\+\\=|\\+\\+",
     "increment-lookahead": "増やす",
     
     "decrement-begin": "",
     "decrement-infix": "",
+    "!decrement-end": "\\-\\=|\\-\\-",
     "decrement-end": "を減らす",
 
+    "append-lookahead": "を追加する",
     "append-begin": "",
     "append-infix": "(の末尾)?に",
     "append-end": "を追加する",
 
+    "append2-lookahead": "に追加する",
+    "append2-begin": "",
+    "append2-infix": "を",
+    "append2-end": "に追加する",
+
     "print-begin": "",
     "print-end": "",
 
+    "!break": "break",
     "break": "くり返しを抜ける",
     "pass": "何もしない",
 
+    "!return-begin": "return",
     "return-begin": "",
     "return-end": "が[、]?答え",
     "return-none": "関数から抜ける",
 
     "repeat-begin": "",
     "repeat-times": "回[、]?",
+    "!repeat-block": "繰り返す|くりかえす",
     "repeat-block": "くり返す",
     "repeat-end": "",
 
+    "!if-begin": "if",
     "if-begin": "もし",
     "if-condition-begin": "",
     "if-condition-end": "",
     "if-prefix": "",
     "if-infix": "が",
+    "!if-infix": "は|==|!=|<|<=|>|>=|＝|≦|≧|≠",
     "if-suffix!=": "以外",
+    "!if-suffix!=": "でない",
     "if-suffix<": "より小さい",
     "if-suffix<=": "以下",
     "if-suffix>": "より大きい",
@@ -130,9 +145,6 @@
     "funcdef-args-end": "",
     "funcdef-noarg": "入力なし",
     "funcdef-block": "に対し[て]?[、]?",
-    "funcdef-end": "",
+    "funcdef-end": ""
 
-    "assert-begin": ">>>\\s+",
-    "assert-infix": "[\\n]",
-    "assert-end": ""
 }

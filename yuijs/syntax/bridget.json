@@ -1,5 +1,6 @@
 {
     "syntax": "Plain English",
+    "function-language": "en",
 
     "whitespace": "[ \\t\\r　]",
     "whitespaces": "[ \\t\\r　]+",

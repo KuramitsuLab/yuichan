@@ -7,14 +7,14 @@ import { YuiError } from './yuierror.js';
 // ─────────────────────────────────────────────
 // Type emoji constants
 // ─────────────────────────────────────────────
-export const TY_NULL    = '⛔';
-export const TY_BOOLEAN = '🔘';
-export const TY_INT     = '💯';
+export const TY_NULL    = '🚫';
+export const TY_BOOLEAN = '🎭';
+export const TY_INT     = '🔢';
 export const TY_FLOAT   = '📊';
 export const TY_NUMBER  = '🔢';
 export const TY_ARRAY   = '🍡';
 export const TY_OBJECT  = '🗂️';
-export const TY_STRING  = '💬';
+export const TY_STRING  = '🔤';
 
 // ─────────────────────────────────────────────
 // YuiType base class and subclasses
@@ -28,6 +28,15 @@ export class YuiType {
 
     toString() {
         return this.emoji;
+    }
+
+    // 配列内で unbox されるかどうか（scalar 型は true、array/object は false）
+    isArrayUnboxed() {
+        return true;
+    }
+
+    isImmutable() {
+        return false;
     }
 
     // Abstract: must be overridden
@@ -236,9 +245,16 @@ function _compare(left, right) {
 // Concrete type classes
 // ─────────────────────────────────────────────
 
+// NullType and BoolType are immutable
+// ArrayType and ObjectType are not array-unboxed (placeholder; overridden below)
+
 export class YuiNullType extends YuiType {
     constructor() {
         super('null', TY_NULL);
+    }
+
+    isImmutable() {
+        return true;
     }
 
     match(nodeOrValue) {
@@ -268,6 +284,10 @@ export class YuiBooleanType extends YuiType {
         super('boolean', TY_BOOLEAN);
     }
 
+    isImmutable() {
+        return true;
+    }
+
     match(nodeOrValue) {
         // In JS, booleans are a distinct type (no subclass issue like Python)
         if (typeof nodeOrValue === 'boolean') return true;
@@ -279,11 +299,11 @@ export class YuiBooleanType extends YuiType {
     }
 
     toArrayview(n) {
-        return n ? [1] : [];
+        return n ? [1] : [0];
     }
 
     toNative(elements, sign = 1, node = null) {
-        return elements.length > 0;
+        return elements.length > 0 ? Boolean(elements[0]) : false;
     }
 
     stringfy(nativeValue, indentPrefix = '', width = 80) {
@@ -347,7 +367,15 @@ export class YuiIntType extends YuiType {
         // 可変長LSBファースト配列を整数に変換
         let n = 0;
         for (let i = 0; i < bits.length; i++) {
-            if (bits[i]) n += Math.pow(2, i);
+            const bit = bits[i];
+            if ((bit !== 0 && bit !== 1) || typeof bit === 'boolean') {
+                const array = ArrayType.stringfy(bits, null, ",");
+                throw new YuiError(
+                    ['array-value-error', `❌${types.format_json(bit)}`, '✅0/1', `🔍${array}`],
+                    node
+                );
+            }
+            if (bit) n += Math.pow(2, i);
         }
         return sign * n;
     }
@@ -410,18 +438,23 @@ export class YuiFloatType extends YuiType {
 
     toNative(digits, sign = 1, node = null) {
         // LSBファーストをMSBファーストに戻して数値に変換
-        const numDigits = [...digits].reverse();
-        for (let i = 0; i < numDigits.length; i++) {
-            const d = numDigits[i];
-            if (!Number.isInteger(d) || d < 0 || d > 9) {
-                throw new YuiError(['conversion', 'tofloat', `❌[${i}]${d}`, '✅0-9', `🔍${digits}`], node);
+        for (const d of digits) {
+            if (!Number.isInteger(d) || typeof d === 'boolean' || d < 0 || d > 9) {
+                const array = ArrayType.stringfy(digits, null, ',');
+                throw new YuiError(
+                    ['array-value-error', `❌${types.format_json(d)}`, '✅0-9', `🔍${array}`],
+                    node
+                );
             }
         }
+        const numDigits = [...digits].reverse();
         const s = numDigits.join('');
         let value;
         if (s.length <= 6) {
-            value = parseInt(s, 10);
+            // 整数部なし（小数点以下のみ）
+            value = parseFloat('0.' + s.padStart(6, '0'));
         } else {
+            // 小数点を6桁前に挿入
             value = parseFloat(s.slice(0, -6) + '.' + s.slice(-6));
         }
         return sign * value;
@@ -511,12 +544,22 @@ export class YuiStringType extends YuiType {
     }
 
     toNative(elements, sign = 1, node = null) {
-        return elements.map(d => String.fromCodePoint(d)).join('');
+        const contents = [];
+        for (const d of elements) {
+            if (!Number.isInteger(d) || typeof d === 'boolean' || d < 0 || d > 0x10FFFF) {
+                const array = ArrayType.stringfy(elements, null, ',');
+                throw new YuiError(
+                    ['array-value-error', `❌${types.format_json(d)}`, '✅<文字コード>', `🔍${array}`],
+                    node
+                );
+            }
+            contents.push(String.fromCodePoint(d));
+        }
+        return contents.join('');
     }
 
     stringfy(nativeValue, indentPrefix = '', width = 80) {
-        const content = nativeValue.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-        return `"${content}"`;
+        return types.format_json(nativeValue);
     }
 
     equals(leftNode, rightNode) {
@@ -561,6 +604,10 @@ export class YuiArrayType extends YuiType {
         super('array', TY_ARRAY);
     }
 
+    isArrayUnboxed() {
+        return false;
+    }
+
     match(nodeOrValue) {
         if (Array.isArray(nodeOrValue)) return true;
         return nodeOrValue instanceof YuiValue && nodeOrValue.type instanceof YuiArrayType;
@@ -579,9 +626,9 @@ export class YuiArrayType extends YuiType {
         });
     }
 
-    stringfy(elements, indentPrefix = '', width = 80) {
+    stringfy(elements, indentPrefix = '', comma = ', ', width = 80) {
         const parts = elements.map(e => YuiType.arrayviewS(e));
-        const oneLine = '[' + parts.join(', ') + ']';
+        const oneLine = '[' + parts.join(comma) + ']';
         if (indentPrefix === null || indentPrefix.length + oneLine.length <= width) {
             return oneLine;
         }
@@ -603,6 +650,10 @@ export class YuiArrayType extends YuiType {
 export class YuiObjectType extends YuiType {
     constructor() {
         super('object', TY_OBJECT);
+    }
+
+    isArrayUnboxed() {
+        return false;
     }
 
     match(nodeOrValue) {
@@ -629,15 +680,15 @@ export class YuiObjectType extends YuiType {
         const obj = {};
         for (const keyValue of elements) {
             if (!(keyValue instanceof YuiValue)) {
-                throw new YuiError(['conversion', 'toobject', `❌${keyValue}`, '✅[key, value]', `🔍${elements}`], node);
+                throw new YuiError(['array-value-error', `❌${keyValue}`, '✅[key, value]', `🔍${elements}`], node);
             }
             const kv = keyValue.native;
             if (!Array.isArray(kv) || kv.length !== 2) {
-                throw new YuiError(['conversion', 'toobject', `❌${kv}`, '✅[key, value]', `🔍${elements}`], node);
+                throw new YuiError(['array-value-error', `❌${kv}`, '✅[key, value]', `🔍${elements}`], node);
             }
             const key = kv[0];
             if (typeof key !== 'string') {
-                throw new YuiError(['conversion', 'toobject', `❌${key}`, '✅<string>', `🔍${kv}`], node);
+                throw new YuiError(['array-value-error', `❌${key}`, '✅<string>', `🔍${kv}`], node);
             }
             obj[key] = kv[1];
         }
@@ -711,14 +762,15 @@ function _typing(value) {
 
 export class YuiValue {
     constructor(nativeValue, type = null) {
-        this._nativeValue = YuiType.toNative(nativeValue);
-        this._elements = null;
-        this._sign = 1;
+        this._nativeValue = nativeValue instanceof YuiValue ? nativeValue.native : YuiType.toNative(nativeValue);
         this.type = type !== null ? type : _typing(nativeValue);
+        this._elements = null;
+        this._sign = null;
+        this.innerView = false;
     }
 
     get sign() {
-        return this._sign;
+        return this._sign !== null ? this._sign : 1;
     }
 
     get native() {
@@ -732,6 +784,8 @@ export class YuiValue {
         if (this._elements === null) {
             this._sign = this.type.toSign(this._nativeValue);
             this._elements = this.type.toArrayview(this._nativeValue);
+            this._nativeValue = null;  // elements を使うので native キャッシュを無効化
+            this.innerView = true;
         }
         return this._elements;
     }
@@ -741,68 +795,81 @@ export class YuiValue {
         return this.arrayview;
     }
 
-    getItem(nodeOrIndex) {
-        if (types.isString(nodeOrIndex)) {
+    getItem(nodeOrIndex, getindexNode = null) {
+        if (types.isString(nodeOrIndex) && types.isObject(this)) {
             const key = YuiType.matchedNative(nodeOrIndex);
-            if (types.isObject(this)) {
-                const obj = YuiType.matchedNative(this);
-                const val = obj[key];
-                return YuiType.fromArrayview(val !== undefined ? val : YuiValue.NullValue);
-            }
+            const obj = YuiType.matchedNative(this);
+            const val = obj[key];
+            return types.box(val !== undefined ? val : YuiValue.NullValue);
         }
-        IntType.matchOrRaise(nodeOrIndex);
+        IntType.matchOrRaise(nodeOrIndex, getindexNode);
         const index = YuiType.matchedNative(nodeOrIndex);
         const elements = this.arrayview;
+        this.innerView = true;
         if (index < 0) {
-            throw new YuiError(['error', 'index', '✅>=0', `❌${index}`], null);
+            throw new YuiError(['index-error', '✅>=0', `❌${index}`], getindexNode);
         }
+        // int type: implicit leading zeros for out-of-range
         if (this.type instanceof YuiIntType && index >= elements.length) {
-            return YuiType.fromArrayview(0);  // int は上位ビットが暗黙的に 0
+            return types.box(0);
         }
         if (index >= elements.length) {
             throw new YuiError(
-                ['error', 'index', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
-                null
+                ['index-error', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
+                getindexNode
             );
         }
-        return YuiType.fromArrayview(elements[index]);
+        return types.box(elements[index]);
     }
 
-    setItem(nodeOrIndex, nodeOrValue) {
-        const value = YuiType.intoArrayview(nodeOrValue);
-        if (types.isString(nodeOrIndex)) {
+    setItem(nodeOrIndex, nodeOrValue, getindexNode = null) {
+        const value = types.array_unbox(nodeOrValue);
+        if (this.type.isImmutable()) {
+            throw new YuiError(['immutable-set', `❌${this.type}`], null);
+        }
+        if (types.isString(nodeOrIndex) && types.isObject(this)) {
             const key = YuiType.matchedNative(nodeOrIndex);
-            if (types.isObject(this)) {
-                const obj = YuiType.matchedNative(this);
-                obj[key] = value;
-                this._elements = null;
-                return;
-            }
+            const obj = this._nativeValue;
+            obj[key] = value;
+            this._elements = null;
+            return;
         }
-        IntType.matchOrRaise(nodeOrIndex);
+        IntType.matchOrRaise(nodeOrIndex, getindexNode);
         const index = YuiType.matchedNative(nodeOrIndex);
-        const elements = this.arrayview;
         if (index < 0) {
-            throw new YuiError(['error', 'index', '✅>=0', `❌${index}`], null);
+            throw new YuiError(['index-error', '✅>=0', `❌${index}`], getindexNode);
         }
-        if (this.type instanceof YuiIntType && index >= elements.length) {
-            // int は上位ビットを 0 で自動拡張
-            while (elements.length <= index) elements.push(0);
-        } else if (index >= elements.length) {
+        const elements = this.arrayview;
+        if (index >= elements.length) {
             throw new YuiError(
-                ['error', 'index', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
-                null
+                ['index-error', `✅<${elements.length}`, `❌${index}`, `🔍${elements}`],
+                getindexNode
             );
         }
-        this.type.checkElement(nodeOrValue);
+        this.innerView = true;
         elements[index] = value;
+        try {
+            this.type.toNative(elements, this._sign, getindexNode);
+        } catch (e) {
+            this.type = ArrayType;
+            throw e;
+        }
         this._nativeValue = null;
     }
 
-    append(nodeOrValue) {
-        this.type.checkElement(nodeOrValue);
-        const value = YuiType.intoArrayview(nodeOrValue);
+    append(nodeOrValue, appendNode = null) {
+        const value = types.array_unbox(nodeOrValue);
+        if (this.type.isImmutable()) {
+            throw new YuiError(['immutable-append', `❌${this.type}`], appendNode);
+        }
         this.arrayview.push(value);
+        this.innerView = true;
+        try {
+            this.type.toNative(this.arrayview, this._sign, appendNode);
+        } catch (e) {
+            this.type = ArrayType;
+            throw e;
+        }
         this._nativeValue = null;
     }
 
@@ -821,12 +888,16 @@ export class YuiValue {
         return String(value);
     }
 
-    stringfy(indentPrefix = '', arrayview = false, width = 80) {
-        if (arrayview) {
-            const elements = this.arrayview;
-            return ArrayType.stringfy(elements, indentPrefix, width);
+    stringfy(indentPrefix = '', innerView = false, width = 80) {
+        const nativeView = this.type.stringfy(this.native, indentPrefix, width);
+        if (innerView === true && this.innerView && this.type.isArrayUnboxed()) {
+            const elements = this._elements;
+            const arrayView = ArrayType.stringfy(elements, null, ',', width);
+            // Python: f"{native_view:12}   🔬{array_view}"
+            const padded = nativeView.length >= 12 ? nativeView : nativeView + ' '.repeat(12 - nativeView.length);
+            return `${padded}   🔬${arrayView}`;
         }
-        return this.type.stringfy(this.native, indentPrefix, width);
+        return nativeView;
     }
 
     equals(otherNode) {
@@ -1055,6 +1126,7 @@ export const types = {
     },
     unbox(value) { return YuiType.toNative(value); },
     arrayUnbox(value) { return YuiType.intoArrayview(value); },
+    array_unbox(value) { return YuiType.intoArrayview(value); },
     isBool(v)   { return BoolType.match(v); },
     isInt(v)    { return IntType.match(v); },
     isFloat(v)  { return FloatType.match(v); },
@@ -1062,7 +1134,15 @@ export const types = {
     isString(v) { return StringType.match(v); },
     isArray(v)  { return ArrayType.match(v); },
     isObject(v) { return ObjectType.match(v); },
+    is_bool(v)   { return BoolType.match(v); },
+    is_int(v)    { return IntType.match(v); },
+    is_float(v)  { return FloatType.match(v); },
+    is_number(v) { return NumberType.match(v); },
+    is_string(v) { return StringType.match(v); },
+    is_array(v)  { return ArrayType.match(v); },
+    is_object(v) { return ObjectType.match(v); },
     formatJson(v) { return YuiType.arrayviewS(v); },
+    format_json(v) { return YuiType.arrayviewS(v); },
     arrayviewS(v) { return YuiType.arrayviewS(v); },
     compare(l, r) { return YuiType.compare(l, r); },
 };

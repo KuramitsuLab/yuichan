@@ -1,0 +1,93 @@
+{
+    "syntax": "cryptic zup",
+    "description": "Zup is a programming language designed to be deliberately opaque to anyone unfamiliar with its specification. All keywords follow a strict CVC (Consonant-Vowel-Consonant) syllable structure, drawn from a constrained phoneme set that avoids common patterns found in natural languages — making the vocabulary impossible to guess by intuition alone.",
+    "function-language": "emoji",
+
+    "word-segmenter": " ",
+    "comment-begin": "",
+    "comment-end": "",
+    "indent": "  ",
+
+    "special-name-variable": "Kem\\s+({name_pattern})\\s+par",
+
+    "null": "zup",
+    "boolean-true": "vak",
+    "boolean-false": "mep",
+ 
+    "binary-infix+": "rug",
+    "binary-infix-": "dap",
+    "binary-infix*": "gev",
+    "binary-infix/": "kum",
+    "binary-infix%": "zen",
+    "binary-infix==": "paz",
+    "binary-infix!=": "nup",
+    "binary-infix<=": "dur",
+    "binary-infix>=": "pev",
+    "binary-infix<": "dup",
+    "binary-infix>": "pep",
+    "binary-infixin": "kag",
+
+    "property-length": "\\@kez",
+    
+    "import-standard": "Nav rem vaz",
+    "import-begin": "Nav",
+    "import-end": "",
+
+    "block-begin": ":",
+    "block-end": "",
+
+    "assignment-begin": "Kem",
+    "assignment-infix": "par",
+    "assignment-end": "",
+
+    "increment-begin": "Rav",
+    "increment-end": "",
+    
+    "decrement-begin": "Zar",
+    "decrement-end": "",
+
+    "append-begin": "Mev",
+    "append-infix": "naz",
+    "append-end": "",
+
+    "break": "Dez kup",
+    "pass": "Mup nek",
+
+    "print-begin": "",
+    "print-end": "",
+
+    "return-begin": "Dup vem",
+    "return-end": "",
+    "return-none": "Nag pag",
+
+    "repeat-begin": "Mup dum",
+    "repeat-times": "pag",
+    "repeat-block": "",
+    "repeat-end": "Dam mup",
+
+    "if-begin": "Nev",
+    "if-condition-begin": "",
+    "if-condition-end": "",
+    "if-prefix": "",
+    "if-infix==": "paz",
+    "if-infix!=": "nup",
+    "if-infix<": "dup",
+    "if-infix<=": "dur",
+    "if-infix>": "pep",
+    "if-infix>=": "pev",
+    "if-infixin": "kag",
+    "if-infixnotin": "nag",
+    "if-then": "ger",
+    "if-else": "Zum",
+    "if-end": "Dam nev",
+
+    "funcdef-begin": "Dum",
+    "funcdef-name-begin": "",
+    "funcdef-name-end": "",
+    "funcdef-args-begin": "\\(",
+    "funcdef-arg-separator": ",",
+    "funcdef-args-end": "\\)",
+    "funcdef-noarg": "",
+    "funcdef-block": "",
+    "funcdef-end": "Pam dum"
+}
