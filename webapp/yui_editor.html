@@ -553,7 +553,7 @@
     <script src="yui_bundle.js"></script>
 
     <script>
-        const { YuiRuntime, YuiError, YuiType, YuiValue, getAllSamples } = YuiEditor;
+        const { YuiRuntime, YuiError, YuiValue, types, getSamples } = YuiEditor;
 
         // ─────────────────────────────────────────────
         // State
@@ -564,7 +564,7 @@
         let currentSyntax = 'yui';
         let errorDecorations = [];
         let lastResult = null;
-        const allExamples = getAllSamples();
+        const allExamples = getSamples();
 
         // ── 演習記録用 ──
         const sessionStart = new Date();
@@ -652,7 +652,7 @@
                 return;
             }
 
-            const code = ex.generate(currentSyntax, false);
+            const code = ex.generate(currentSyntax);
             codeEl.value = code;
             codeEl.placeholder = '';
             descEl.textContent = ex.description;
@@ -663,7 +663,7 @@
             const sel = document.getElementById('sample-select');
             const ex = allExamples.find(e => e.name === sel.value);
             if (!ex) return;
-            setEditorValue(ex.generate(currentSyntax, false));
+            setEditorValue(ex.generate(currentSyntax));
             clearErrorHighlights();
             // Switch to editor focus
             if (monacoEditor) monacoEditor.focus();
@@ -673,7 +673,7 @@
         // Value formatting for output panel
         // ─────────────────────────────────────────────
         function formatValue(yuiValue) {
-            const native = YuiType.yuiToNative(yuiValue);
+            const native = types.unbox(yuiValue);
             if (native === null)    return { text: 'null',               cls: 'is-null' };
             if (native === true)    return { text: 'true',               cls: 'is-bool' };
             if (native === false)   return { text: 'false',              cls: 'is-bool' };
@@ -724,21 +724,21 @@
                 el.innerHTML = '<div class="stats-placeholder">プログラムを実行すると統計情報が表示されます</div>';
                 return;
             }
-            const passed = rt.testPassed.length;
-            const failed = rt.testFailed.length;
+            const passed = rt.test_passed.length;
+            const failed = rt.test_failed.length;
             el.innerHTML = `
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">インクリメント回数</div>
-                        <div class="stat-value">${rt.incrementCount}</div>
+                        <div class="stat-value">${rt.increment_count}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">デクリメント回数</div>
-                        <div class="stat-value">${rt.decrementCount}</div>
+                        <div class="stat-value">${rt.decrement_count}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">比較回数</div>
-                        <div class="stat-value">${rt.compareCount}</div>
+                        <div class="stat-value">${rt.compare_count}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">テスト合格 / 不合格</div>
@@ -763,14 +763,15 @@
             const outputs = [];
             const rt = new YuiRuntime();
 
-            rt.print = (value, node) => {
+            rt.printValue = (value, node) => {
+                if (!node) return;
                 const [line, , snippet] = node.extract();
                 outputs.push({ line, snippet: snippet.trim(), yuiValue: value });
             };
 
             let error = null;
             try {
-                rt.exec(source, currentSyntax, 30, false);
+                rt.exec(source, currentSyntax, { timeout: 30, evalMode: false });
             } catch (e) {
                 if (e instanceof YuiError) {
                     error = e;
