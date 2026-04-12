@@ -1,0 +1,41 @@
+Grammar for 'Yui-Classic'
+────────────────────────────────────────
+
+Literals:
+  Number             ::= 0  |  3.14
+  String             ::= "..."  (interp: {<expr>})
+  Array              ::= [ <expr> {, <expr>} ]
+  Object             ::= { "key":<expr> {, "key":<expr>} }
+  Null               ::= 値なし
+  Boolean            ::= 真 | 偽
+  Name               ::= 「...」  |  letter...
+
+Expressions:
+  Grouping           ::= ( <expr> )
+  Length             ::= |<expr>|
+  Minus              ::= -<expr>
+  FuncApp            ::= <expr>(<expr> {, <expr>})
+  Index              ::= <expr>[<expr>]
+
+Statements:
+  Assignment         ::= <expr> = <expr>
+  Increment          ::= <expr> を増やす
+  Decrement          ::= <expr> を減らす
+  Append             ::= <expr> に <expr> を追加する
+  Break              ::= くり返しを抜ける
+  Pass               ::= 何もしない
+  Return             ::= <expr> が答え
+  Return (void)      ::= 関数から抜ける
+  Print              ::= <expr>
+  Repeat             ::= <expr> 回 くり返す <block>
+  If                 ::= もし <expr> が <expr> [ 以外 | より小さい | 以下... ] ならば <block> [ そうでなければ <block> ]
+  FuncDef            ::= <name> = ( 入力なし  |  入力 <name> {, <name>}  ) に対し <block>
+  Assert             ::= >>>  <expr> ↵ <expr>
+  Import             ::= 標準ライブラリを使う
+
+Blocks:
+  Block              ::= { <stmt>... }
+  TopLevel           ::= <stmt>...
+
+Comments:
+  LineComment        ::= # ...

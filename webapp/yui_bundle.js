@@ -176,10 +176,7 @@ ${prefix}${indent}${pointer}`;
   function _array_equal(a, b) {
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) {
-        if (!_array_equal(a[i], b[i])) return false;
-      }
-      return true;
+      return a.every((el, i) => _array_equal(el, b[i]));
     }
     if (Array.isArray(a) && typeof b === "string") {
       try {
@@ -554,31 +551,16 @@ ${prefix}${indent}${pointer}`;
           return result;
         }
         stringify(elements, indentPrefix = "", width = 80, comma = ", ") {
-          const parts = ["["];
-          for (let i = 0; i < elements.length; i++) {
-            if (i > 0) parts.push(comma);
-            parts.push(types.format_json(elements[i]));
-          }
-          parts.push("]");
-          const content = parts.join("");
+          const content = `[${elements.map((el) => types.format_json(el)).join(comma)}]`;
           if (indentPrefix === null || indentPrefix.length + content.length <= width) {
             return content;
           }
           const innerIndent = indentPrefix + "  ";
           const LF = "\n";
-          const buf = ["["];
-          for (let i = 0; i < elements.length; i++) {
-            buf.push(`${LF}${innerIndent}`);
-            const el = elements[i];
-            if (el instanceof YuiValue) {
-              buf.push(el.stringify(innerIndent, false, width));
-            } else {
-              buf.push(types.format_json(el));
-            }
-            if (i < elements.length - 1) buf.push(",");
-          }
-          buf.push(`${LF}${indentPrefix}]`);
-          return buf.join("");
+          const formatted = elements.map(
+            (el) => el instanceof YuiValue ? el.stringify(innerIndent, false, width) : types.format_json(el)
+          );
+          return `[${LF}${innerIndent}${formatted.join(`,${LF}${innerIndent}`)}${LF}${indentPrefix}]`;
         }
         equals(left, right, _binaryNode = null) {
           if (!types.is_array(right) && !types.is_string(right)) {
@@ -636,33 +618,17 @@ ${prefix}${indent}${pointer}`;
         }
         stringify(nativeValue, indentPrefix = "", width = 80) {
           const entries = Object.entries(nativeValue);
-          const parts = ["{"];
-          for (let i = 0; i < entries.length; i++) {
-            if (i > 0) parts.push(", ");
-            const [key, value] = entries[i];
-            parts.push(`"${key}": ${types.format_json(value)}`);
-          }
-          parts.push("}");
-          const content = parts.join("");
+          const content = `{${entries.map(([k, v]) => `"${k}": ${types.format_json(v)}`).join(", ")}}`;
           if (indentPrefix === null || indentPrefix.length + content.length <= width) {
             return content;
           }
           const innerIndent = indentPrefix + "  ";
           const LF = "\n";
-          const buf = ["{"];
-          for (let i = 0; i < entries.length; i++) {
-            const [key, value] = entries[i];
-            buf.push(`${LF}${innerIndent}`);
-            buf.push(`"${key}": `);
-            if (value instanceof YuiValue) {
-              buf.push(value.stringify(innerIndent, false, width));
-            } else {
-              buf.push(types.format_json(value));
-            }
-            if (i < entries.length - 1) buf.push(",");
-          }
-          buf.push(`${LF}${indentPrefix}}`);
-          return buf.join("");
+          const formatted = entries.map(([key, value]) => {
+            const valStr = value instanceof YuiValue ? value.stringify(innerIndent, false, width) : types.format_json(value);
+            return `"${key}": ${valStr}`;
+          });
+          return `{${LF}${innerIndent}${formatted.join(`,${LF}${innerIndent}`)}${LF}${indentPrefix}}`;
         }
         equals(left, right, _binaryNode = null) {
           const ln = types.unbox(left);
@@ -2573,17 +2539,9 @@ ${prefix}${indent}${pointer}`;
     YuiParser: () => YuiParser
   });
   function _isAsciiIdentifier(s) {
-    if (s.length === 0) return false;
-    if (s[0] >= "0" && s[0] <= "9") return false;
-    for (let i = 0; i < s.length; i++) {
-      const ch = s[i];
-      const isAlpha = ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z";
-      const isDigit = ch >= "0" && ch <= "9";
-      if (!(isAlpha || isDigit || ch === "_")) return false;
-    }
-    return true;
+    return _ASCII_IDENTIFIER_RE.test(s);
   }
-  var SourceNode, Source, NONTERMINALS, ParserCombinator, ConstParser, NumberParser, _ESCAPED_STRING, StringParser, ArrayParser, ObjectParser, NameParser, LITERALS, TermParser, PrimaryParser, MultiplicativeParser, AdditiveParser, ComparativeParser, AssignmentParser, IncrementParser, DecrementParser, AppendParser, BreakParser, ImportParser, PassParser, ReturnParser, PrintExpressionParser, RepeatParser, IfParser, FuncDefParser, _YUI_FALLBACK_SYNTAX, AssertParser, BlockParser, STATEMENTS, StatementParser, StatementsParser, TopLevelParser, YuiParser;
+  var SourceNode, _ASCII_IDENTIFIER_RE, Source, NONTERMINALS, ParserCombinator, ConstParser, NumberParser, _ESCAPED_STRING, StringParser, ArrayParser, ObjectParser, NameParser, LITERALS, TermParser, PrimaryParser, MultiplicativeParser, AdditiveParser, ComparativeParser, AssignmentParser, IncrementParser, DecrementParser, AppendParser, BreakParser, ImportParser, PassParser, ReturnParser, PrintExpressionParser, RepeatParser, IfParser, FuncDefParser, _YUI_FALLBACK_SYNTAX, AssertParser, BlockParser, STATEMENTS, StatementParser, StatementsParser, TopLevelParser, YuiParser;
   var init_yuiparser = __esm({
     "src/yuiparser.js"() {
       init_yuiast();
@@ -2591,6 +2549,7 @@ ${prefix}${indent}${pointer}`;
       init_yuisyntax();
       SourceNode = class extends ASTNode {
       };
+      _ASCII_IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
       Source = class extends YuiSyntax {
         /**
          * @param {string} source  ソースコード文字列
@@ -4950,10 +4909,10 @@ ${" ".repeat(col - 1)}^`);
       const savedBuffer = this.buffer;
       this.buffer = [];
       this.terminal("array-begin");
-      for (let i = 0; i < node.elements.length; i++) {
+      node.elements.forEach((el, i) => {
         if (i > 0) this.terminal("array-separator");
-        this.expression(node.elements[i]);
-      }
+        this.expression(el);
+      });
       this.terminal("array-end");
       const content = this.buffer.join("");
       this.buffer = savedBuffer;
@@ -4964,13 +4923,13 @@ ${" ".repeat(col - 1)}^`);
       this.terminal("array-begin");
       this.indentLevel += 1;
       this.linefeed();
-      for (let i = 0; i < node.elements.length; i++) {
+      node.elements.forEach((el, i) => {
         if (i > 0) {
           this.terminal("array-separator");
           this.linefeed();
         }
-        this.expression(node.elements[i]);
-      }
+        this.expression(el);
+      });
       this.indentLevel -= 1;
       this.linefeed();
       this.terminal("array-end");
@@ -5088,12 +5047,11 @@ ${" ".repeat(col - 1)}^`);
         this.terminal("funcapp-noarg");
       } else {
         this.terminal("funcapp-args-begin");
-        for (let i = 0; i < node.arguments.length; i++) {
+        node.arguments.forEach((arg, i) => {
           if (i > 0) this.terminal("funcapp-separator");
-          const arg = node.arguments[i];
           const grouping = arg instanceof FuncAppNode && !this.isDefined("funcapp-args-end");
           this.expression(arg, grouping);
-        }
+        });
         this.terminal("funcapp-args-end");
         this.terminal("funcapp-end");
       }
@@ -5224,10 +5182,10 @@ ${" ".repeat(col - 1)}^`);
         this.terminal("funcdef-noarg");
       } else {
         this.terminal("funcdef-args-begin");
-        for (let i = 0; i < node.parameters.length; i++) {
+        node.parameters.forEach((param, i) => {
           if (i > 0) this.terminal("funcdef-arg-separator");
-          this.expression(node.parameters[i]);
-        }
+          this.expression(param);
+        });
         this.terminal("funcdef-args-end");
       }
       this.terminal("funcdef-block");
@@ -5264,8 +5222,7 @@ ${" ".repeat(col - 1)}^`);
       if (node.statements.length === 0) {
         this.terminal("pass");
       } else {
-        for (let i = 0; i < node.statements.length; i++) {
-          const statement = node.statements[i];
+        node.statements.forEach((statement, i) => {
           if (i > 0) this.linefeed();
           if (!(statement instanceof StatementNode) && this.isDefined("print-begin")) {
             new PrintExpressionNode(statement).visit(this);
@@ -5282,7 +5239,7 @@ ${" ".repeat(col - 1)}^`);
             this.linefeed();
           }
           this.comment(statement.comment);
-        }
+        });
       }
       if (!node.top_level) {
         this.indentLevel -= 1;
@@ -5353,9 +5310,7 @@ ${linesOut.join("\n")}`;
           node
         );
       }
-      for (let i = 0; i < this.parameters.length; i++) {
-        runtime.setenv(this.parameters[i], argValues[i]);
-      }
+      this.parameters.forEach((p, i) => runtime.setenv(p, argValues[i]));
       try {
         runtime.pushCallFrame(this.name, argValues, node);
         runtime.checkRecursionDepth();
@@ -5374,7 +5329,7 @@ ${linesOut.join("\n")}`;
         }
       }
       runtime.popCallFrame();
-      return new YuiValue(runtime.popenv());
+      return new YuiValue(Object.fromEntries(runtime.popenv()));
     }
   };
   var NativeFunction = class extends YuiFunction {
@@ -5401,7 +5356,7 @@ ${linesOut.join("\n")}`;
   };
   var YuiRuntime = class {
     constructor() {
-      this.environments = [{}];
+      this.environments = [/* @__PURE__ */ new Map()];
       this.call_frames = [];
       this.filesystems = {};
       this.shouldStop = false;
@@ -5422,28 +5377,29 @@ ${linesOut.join("\n")}`;
     // ── 環境操作 ───────────────────────────────────────────
     hasenv(name) {
       for (let i = this.environments.length - 1; i >= 0; i--) {
-        if (Object.prototype.hasOwnProperty.call(this.environments[i], name)) {
-          return true;
-        }
+        if (this.environments[i].has(name)) return true;
       }
       return false;
     }
     getenv(name) {
       for (let i = this.environments.length - 1; i >= 0; i--) {
-        if (Object.prototype.hasOwnProperty.call(this.environments[i], name)) {
-          return this.environments[i][name];
-        }
+        const env = this.environments[i];
+        if (env.has(name)) return env.get(name);
       }
       return null;
     }
     setenv(name, value) {
-      this.environments[this.environments.length - 1][name] = value;
+      this.environments.at(-1).set(name, value);
     }
     pushenv() {
-      this.environments.push({});
+      this.environments.push(/* @__PURE__ */ new Map());
     }
     popenv() {
       return this.environments.pop();
+    }
+    /** 最内 (末尾) スコープを返す。 */
+    getTopEnv() {
+      return this.environments.at(-1);
     }
     stringifyEnv(stack = -1, indentPrefix = "") {
       let inner;
@@ -5459,7 +5415,7 @@ ${linesOut.join("\n")}`;
       const idx = stack < 0 ? this.environments.length + stack : stack;
       const env = this.environments[idx];
       const lines = [`${indentPrefix}<${this.stringifyCallFrames(stack)}>${LF}{`];
-      const entries = Object.entries(env).filter(([k]) => !k.startsWith("@"));
+      const entries = [...env].filter(([k]) => !k.startsWith("@"));
       entries.forEach(([key, value], i) => {
         lines.push(`${LF}${indentPrefix}  "${key}": `);
         lines.push(value && typeof value.stringify === "function" ? value.stringify(inner) : String(value));
@@ -5588,7 +5544,7 @@ ${value.stringify("", true)}`);
         }
         throw e;
       }
-      return evalMode ? types.unbox(value) : this.environments[this.environments.length - 1];
+      return evalMode ? types.unbox(value) : this.environments.at(-1);
     }
     // ──────────────────────────────────────────────────────────
     // visitor entrypoint
@@ -7039,8 +6995,7 @@ ${value.stringify("", true)}`);
     }
     const value = runtime.exec(source, syntax, { timeout, evalMode: true });
     const envSnapshot = {};
-    const topEnv = runtime.environments[runtime.environments.length - 1];
-    for (const [key, v] of Object.entries(topEnv)) {
+    for (const [key, v] of runtime.getTopEnv()) {
       if (key.startsWith("@")) continue;
       envSnapshot[key] = types.unbox(v);
     }
