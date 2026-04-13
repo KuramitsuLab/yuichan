@@ -370,6 +370,14 @@
         .print-value.is-null   { border-left-color: #888; color: #888; }
         .print-value.is-bool   { border-left-color: #569cd6; }
 
+        /* トップレベル文字列 (print 風) */
+        .print-raw {
+            padding: 4px 10px;
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
         .error-box {
             color: #e74c3c;
             background: #ffeaea;
@@ -697,7 +705,13 @@
                 el.innerHTML = '<div class="placeholder">出力なし（プリント式がありませんでした）</div>';
                 return;
             }
-            el.innerHTML = items.map(({ line, snippet, yuiValue }) => {
+            el.innerHTML = items.map((item) => {
+                if (item.raw) {
+                    // トップレベル文字列: 生テキストとして表示 (引用符・行番号なし)
+                    const native = types.unbox(item.yuiValue);
+                    return `<div class="print-raw">${escapeHtml(String(native))}</div>`;
+                }
+                const { line, snippet, yuiValue } = item;
                 const { text, cls } = formatValue(yuiValue);
                 return `
                     <div class="print-item">
@@ -756,7 +770,11 @@
             const rt = new YuiRuntime();
 
             rt.printValue = (value, node) => {
-                if (!node) return;
+                if (!node) {
+                    // トップレベル文字列 / 文字列補間: 生値として出力 (print 風)
+                    outputs.push({ raw: true, yuiValue: value });
+                    return;
+                }
                 const [line, , snippet] = node.extract();
                 outputs.push({ line, snippet: snippet.trim(), yuiValue: value });
             };
