@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yui Editor</title>
+    <title>Kogi Playground</title>
     <style>
         * {
             margin: 0;
@@ -39,6 +39,21 @@
             font-size: 1.4em;
             font-weight: 300;
             letter-spacing: 0.05em;
+        }
+
+        .header-kogi {
+            height: 36px;
+            width: auto;
+            image-rendering: pixelated;
+        }
+
+        /* 出力パネルのマスコット画像 (実行状態に応じて差し替え) */
+        .kogi-mascot {
+            display: block;
+            max-width: 120px;
+            height: auto;
+            margin: 8px auto 16px;
+            image-rendering: pixelated;
         }
 
         .header-sub {
@@ -475,8 +490,9 @@
 </head>
 <body>
     <div class="header">
-        <div style="display:flex; align-items:baseline;">
-            <h1>Yui Editor</h1>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img src="images/kogi_imo-fs8.png" alt="Kogi" class="header-kogi">
+            <h1>Kogi Playground</h1>
             <span class="header-sub" id="version-display"></span>
         </div>
         <div class="header-controls">
@@ -695,17 +711,22 @@
         function renderOutputTab(items, error) {
             const el = document.getElementById('output-scroll');
             if (error) {
+                const kogiImg = error.runtime ? 'kogi_gaan-fs8.png' : 'kogi_error-fs8.png';
                 el.innerHTML = `
+                    <img src="images/${kogiImg}" alt="Kogi" class="kogi-mascot">
                     <div class="error-box">${escapeHtml(error.messages.join(' '))}
                         <div class="error-location">${error.runtime ? '[実行時エラー]' : '[構文エラー]'} — 行 ${error.lineno}、列 ${error.offset}</div>
                     </div>`;
                 return;
             }
             if (items.length === 0) {
-                el.innerHTML = '<div class="placeholder">出力なし（プリント式がありませんでした）</div>';
+                el.innerHTML = `
+                    <img src="images/kogi_imo-fs8.png" alt="Kogi" class="kogi-mascot">
+                    <div class="placeholder">出力なし（プリント式がありませんでした）</div>`;
                 return;
             }
-            el.innerHTML = items.map((item) => {
+            const header = `<img src="images/kogi_doya-fs8.png" alt="Kogi" class="kogi-mascot">`;
+            el.innerHTML = header + items.map((item) => {
                 if (item.raw) {
                     // トップレベル文字列: 生テキストとして表示 (引用符・行番号なし)
                     const native = types.unbox(item.yuiValue);
