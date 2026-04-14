@@ -201,27 +201,59 @@ class Source(YuiSyntax):
         if self.is_defined("special-names"):
             names = self.terminals.get("special-names", "").split("|")
         else:
-            names = []        
-    
+            names = []
+
         name_pattern = self.terminals.get("special-name-pattern", r'[^\s\[\]\(\)",\.+*/%=!<>-]+')
-        
+
+        # コメントを除去してから抽出する（コメント内の `name(` / `name =` に惑わされないため）
+        text_for_extraction = self._strip_comments_for_extraction(text)
+
         # 1. 変数定義のパターン（例: `name =` だが `==` は除外）
         var_pattern = self.terminals.get("special-name-variable", r'(?:^|\n)\s*({name_pattern})\s*=(?!=)')
         var_pattern = var_pattern.replace("{name_pattern}", name_pattern)
-        matches1 = re.findall(var_pattern, text)
+        matches1 = re.findall(var_pattern, text_for_extraction)
         names.extend(matches1)
-        
+
         # 2. 関数名のパターン（例: `name(` ）
         funcapp_pattern = self.terminals.get("special-name-funcname", r'({name_pattern})\s*[\(]')
         funcapp_pattern = funcapp_pattern.replace("{name_pattern}", name_pattern)
-        matches2 = re.findall(funcapp_pattern, text)
+        matches2 = re.findall(funcapp_pattern, text_for_extraction)
         names.extend(matches2)
 
+        # 3. キーワードが接頭辞として貼り付いた名前（例: `もし剰余(` → `剰余` も登録）を救済
+        exclude_prefix = self.terminals.get("special-name-exclude-prefix", "")
+        if exclude_prefix:
+            prefix_re = re.compile(f"^(?:{exclude_prefix})")
+            expanded = []
+            for name in names:
+                stripped = name
+                while True:
+                    m = prefix_re.match(stripped)
+                    if not m or m.end() == 0 or m.end() == len(stripped):
+                        break
+                    stripped = stripped[m.end():]
+                if stripped != name and stripped:
+                    expanded.append(stripped)
+            names.extend(expanded)
 
         # Unicodeなど特殊な名前をあらかじめ抽出しておく（例: `λ` など）。ただし、英数字とアンダースコアのみで構成される名前は除外する。
         names = list(set(name.strip() for name in names if not _is_special_name(name) and name.strip() != ""))
-        vprint(f"@extracted special names: {names}")  
+        vprint(f"@extracted special names: {names}")
         self.special_names = sorted(names, key=len, reverse=True)
+
+    def _strip_comments_for_extraction(self, text: str) -> str:
+        """特殊名抽出のためにコメントを空白で置換する（位置情報は保持）"""
+        result = text
+        line_comment = self.terminals.get("line-comment-begin", "")
+        if line_comment:
+            line_re = re.compile(f"(?:{line_comment}).*?(?=\\n|$)")
+            result = line_re.sub(lambda m: " " * len(m.group()), result)
+        comment_begin = self.terminals.get("comment-begin", "")
+        comment_end = self.terminals.get("comment-end", "")
+        if comment_begin and comment_end:
+            block_re = re.compile(f"(?:{comment_begin}).*?(?:{comment_end})", re.DOTALL)
+            result = block_re.sub(lambda m: " " * len(m.group()), result)
+        return result
 
     def match_special_name(self, unconsumed=False) -> Optional[str]:
         for name in self.special_names:
@@ -252,7 +284,7 @@ class Source(YuiSyntax):
     def capture_line(self):
         start_pos = self.pos
         while self.pos < self.length:
-            if self.is_("linefeed|line-comment-begin|comment-begin|statement-separator", lskip_ws=False, unconsumed=True):
+            if self.is_("linefeed|line-comment-begin|comment-begin|statement-separator|block-begin", lskip_ws=False, unconsumed=True):
                 captured = self.source[start_pos:self.pos]
                 self.pos = start_pos
                 return captured

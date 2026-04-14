@@ -2340,6 +2340,7 @@ ${prefix}${indent}${pointer}`;
           "number-chars": "[0-9]*",
           "number-dot-char": "[\\.]",
           "name-first-char": "[A-Za-z_]",
+          "special-name-exclude-prefix": "もし|そうでなければ|くり返す|繰り返す|くりかえす|入力|ならば|に対し[て]?|[0-9]+",
           "name-chars": "[A-Za-z0-9_]*",
           "extra-name-begin": "「",
           "extra-name-end": "」",
@@ -2854,17 +2855,33 @@ ${prefix}${indent}${pointer}`;
             names = [];
           }
           const namePattern = this.terminals["special-name-pattern"] || '[^\\s\\[\\]\\(\\)",\\.+*/%=!<>-]+';
+          const textForExtraction = this._stripCommentsForExtraction(text);
           const varPatternRaw = this.terminals["special-name-variable"] || "(?:^|\\n)\\s*({name_pattern})\\s*=(?!=)";
           const varPattern = varPatternRaw.replace("{name_pattern}", namePattern);
           const varRe = new RegExp(varPattern, "g");
-          for (const m of text.matchAll(varRe)) {
+          for (const m of textForExtraction.matchAll(varRe)) {
             if (m[1] !== void 0) names.push(m[1]);
           }
           const funcPatternRaw = this.terminals["special-name-funcname"] || "({name_pattern})\\s*[\\(]";
           const funcPattern = funcPatternRaw.replace("{name_pattern}", namePattern);
           const funcRe = new RegExp(funcPattern, "g");
-          for (const m of text.matchAll(funcRe)) {
+          for (const m of textForExtraction.matchAll(funcRe)) {
             if (m[1] !== void 0) names.push(m[1]);
+          }
+          const excludePrefix = this.terminals["special-name-exclude-prefix"] || "";
+          if (excludePrefix) {
+            const prefixRe = new RegExp(`^(?:${excludePrefix})`);
+            const expanded = [];
+            for (const name of names) {
+              let stripped = name;
+              while (true) {
+                const m = prefixRe.exec(stripped);
+                if (!m || m[0].length === 0 || m[0].length === stripped.length) break;
+                stripped = stripped.slice(m[0].length);
+              }
+              if (stripped !== name && stripped) expanded.push(stripped);
+            }
+            names.push(...expanded);
           }
           const uniq = /* @__PURE__ */ new Set();
           for (const n of names) {
@@ -2875,6 +2892,21 @@ ${prefix}${indent}${pointer}`;
           }
           this.specialNames = [...uniq].sort((a, b) => b.length - a.length);
           vprint(`@extracted special names: ${JSON.stringify(this.specialNames)}`);
+        }
+        _stripCommentsForExtraction(text) {
+          let result = text;
+          const lineComment = this.terminals["line-comment-begin"] || "";
+          if (lineComment) {
+            const lineRe = new RegExp(`(?:${lineComment}).*?(?=\\n|$)`, "g");
+            result = result.replace(lineRe, (m) => " ".repeat(m.length));
+          }
+          const commentBegin = this.terminals["comment-begin"] || "";
+          const commentEnd = this.terminals["comment-end"] || "";
+          if (commentBegin && commentEnd) {
+            const blockRe = new RegExp(`(?:${commentBegin})[\\s\\S]*?(?:${commentEnd})`, "g");
+            result = result.replace(blockRe, (m) => " ".repeat(m.length));
+          }
+          return result;
         }
         matchSpecialName({ unconsumed = false } = {}) {
           for (const name of this.specialNames) {
@@ -2912,7 +2944,7 @@ ${prefix}${indent}${pointer}`;
         captureLine() {
           const startPos = this.pos;
           while (this.pos < this.length) {
-            if (this.is("linefeed|line-comment-begin|comment-begin|statement-separator", {
+            if (this.is("linefeed|line-comment-begin|comment-begin|statement-separator|block-begin", {
               lskipWs: false,
               unconsumed: true
             })) {
@@ -6943,6 +6975,259 @@ ${value.stringify("", true)}`);
       "test"
     );
   }
+  function exampleStringInterpolation() {
+    const statements = [
+      new PassNode("名前と年齢を変数に代入する"),
+      new AssignmentNode(new NameNode("name"), new StringNode("ゆい")),
+      new AssignmentNode(new NameNode("age"), new NumberNode(12)),
+      new PassNode("文字列の中に式を埋め込む（文字列補間）"),
+      new AssignmentNode(
+        new NameNode("msg"),
+        new StringNode([
+          "こんにちは、",
+          new NameNode("name"),
+          "さん！あなたは",
+          new NameNode("age"),
+          "歳です。"
+        ])
+      ),
+      new PrintExpressionNode(new NameNode("msg")),
+      new PassNode("テスト: 文字列補間が展開される"),
+      new AssertNode(
+        new NameNode("msg"),
+        new StringNode("こんにちは、ゆいさん！あなたは12歳です。")
+      )
+    ];
+    return new YuiExample(
+      "string_interpolation",
+      "文字列の中に式を埋め込む（文字列補間）",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
+  function exampleArrayIndexing() {
+    const statements = [
+      new ImportNode(),
+      new PassNode("配列 A を作成する"),
+      new AssignmentNode(
+        new NameNode("A"),
+        new ArrayNode([new NumberNode(10), new NumberNode(20), new NumberNode(30)])
+      ),
+      new PassNode("配列の大きさを調べる"),
+      new AssignmentNode(new NameNode("n"), new ArrayLenNode(new NameNode("A"))),
+      new AssertNode(new NameNode("n"), new NumberNode(3)),
+      new PassNode("インデックスで要素を取り出す（0 から始まる）"),
+      new AssignmentNode(
+        new NameNode("first"),
+        new GetIndexNode(new NameNode("A"), new NumberNode(0))
+      ),
+      new AssignmentNode(
+        new NameNode("last"),
+        new GetIndexNode(
+          new NameNode("A"),
+          new FuncAppNode(new NameNode("差"), [
+            new NameNode("n"),
+            new NumberNode(1)
+          ])
+        )
+      ),
+      new AssertNode(new NameNode("first"), new NumberNode(10)),
+      new AssertNode(new NameNode("last"), new NumberNode(30)),
+      new PassNode("インデックスで要素を書き換える"),
+      new AssignmentNode(
+        new GetIndexNode(new NameNode("A"), new NumberNode(1)),
+        new NumberNode(200)
+      ),
+      new AssertNode(
+        new GetIndexNode(new NameNode("A"), new NumberNode(1)),
+        new NumberNode(200)
+      )
+    ];
+    return new YuiExample(
+      "array_indexing",
+      "配列のインデックスアクセスと大きさ",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
+  function exampleMembership() {
+    const statements = [
+      new PassNode("果物の配列を作成する"),
+      new AssignmentNode(
+        new NameNode("fruits"),
+        new ArrayNode([
+          new StringNode("apple"),
+          new StringNode("banana"),
+          new StringNode("cherry")
+        ])
+      ),
+      new AssignmentNode(new NameNode("found"), new NumberNode(0)),
+      new AssignmentNode(new NameNode("missing"), new NumberNode(0)),
+      new PassNode("banana が fruits の中にあるか？"),
+      new IfNode(
+        new StringNode("banana"),
+        "in",
+        new NameNode("fruits"),
+        new BlockNode(new IncrementNode(new NameNode("found")))
+      ),
+      new PassNode("grape が fruits の中にないか？"),
+      new IfNode(
+        new StringNode("grape"),
+        "notin",
+        new NameNode("fruits"),
+        new BlockNode(new IncrementNode(new NameNode("missing")))
+      ),
+      new PassNode("テスト: どちらの条件も成立している"),
+      new AssertNode(new NameNode("found"), new NumberNode(1)),
+      new AssertNode(new NameNode("missing"), new NumberNode(1))
+    ];
+    return new YuiExample(
+      "membership",
+      "in / not in による要素の所属判定",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
+  function exampleTypeCheck() {
+    const statements = [
+      new ImportNode(),
+      new PassNode("値の型を判定する関数群"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("整数判定"), [new NumberNode(42)]),
+        new ConstNode(true)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("小数判定"), [new NumberNode(3.14)]),
+        new ConstNode(true)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("文字列判定"), [new StringNode("hello")]),
+        new ConstNode(true)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("配列判定"), [
+          new ArrayNode([new NumberNode(1), new NumberNode(2)])
+        ]),
+        new ConstNode(true)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("オブジェクト判定"), [
+          _node({ x: new NumberNode(1) })
+        ]),
+        new ConstNode(true)
+      ),
+      new PassNode("型が違えば偽"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("整数判定"), [new StringNode("42")]),
+        new ConstNode(false)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("配列判定"), [new NumberNode(1)]),
+        new ConstNode(false)
+      )
+    ];
+    return new YuiExample(
+      "type_check",
+      "型判定関数（整数判定・小数判定・文字列判定・配列判定・オブジェクト判定）",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
+  function exampleTypeConvert() {
+    const statements = [
+      new ImportNode(),
+      new PassNode("文字列を整数に変換する"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("整数化"), [new StringNode("42")]),
+        new NumberNode(42)
+      ),
+      new PassNode("小数を整数に変換する（切り捨て）"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("整数化"), [new NumberNode(3.7)]),
+        new NumberNode(3)
+      ),
+      new PassNode("整数を小数に変換する"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("小数化"), [new NumberNode(5)]),
+        new NumberNode(5)
+      ),
+      new PassNode("整数を文字列に変換する"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("文字列化"), [new NumberNode(42)]),
+        new StringNode("42")
+      ),
+      new PassNode("文字列を配列（文字コード）に変換する"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("配列化"), [new StringNode("Hi")]),
+        new ArrayNode([new NumberNode(72), new NumberNode(105)])
+      )
+    ];
+    return new YuiExample(
+      "type_convert",
+      "型変換関数（整数化・小数化・文字列化・配列化）",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
+  function exampleMathFunctions() {
+    const statements = [
+      new ImportNode(),
+      new PassNode("絶対値"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("絶対値"), [
+          new MinusNode(new NumberNode(7))
+        ]),
+        new NumberNode(7)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("絶対値"), [new NumberNode(3)]),
+        new NumberNode(3)
+      ),
+      new PassNode("平方根（常に小数を返す）"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("平方根"), [new NumberNode(9)]),
+        new NumberNode(3)
+      ),
+      new PassNode("最大値・最小値（可変長引数）"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("最大値"), [
+          new NumberNode(3),
+          new NumberNode(1),
+          new NumberNode(4),
+          new NumberNode(1),
+          new NumberNode(5)
+        ]),
+        new NumberNode(5)
+      ),
+      new AssertNode(
+        new FuncAppNode(new NameNode("最小値"), [
+          new NumberNode(3),
+          new NumberNode(1),
+          new NumberNode(4),
+          new NumberNode(1),
+          new NumberNode(5)
+        ]),
+        new NumberNode(1)
+      ),
+      new PassNode("配列をそのまま渡すこともできる"),
+      new AssertNode(
+        new FuncAppNode(new NameNode("最大値"), [
+          new ArrayNode([
+            new NumberNode(10),
+            new NumberNode(20),
+            new NumberNode(30)
+          ])
+        ]),
+        new NumberNode(30)
+      )
+    ];
+    return new YuiExample(
+      "math_functions",
+      "数学関数（絶対値・平方根・最大値・最小値）",
+      new BlockNode(statements, true),
+      "both"
+    );
+  }
   function getAllExamples() {
     return [
       exampleHelloWorld(),
@@ -6952,19 +7237,25 @@ ${value.stringify("", true)}`);
       exampleNestedConditionalBranches(),
       exampleComparisons(),
       exampleArray(),
+      exampleArrayIndexing(),
       exampleStrings(),
+      exampleStringInterpolation(),
       exampleObjects(),
+      exampleMembership(),
       exampleFunction(),
       exampleFunctionNoArgument(),
       exampleFunctionWithoutReturn(),
       exampleRecursiveFunction(),
       exampleArithmetic(),
+      exampleMathFunctions(),
       exampleFloatAdd(),
       exampleMonteCarlo(),
       exampleNullAssignment(),
       exampleBooleanAssignment(),
       exampleBooleanBranch(),
-      exampleNullCheck()
+      exampleNullCheck(),
+      exampleTypeCheck(),
+      exampleTypeConvert()
     ];
   }
   function getSamples() {

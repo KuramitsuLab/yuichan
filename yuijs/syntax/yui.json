@@ -20,6 +20,7 @@
 
     "name-first-char": "[A-Za-z_]",
     "name-chars": "[A-Za-z0-9_]*",
+    "special-name-exclude-prefix": "もし|そうでなければ|くり返す|繰り返す|くりかえす|入力|ならば|に対し[て]?|[0-9]+",
     "extra-name-begin": "「",
     "extra-name-end": "」",
     

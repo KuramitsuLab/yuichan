@@ -118,9 +118,9 @@ test('loadSyntax derives string-content-end from defaults when missing', () => {
   assert.ok(t['string-content-end'].includes('|'));
 });
 
-test('loadSyntax key count matches Python (yui has 132 keys)', () => {
+test('loadSyntax key count matches Python (yui has 133 keys)', () => {
   const t = loadSyntax('yui');
-  assert.equal(Object.keys(t).length, 132);
+  assert.equal(Object.keys(t).length, 133);
 });
 
 // ─────────────────────────────────────────────

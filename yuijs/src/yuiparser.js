@@ -403,6 +403,9 @@ export class Source extends YuiSyntax {
       this.terminals['special-name-pattern'] ||
       '[^\\s\\[\\]\\(\\)",\\.+*/%=!<>-]+';
 
+    // コメントを除去してから抽出する (コメント内の `name(` / `name =` に惑わされないため)
+    const textForExtraction = this._stripCommentsForExtraction(text);
+
     // 1. 変数定義のパターン (例: `name =`, ただし `==` は除外)
     const varPatternRaw =
       this.terminals['special-name-variable'] ||
@@ -410,7 +413,7 @@ export class Source extends YuiSyntax {
     const varPattern = varPatternRaw.replace('{name_pattern}', namePattern);
 
     const varRe = new RegExp(varPattern, 'g');
-    for (const m of text.matchAll(varRe)) {
+    for (const m of textForExtraction.matchAll(varRe)) {
       if (m[1] !== undefined) names.push(m[1]);
     }
 
@@ -421,8 +424,25 @@ export class Source extends YuiSyntax {
     const funcPattern = funcPatternRaw.replace('{name_pattern}', namePattern);
 
     const funcRe = new RegExp(funcPattern, 'g');
-    for (const m of text.matchAll(funcRe)) {
+    for (const m of textForExtraction.matchAll(funcRe)) {
       if (m[1] !== undefined) names.push(m[1]);
+    }
+
+    // 3. キーワードが接頭辞として貼り付いた名前 (例: `もし剰余(` → `剰余` も登録) を救済
+    const excludePrefix = this.terminals['special-name-exclude-prefix'] || '';
+    if (excludePrefix) {
+      const prefixRe = new RegExp(`^(?:${excludePrefix})`);
+      const expanded = [];
+      for (const name of names) {
+        let stripped = name;
+        while (true) {
+          const m = prefixRe.exec(stripped);
+          if (!m || m[0].length === 0 || m[0].length === stripped.length) break;
+          stripped = stripped.slice(m[0].length);
+        }
+        if (stripped !== name && stripped) expanded.push(stripped);
+      }
+      names.push(...expanded);
     }
 
     // ASCII 識別子は普通に name-first-char でパースできるので除外。
@@ -437,6 +457,22 @@ export class Source extends YuiSyntax {
     // 長い名前優先 (prefix マッチでの衝突回避)
     this.specialNames = [...uniq].sort((a, b) => b.length - a.length);
     vprint(`@extracted special names: ${JSON.stringify(this.specialNames)}`);
+  }
+
+  _stripCommentsForExtraction(text) {
+    let result = text;
+    const lineComment = this.terminals['line-comment-begin'] || '';
+    if (lineComment) {
+      const lineRe = new RegExp(`(?:${lineComment}).*?(?=\\n|$)`, 'g');
+      result = result.replace(lineRe, (m) => ' '.repeat(m.length));
+    }
+    const commentBegin = this.terminals['comment-begin'] || '';
+    const commentEnd = this.terminals['comment-end'] || '';
+    if (commentBegin && commentEnd) {
+      const blockRe = new RegExp(`(?:${commentBegin})[\\s\\S]*?(?:${commentEnd})`, 'g');
+      result = result.replace(blockRe, (m) => ' '.repeat(m.length));
+    }
+    return result;
   }
 
   matchSpecialName({ unconsumed = false } = {}) {
@@ -478,7 +514,7 @@ export class Source extends YuiSyntax {
     const startPos = this.pos;
     while (this.pos < this.length) {
       if (
-        this.is('linefeed|line-comment-begin|comment-begin|statement-separator', {
+        this.is('linefeed|line-comment-begin|comment-begin|statement-separator|block-begin', {
           lskipWs: false,
           unconsumed: true,
         })
