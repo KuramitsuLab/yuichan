@@ -1,6 +1,6 @@
 {
   "name": "yuijs",
-  "version": "0.0.1",
+  "version": "0.5.3",
   "description": "Yui language — JavaScript implementation (port of yuichan)",
   "type": "module",
   "private": true,
