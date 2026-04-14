@@ -1217,6 +1217,265 @@ export function exampleNullCheck() {
 // collections
 // ─────────────────────────────────────────────
 
+export function exampleStringInterpolation() {
+  const statements = [
+    new PassNode('名前と年齢を変数に代入する'),
+    new AssignmentNode(new NameNode('name'), new StringNode('ゆい')),
+    new AssignmentNode(new NameNode('age'), new NumberNode(12)),
+    new PassNode('文字列の中に式を埋め込む（文字列補間）'),
+    new AssignmentNode(
+      new NameNode('msg'),
+      new StringNode([
+        'こんにちは、',
+        new NameNode('name'),
+        'さん！あなたは',
+        new NameNode('age'),
+        '歳です。',
+      ]),
+    ),
+    new PrintExpressionNode(new NameNode('msg')),
+    new PassNode('テスト: 文字列補間が展開される'),
+    new AssertNode(
+      new NameNode('msg'),
+      new StringNode('こんにちは、ゆいさん！あなたは12歳です。'),
+    ),
+  ];
+  return new YuiExample(
+    'string_interpolation',
+    '文字列の中に式を埋め込む（文字列補間）',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
+export function exampleArrayIndexing() {
+  const statements = [
+    new ImportNode(),
+    new PassNode('配列 A を作成する'),
+    new AssignmentNode(
+      new NameNode('A'),
+      new ArrayNode([new NumberNode(10), new NumberNode(20), new NumberNode(30)]),
+    ),
+    new PassNode('配列の大きさを調べる'),
+    new AssignmentNode(new NameNode('n'), new ArrayLenNode(new NameNode('A'))),
+    new AssertNode(new NameNode('n'), new NumberNode(3)),
+    new PassNode('インデックスで要素を取り出す（0 から始まる）'),
+    new AssignmentNode(
+      new NameNode('first'),
+      new GetIndexNode(new NameNode('A'), new NumberNode(0)),
+    ),
+    new AssignmentNode(
+      new NameNode('last'),
+      new GetIndexNode(
+        new NameNode('A'),
+        new FuncAppNode(new NameNode('差'), [
+          new NameNode('n'),
+          new NumberNode(1),
+        ]),
+      ),
+    ),
+    new AssertNode(new NameNode('first'), new NumberNode(10)),
+    new AssertNode(new NameNode('last'), new NumberNode(30)),
+    new PassNode('インデックスで要素を書き換える'),
+    new AssignmentNode(
+      new GetIndexNode(new NameNode('A'), new NumberNode(1)),
+      new NumberNode(200),
+    ),
+    new AssertNode(
+      new GetIndexNode(new NameNode('A'), new NumberNode(1)),
+      new NumberNode(200),
+    ),
+  ];
+  return new YuiExample(
+    'array_indexing',
+    '配列のインデックスアクセスと大きさ',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
+export function exampleMembership() {
+  const statements = [
+    new PassNode('果物の配列を作成する'),
+    new AssignmentNode(
+      new NameNode('fruits'),
+      new ArrayNode([
+        new StringNode('apple'),
+        new StringNode('banana'),
+        new StringNode('cherry'),
+      ]),
+    ),
+    new AssignmentNode(new NameNode('found'), new NumberNode(0)),
+    new AssignmentNode(new NameNode('missing'), new NumberNode(0)),
+    new PassNode('banana が fruits の中にあるか？'),
+    new IfNode(
+      new StringNode('banana'),
+      'in',
+      new NameNode('fruits'),
+      new BlockNode(new IncrementNode(new NameNode('found'))),
+    ),
+    new PassNode('grape が fruits の中にないか？'),
+    new IfNode(
+      new StringNode('grape'),
+      'notin',
+      new NameNode('fruits'),
+      new BlockNode(new IncrementNode(new NameNode('missing'))),
+    ),
+    new PassNode('テスト: どちらの条件も成立している'),
+    new AssertNode(new NameNode('found'), new NumberNode(1)),
+    new AssertNode(new NameNode('missing'), new NumberNode(1)),
+  ];
+  return new YuiExample(
+    'membership',
+    'in / not in による要素の所属判定',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
+export function exampleTypeCheck() {
+  const statements = [
+    new ImportNode(),
+    new PassNode('値の型を判定する関数群'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('整数判定'), [new NumberNode(42)]),
+      new ConstNode(true),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('小数判定'), [new NumberNode(3.14)]),
+      new ConstNode(true),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('文字列判定'), [new StringNode('hello')]),
+      new ConstNode(true),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('配列判定'), [
+        new ArrayNode([new NumberNode(1), new NumberNode(2)]),
+      ]),
+      new ConstNode(true),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('オブジェクト判定'), [
+        _node({ x: new NumberNode(1) }),
+      ]),
+      new ConstNode(true),
+    ),
+    new PassNode('型が違えば偽'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('整数判定'), [new StringNode('42')]),
+      new ConstNode(false),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('配列判定'), [new NumberNode(1)]),
+      new ConstNode(false),
+    ),
+  ];
+  return new YuiExample(
+    'type_check',
+    '型判定関数（整数判定・小数判定・文字列判定・配列判定・オブジェクト判定）',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
+export function exampleTypeConvert() {
+  const statements = [
+    new ImportNode(),
+    new PassNode('文字列を整数に変換する'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('整数化'), [new StringNode('42')]),
+      new NumberNode(42),
+    ),
+    new PassNode('小数を整数に変換する（切り捨て）'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('整数化'), [new NumberNode(3.7)]),
+      new NumberNode(3),
+    ),
+    new PassNode('整数を小数に変換する'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('小数化'), [new NumberNode(5)]),
+      new NumberNode(5.0),
+    ),
+    new PassNode('整数を文字列に変換する'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('文字列化'), [new NumberNode(42)]),
+      new StringNode('42'),
+    ),
+    new PassNode('文字列を配列（文字コード）に変換する'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('配列化'), [new StringNode('Hi')]),
+      new ArrayNode([new NumberNode(72), new NumberNode(105)]),
+    ),
+  ];
+  return new YuiExample(
+    'type_convert',
+    '型変換関数（整数化・小数化・文字列化・配列化）',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
+export function exampleMathFunctions() {
+  const statements = [
+    new ImportNode(),
+    new PassNode('絶対値'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('絶対値'), [
+        new MinusNode(new NumberNode(7)),
+      ]),
+      new NumberNode(7),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('絶対値'), [new NumberNode(3)]),
+      new NumberNode(3),
+    ),
+    new PassNode('平方根（常に小数を返す）'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('平方根'), [new NumberNode(9)]),
+      new NumberNode(3.0),
+    ),
+    new PassNode('最大値・最小値（可変長引数）'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('最大値'), [
+        new NumberNode(3),
+        new NumberNode(1),
+        new NumberNode(4),
+        new NumberNode(1),
+        new NumberNode(5),
+      ]),
+      new NumberNode(5),
+    ),
+    new AssertNode(
+      new FuncAppNode(new NameNode('最小値'), [
+        new NumberNode(3),
+        new NumberNode(1),
+        new NumberNode(4),
+        new NumberNode(1),
+        new NumberNode(5),
+      ]),
+      new NumberNode(1),
+    ),
+    new PassNode('配列をそのまま渡すこともできる'),
+    new AssertNode(
+      new FuncAppNode(new NameNode('最大値'), [
+        new ArrayNode([
+          new NumberNode(10),
+          new NumberNode(20),
+          new NumberNode(30),
+        ]),
+      ]),
+      new NumberNode(30),
+    ),
+  ];
+  return new YuiExample(
+    'math_functions',
+    '数学関数（絶対値・平方根・最大値・最小値）',
+    new BlockNode(statements, true),
+    'both',
+  );
+}
+
 /** すべての例を返す (kind に関わらず) */
 export function getAllExamples() {
   return [
@@ -1227,19 +1486,25 @@ export function getAllExamples() {
     exampleNestedConditionalBranches(),
     exampleComparisons(),
     exampleArray(),
+    exampleArrayIndexing(),
     exampleStrings(),
+    exampleStringInterpolation(),
     exampleObjects(),
+    exampleMembership(),
     exampleFunction(),
     exampleFunctionNoArgument(),
     exampleFunctionWithoutReturn(),
     exampleRecursiveFunction(),
     exampleArithmetic(),
+    exampleMathFunctions(),
     exampleFloatAdd(),
     exampleMonteCarlo(),
     exampleNullAssignment(),
     exampleBooleanAssignment(),
     exampleBooleanBranch(),
     exampleNullCheck(),
+    exampleTypeCheck(),
+    exampleTypeConvert(),
   ];
 }
 

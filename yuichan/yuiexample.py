@@ -270,10 +270,10 @@ def example_objects():
     """オブジェクト操作のサンプル"""
     statements = [
         PassNode(comment="プロパティ x と y を持つオブジェクト O を作成する"),
-        AssignmentNode(NameNode("O"), ObjectNode({
-            "x": NumberNode(0),
-            "y": NumberNode(0)
-        })),
+        AssignmentNode(NameNode("O"), ObjectNode([
+            StringNode("x"), NumberNode(0),
+            StringNode("y"), NumberNode(0),
+        ])),
         PassNode(comment="O の x プロパティを 1 に設定する"),
         AssignmentNode(GetIndexNode(NameNode("O"), StringNode("x")), NumberNode(1)),
         PassNode(comment="O の y プロパティを 2 に設定する"),
@@ -728,6 +728,162 @@ def example_null_check():
     )
 
 
+def example_string_interpolation():
+    """文字列補間のサンプル"""
+    statements = [
+        PassNode(comment="名前と年齢を変数に代入する"),
+        AssignmentNode(NameNode("name"), StringNode("ゆい")),
+        AssignmentNode(NameNode("age"), NumberNode(12)),
+        PassNode(comment="文字列の中に式を埋め込む（文字列補間）"),
+        AssignmentNode(NameNode("msg"), StringNode([
+            "こんにちは、", NameNode("name"), "さん！あなたは",
+            NameNode("age"), "歳です。",
+        ])),
+        PrintExpressionNode(NameNode("msg")),
+        PassNode(comment="テスト: 文字列補間が展開される"),
+        AssertNode(NameNode("msg"),
+                   StringNode("こんにちは、ゆいさん！あなたは12歳です。")),
+    ]
+    return YuiExample(
+        name="string_interpolation",
+        description="文字列の中に式を埋め込む（文字列補間）",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_array_indexing():
+    """配列のインデックスアクセスと大きさ"""
+    statements = [
+        ImportNode(),
+        PassNode(comment="配列 A を作成する"),
+        AssignmentNode(NameNode("A"),
+            ArrayNode([NumberNode(10), NumberNode(20), NumberNode(30)])),
+        PassNode(comment="配列の大きさを調べる"),
+        AssignmentNode(NameNode("n"), ArrayLenNode(NameNode("A"))),
+        AssertNode(NameNode("n"), NumberNode(3)),
+        PassNode(comment="インデックスで要素を取り出す（0 から始まる）"),
+        AssignmentNode(NameNode("first"), GetIndexNode(NameNode("A"), NumberNode(0))),
+        AssignmentNode(NameNode("last"),
+            GetIndexNode(NameNode("A"),
+                FuncAppNode(NameNode("差"), [NameNode("n"), NumberNode(1)]))),
+        AssertNode(NameNode("first"), NumberNode(10)),
+        AssertNode(NameNode("last"),  NumberNode(30)),
+        PassNode(comment="インデックスで要素を書き換える"),
+        AssignmentNode(GetIndexNode(NameNode("A"), NumberNode(1)), NumberNode(200)),
+        AssertNode(GetIndexNode(NameNode("A"), NumberNode(1)), NumberNode(200)),
+    ]
+    return YuiExample(
+        name="array_indexing",
+        description="配列のインデックスアクセスと大きさ",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_membership():
+    """in / not in による要素の所属判定"""
+    statements = [
+        PassNode(comment="果物の配列を作成する"),
+        AssignmentNode(NameNode("fruits"),
+            ArrayNode([StringNode("apple"), StringNode("banana"), StringNode("cherry")])),
+        AssignmentNode(NameNode("found"),   NumberNode(0)),
+        AssignmentNode(NameNode("missing"), NumberNode(0)),
+        PassNode(comment="banana が fruits の中にあるか？"),
+        IfNode(StringNode("banana"), "in", NameNode("fruits"),
+            BlockNode(IncrementNode(NameNode("found")))),
+        PassNode(comment="grape が fruits の中にないか？"),
+        IfNode(StringNode("grape"), "notin", NameNode("fruits"),
+            BlockNode(IncrementNode(NameNode("missing")))),
+        PassNode(comment="テスト: どちらの条件も成立している"),
+        AssertNode(NameNode("found"),   NumberNode(1)),
+        AssertNode(NameNode("missing"), NumberNode(1)),
+    ]
+    return YuiExample(
+        name="membership",
+        description="in / not in による要素の所属判定",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_type_check():
+    """型判定関数のサンプル"""
+    statements = [
+        ImportNode(),
+        PassNode(comment="値の型を判定する関数群"),
+        AssertNode(FuncAppNode(NameNode("整数判定"),   [NumberNode(42)]),      ConstNode(True)),
+        AssertNode(FuncAppNode(NameNode("小数判定"),   [NumberNode(3.14)]),    ConstNode(True)),
+        AssertNode(FuncAppNode(NameNode("文字列判定"), [StringNode("hello")]), ConstNode(True)),
+        AssertNode(FuncAppNode(NameNode("配列判定"),
+            [ArrayNode([NumberNode(1), NumberNode(2)])]), ConstNode(True)),
+        AssertNode(FuncAppNode(NameNode("オブジェクト判定"),
+            [ObjectNode([StringNode("x"), NumberNode(1)])]), ConstNode(True)),
+        PassNode(comment="型が違えば偽"),
+        AssertNode(FuncAppNode(NameNode("整数判定"), [StringNode("42")]), ConstNode(False)),
+        AssertNode(FuncAppNode(NameNode("配列判定"), [NumberNode(1)]),    ConstNode(False)),
+    ]
+    return YuiExample(
+        name="type_check",
+        description="型判定関数（整数判定・小数判定・文字列判定・配列判定・オブジェクト判定）",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_type_convert():
+    """型変換関数のサンプル"""
+    statements = [
+        ImportNode(),
+        PassNode(comment="文字列を整数に変換する"),
+        AssertNode(FuncAppNode(NameNode("整数化"), [StringNode("42")]), NumberNode(42)),
+        PassNode(comment="小数を整数に変換する（切り捨て）"),
+        AssertNode(FuncAppNode(NameNode("整数化"), [NumberNode(3.7)]), NumberNode(3)),
+        PassNode(comment="整数を小数に変換する"),
+        AssertNode(FuncAppNode(NameNode("小数化"), [NumberNode(5)]), NumberNode(5.0)),
+        PassNode(comment="整数を文字列に変換する"),
+        AssertNode(FuncAppNode(NameNode("文字列化"), [NumberNode(42)]), StringNode("42")),
+        PassNode(comment="文字列を配列（文字コード）に変換する"),
+        AssertNode(FuncAppNode(NameNode("配列化"), [StringNode("Hi")]),
+                   ArrayNode([NumberNode(72), NumberNode(105)])),
+    ]
+    return YuiExample(
+        name="type_convert",
+        description="型変換関数（整数化・小数化・文字列化・配列化）",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
+def example_math_functions():
+    """数学関数のサンプル"""
+    statements = [
+        ImportNode(),
+        PassNode(comment="絶対値"),
+        AssertNode(FuncAppNode(NameNode("絶対値"), [MinusNode(NumberNode(7))]), NumberNode(7)),
+        AssertNode(FuncAppNode(NameNode("絶対値"), [NumberNode(3)]),            NumberNode(3)),
+        PassNode(comment="平方根（常に小数を返す）"),
+        AssertNode(FuncAppNode(NameNode("平方根"), [NumberNode(9)]), NumberNode(3.0)),
+        PassNode(comment="最大値・最小値（可変長引数）"),
+        AssertNode(FuncAppNode(NameNode("最大値"),
+            [NumberNode(3), NumberNode(1), NumberNode(4), NumberNode(1), NumberNode(5)]),
+            NumberNode(5)),
+        AssertNode(FuncAppNode(NameNode("最小値"),
+            [NumberNode(3), NumberNode(1), NumberNode(4), NumberNode(1), NumberNode(5)]),
+            NumberNode(1)),
+        PassNode(comment="配列をそのまま渡すこともできる"),
+        AssertNode(FuncAppNode(NameNode("最大値"),
+            [ArrayNode([NumberNode(10), NumberNode(20), NumberNode(30)])]),
+            NumberNode(30)),
+    ]
+    return YuiExample(
+        name="math_functions",
+        description="数学関数（絶対値・平方根・最大値・最小値）",
+        ast_node=BlockNode(statements, top_level=True),
+        kind='both',
+    )
+
+
 def get_all_examples() -> List[YuiExample]:
     """すべての例を返す（kind に関わらず）"""
     return [
@@ -738,19 +894,25 @@ def get_all_examples() -> List[YuiExample]:
         example_nested_conditional_branches(),
         example_comparisons(),
         example_array(),
+        example_array_indexing(),
         example_strings(),
+        example_string_interpolation(),
         example_objects(),
+        example_membership(),
         example_function(),
         example_function_no_argument(),
         example_function_without_return(),
         example_recursive_function(),
         example_arithmetic(),
+        example_math_functions(),
         example_float_add(),
         example_monte_carlo(),
         example_null_assignment(),
         example_boolean_assignment(),
         example_boolean_branch(),
         example_null_check(),
+        example_type_check(),
+        example_type_convert(),
     ]
 
 

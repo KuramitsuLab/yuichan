@@ -15,8 +15,8 @@ const SYNTAXES = ['yui', 'pylike', 'emoji'];
 const ALL_EXAMPLES = getAllExamples();
 
 // 期待される例の数 (Python 版と揃える)
-test('getAllExamples returns 20 examples', () => {
-  assert.equal(ALL_EXAMPLES.length, 20);
+test('getAllExamples returns 26 examples', () => {
+  assert.equal(ALL_EXAMPLES.length, 26);
 });
 
 test('each example has required fields', () => {
