@@ -1,0 +1,101 @@
+標準ライブラリを使う
+# 簡易スタックマシン
+# 命令は [opcode, operand] の形の配列で表す。operand が不要な命令は 0 を入れる。
+#
+# 対応命令:
+#   ["PUSH", n] -- スタックに n を積む
+#   ["POP",  0] -- スタック頂上を捨てる
+#   ["DUP",  0] -- スタック頂上を複製する
+#   ["ADD",  0] -- 上 2 つを取り出して a+b を積む
+#   ["SUB",  0] -- 上 2 つを取り出して a-b を積む
+#   ["MUL",  0] -- 上 2 つを取り出して a*b を積む
+#
+# プログラム実行後、スタックの頂上を答えとして返す。
+# (Yui の配列は要素削除ができないので、論理的なスタックの大きさを top で管理し、
+#  pop は top を減らすだけにする)
+
+run=入力programに対し{
+   stack=[]
+   top=0
+   n=programの大きさ
+   i=0
+   n回くり返す{
+      instr=program[i]
+      op=instr[0]
+      arg=instr[1]
+
+      もしopが"PUSH"ならば{
+         # 論理 top が配列実長より小さければ上書き、そうでなければ末尾に追加
+         sz=stackの大きさ
+         もしtopがszより小さいならば{
+            stack[top]=arg
+         }
+         そうでなければ{
+            stackにargを追加する
+         }
+         topを増やす
+      }
+      もしopが"POP"ならば{
+         topを減らす
+      }
+      もしopが"DUP"ならば{
+         t=差(top,1)
+         x=stack[t]
+         sz=stackの大きさ
+         もしtopがszより小さいならば{
+            stack[top]=x
+         }
+         そうでなければ{
+            stackにxを追加する
+         }
+         topを増やす
+      }
+      もしopが"ADD"ならば{
+         topを減らす
+         b=stack[top]
+         topを減らす
+         a=stack[top]
+         stack[top]=和(a,b)
+         topを増やす
+      }
+      もしopが"SUB"ならば{
+         topを減らす
+         b=stack[top]
+         topを減らす
+         a=stack[top]
+         stack[top]=差(a,b)
+         topを増やす
+      }
+      もしopが"MUL"ならば{
+         topを減らす
+         b=stack[top]
+         topを減らす
+         a=stack[top]
+         stack[top]=積(a,b)
+         topを増やす
+      }
+      iを増やす
+   }
+   # スタックの頂上を結果として返す
+   topを減らす
+   stack[top]が答え
+}
+
+# テスト: 3 + 4 = 7
+>>> run([["PUSH",3],["PUSH",4],["ADD",0]])
+7
+# テスト: (3 + 4) * 2 = 14
+>>> run([["PUSH",3],["PUSH",4],["ADD",0],["PUSH",2],["MUL",0]])
+14
+# テスト: 10 - (2 + 3) = 5
+>>> run([["PUSH",10],["PUSH",2],["PUSH",3],["ADD",0],["SUB",0]])
+5
+# テスト: DUP で 5 を複製して掛ける → 25
+>>> run([["PUSH",5],["DUP",0],["MUL",0]])
+25
+# テスト: POP で途中の値を捨てる → 7
+>>> run([["PUSH",7],["PUSH",99],["POP",0]])
+7
+# テスト: 単一 PUSH
+>>> run([["PUSH",42]])
+42

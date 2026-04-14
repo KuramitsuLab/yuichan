@@ -1,0 +1,78 @@
+標準ライブラリを使う
+# 文字列 s の中の old を全て new で置換した新しい文字列を返す
+# old が空文字列の場合は s をそのまま返す (無限ループ防止)
+# 文字列は文字コード配列なので、追加 (`に〜を追加する`) で組み立てられる
+
+replace=入力s,old,newに対し{
+   result=""
+   n=sの大きさ
+   m=oldの大きさ
+   newlen=newの大きさ
+   もしmが0ならば{
+      sが答え
+   }
+   i=0
+   # 各反復で i は最低 1 進むので n+1 回回せば必ず終わる
+   limit=和(n,1)
+   limit回くり返す{
+      もしiがn以上ならば{
+         くり返しを抜ける
+      }
+      # i から始まる m 文字が old と一致するか調べる
+      match=0
+      tail=和(i,m)
+      もしtailがn以下ならば{
+         match=1
+         j=0
+         m回くり返す{
+            ij=和(i,j)
+            cs=s[ij]
+            co=old[j]
+            もしcsがco以外ならば{
+               match=0
+            }
+            jを増やす
+         }
+      }
+      もしmatchが1ならば{
+         # new を追記して i を m 進める
+         k=0
+         newlen回くり返す{
+            resultにnew[k]を追加する
+            kを増やす
+         }
+         i=和(i,m)
+      }
+      そうでなければ{
+         # 一致しなければ s[i] を 1 文字コピー
+         resultにs[i]を追加する
+         iを増やす
+      }
+   }
+   resultが答え
+}
+
+# テスト: 単純な置換
+>>> replace("hello world","world","Yui")
+"hello Yui"
+# テスト: 複数箇所を一括置換
+>>> replace("ababab","a","X")
+"XbXbXb"
+# テスト: 置換結果が元より短い
+>>> replace("hello hello","hello","hi")
+"hi hi"
+# テスト: 置換結果が元より長い
+>>> replace("abc","b","BBB")
+"aBBBc"
+# テスト: 一致しないなら原文のまま
+>>> replace("hello","xyz","ABC")
+"hello"
+# テスト: 全体が一致
+>>> replace("foo","foo","bar")
+"bar"
+# テスト: 削除 (new が空文字列)
+>>> replace("a-b-c","-","")
+"abc"
+# テスト: old が空なら原文を返す
+>>> replace("hello","","X")
+"hello"

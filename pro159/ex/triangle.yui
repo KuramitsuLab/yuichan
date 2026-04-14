@@ -1,0 +1,77 @@
+標準ライブラリを使う
+# 3 辺の長さから三角形を分類する
+#
+#   "not_triangle" : 三角不等式を満たさない (a+b > c などが成り立たない)
+#   "equilateral"  : 正三角形 (3 辺すべて等しい)
+#   "isosceles"    : 二等辺三角形 (ちょうど 2 辺が等しい)
+#   "scalene"      : 不等辺三角形 (3 辺すべて異なる)
+#
+# yui には AND / OR が無いので、複数条件は **フラグ** か **ネスト もし** で組む。
+# 三角不等式は 3 本の比較すべてが成り立つ必要があるので、ここではフラグで集約する。
+
+classify=入力a,b,cに対し{
+   # === ステップ 1: 三角不等式チェック ===
+   # a+b > c, a+c > b, b+c > a がすべて成り立つかを ok フラグで集約
+   ok=1
+   ab=和(a,b)
+   ac=和(a,c)
+   bc=和(b,c)
+   もしabがc以下ならば{ ok=0 }
+   もしacがb以下ならば{ ok=0 }
+   もしbcがa以下ならば{ ok=0 }
+   もしokが0ならば{
+      "not_triangle"が答え
+   }
+
+   # === ステップ 2: 何辺が等しいかを数える ===
+   # eq == 3 なら正三角形、eq == 1 なら二等辺、eq == 0 なら不等辺
+   # 等しさは「差が 0」で判定する
+   # (もし <変数> が <変数> ならば の形は yui パーサが嫌うので避ける)
+   eq=0
+   dab=差(a,b)
+   dbc=差(b,c)
+   dac=差(a,c)
+   もしdabが0ならば{
+      eqを増やす
+   }
+   もしdbcが0ならば{
+      eqを増やす
+   }
+   もしdacが0ならば{
+      eqを増やす
+   }
+
+   もしeqが3ならば{
+      "equilateral"が答え
+   }
+   もしeqが1ならば{
+      "isosceles"が答え
+   }
+   "scalene"が答え
+}
+
+# === テスト: 正三角形 ===
+>>> classify(5,5,5)
+"equilateral"
+# === テスト: 二等辺 ===
+>>> classify(5,5,8)
+"isosceles"
+>>> classify(8,5,5)
+"isosceles"
+>>> classify(5,8,5)
+"isosceles"
+# === テスト: 不等辺 ===
+>>> classify(3,4,5)
+"scalene"
+>>> classify(7,8,9)
+"scalene"
+# === テスト: 三角不等式違反 ===
+>>> classify(1,2,3)
+"not_triangle"
+>>> classify(1,1,5)
+"not_triangle"
+>>> classify(10,1,1)
+"not_triangle"
+# === テスト: 退化した三角形 (面積ゼロ、ちょうど一直線) も三角形ではない ===
+>>> classify(2,2,4)
+"not_triangle"

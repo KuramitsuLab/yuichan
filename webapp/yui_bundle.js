@@ -2340,7 +2340,7 @@ ${prefix}${indent}${pointer}`;
           "number-chars": "[0-9]*",
           "number-dot-char": "[\\.]",
           "name-first-char": "[A-Za-z_]",
-          "special-name-exclude-prefix": "もし|そうでなければ|くり返す|繰り返す|くりかえす|入力|ならば|に対し[て]?|[0-9]+",
+          "special-name-exclude-prefix": "もし|そうでなければ|くり返す|繰り返す|くりかえす|入力|ならば|に対し[て]?|が|は|を|に|の|と|で|から|まで|[0-9]+",
           "name-chars": "[A-Za-z0-9_]*",
           "extra-name-begin": "「",
           "extra-name-end": "」",
@@ -2870,16 +2870,12 @@ ${prefix}${indent}${pointer}`;
           }
           const excludePrefix = this.terminals["special-name-exclude-prefix"] || "";
           if (excludePrefix) {
-            const prefixRe = new RegExp(`^(?:${excludePrefix})`);
+            const splitRe = new RegExp(`(?:${excludePrefix})+`);
             const expanded = [];
             for (const name of names) {
-              let stripped = name;
-              while (true) {
-                const m = prefixRe.exec(stripped);
-                if (!m || m[0].length === 0 || m[0].length === stripped.length) break;
-                stripped = stripped.slice(m[0].length);
+              for (const fragment of name.split(splitRe)) {
+                if (fragment && fragment !== name) expanded.push(fragment);
               }
-              if (stripped !== name && stripped) expanded.push(stripped);
             }
             names.push(...expanded);
           }

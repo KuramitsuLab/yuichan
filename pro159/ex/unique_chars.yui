@@ -1,0 +1,36 @@
+# 文字列からユニークな文字だけを取り出す
+# 文字列は文字コード配列なので、配列と同じ「のいずれか / のいずれでもない」で
+# 既出判定ができる。先頭から順に見て、まだ結果に含まれていない文字だけを追加する。
+
+unique_chars=入力sに対し{
+   result=""
+   i=0
+   sの大きさ回くり返す{
+      c=s[i]
+      もしcがresultのいずれでもないならば{
+         resultにcを追加する
+      }
+      iを増やす
+   }
+   resultが答え
+}
+
+# テスト: 重複を 1 つにまとめる
+>>> unique_chars("banana")
+"ban"
+>>> unique_chars("mississippi")
+"misp"
+# テスト: 出現順は保たれる
+>>> unique_chars("abcabc")
+"abc"
+>>> unique_chars("programming")
+"progamin"
+# テスト: すべて同じ文字
+>>> unique_chars("aaaa")
+"a"
+# テスト: 空文字列
+>>> unique_chars("")
+""
+# テスト: 日本語もそのまま動く (文字列は文字コード配列)
+>>> unique_chars("さくらさくら")
+"さくら"

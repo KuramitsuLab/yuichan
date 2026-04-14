@@ -428,19 +428,16 @@ export class Source extends YuiSyntax {
       if (m[1] !== undefined) names.push(m[1]);
     }
 
-    // 3. キーワードが接頭辞として貼り付いた名前 (例: `もし剰余(` → `剰余` も登録) を救済
+    // 3. キーワードや助詞が貼り付いた名前 (例: `もしposが差(` → `pos`, `差`) を救済。
+    // exclude-prefix を区切りとして抽出名を分割し、全フラグメントを別名として追加登録する。
     const excludePrefix = this.terminals['special-name-exclude-prefix'] || '';
     if (excludePrefix) {
-      const prefixRe = new RegExp(`^(?:${excludePrefix})`);
+      const splitRe = new RegExp(`(?:${excludePrefix})+`);
       const expanded = [];
       for (const name of names) {
-        let stripped = name;
-        while (true) {
-          const m = prefixRe.exec(stripped);
-          if (!m || m[0].length === 0 || m[0].length === stripped.length) break;
-          stripped = stripped.slice(m[0].length);
+        for (const fragment of name.split(splitRe)) {
+          if (fragment && fragment !== name) expanded.push(fragment);
         }
-        if (stripped !== name && stripped) expanded.push(stripped);
       }
       names.push(...expanded);
     }

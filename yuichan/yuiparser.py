@@ -220,20 +220,16 @@ class Source(YuiSyntax):
         matches2 = re.findall(funcapp_pattern, text_for_extraction)
         names.extend(matches2)
 
-        # 3. キーワードが接頭辞として貼り付いた名前（例: `もし剰余(` → `剰余` も登録）を救済
+        # 3. キーワードや助詞が貼り付いた名前（例: `もしposが差(` → `pos`, `差`）を救済。
+        # exclude-prefix を区切りとして抽出名を分割し、全フラグメントを別名として追加登録する。
         exclude_prefix = self.terminals.get("special-name-exclude-prefix", "")
         if exclude_prefix:
-            prefix_re = re.compile(f"^(?:{exclude_prefix})")
+            split_re = re.compile(f"(?:{exclude_prefix})+")
             expanded = []
             for name in names:
-                stripped = name
-                while True:
-                    m = prefix_re.match(stripped)
-                    if not m or m.end() == 0 or m.end() == len(stripped):
-                        break
-                    stripped = stripped[m.end():]
-                if stripped != name and stripped:
-                    expanded.append(stripped)
+                for fragment in split_re.split(name):
+                    if fragment and fragment != name:
+                        expanded.append(fragment)
             names.extend(expanded)
 
         # Unicodeなど特殊な名前をあらかじめ抽出しておく（例: `λ` など）。ただし、英数字とアンダースコアのみで構成される名前は除外する。

@@ -1,0 +1,50 @@
+標準ライブラリを使う
+# 母音を数える / 最初の母音で抜ける
+# 文字列は文字コード配列なので、「のいずれか」で母音判定ができる。
+
+# 母音を数える
+count_vowels=入力sに対し{
+   vowels="aeiouAEIOU"
+   count=0
+   i=0
+   sの大きさ回くり返す{
+      c=s[i]
+      もしcがvowelsのいずれかならば{
+         countを増やす
+      }
+      iを増やす
+   }
+   countが答え
+}
+
+>>> count_vowels("hello")
+2
+>>> count_vowels("programming")
+3
+>>> count_vowels("xyz")
+0
+>>> count_vowels("AEIOU")
+5
+
+# 最初の母音を見つけたら くり返しを抜ける (break)
+first_vowel=入力sに対し{
+   vowels="aeiouAEIOU"
+   result=""
+   i=0
+   sの大きさ回くり返す{
+      c=s[i]
+      もしcがvowelsのいずれかならば{
+         resultにcを追加する
+         くり返しを抜ける
+      }
+      iを増やす
+   }
+   resultが答え
+}
+
+>>> first_vowel("hello")
+"e"
+>>> first_vowel("sky")
+""
+>>> first_vowel("Apple")
+"A"

@@ -68,6 +68,19 @@ result=0
         env = run(src)
         assert val(env, 'result') == 1
 
+    def test_func_call_on_right_side_of_if(self):
+        """もし <変数> が <関数呼び出し> ならば も動くべき (右辺に関数呼び出し)"""
+        src = """
+pos=5
+result=0
+もしposが差(0,1)ならば{
+   result=1
+}
+"""
+        env = run(src)
+        # 5 != -1 → result は 0 のまま (パース・実行できることが本質)
+        assert val(env, 'result') == 0
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Bug 6: doctest 直後のコメント中の `<数字> (...)` が関数呼び出しに化ける
