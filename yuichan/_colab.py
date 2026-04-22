@@ -199,7 +199,7 @@ def setup() -> None:
     セッション開始時に1回呼び出す。
     """
     _display(Javascript(_build_define_mode_js()))
-    _display(Javascript(_SUPPRESS_DIAGNOSTICS_JS))
+    # _display(Javascript(_SUPPRESS_DIAGNOSTICS_JS))  # TODO: Colab DOM 構造確認後に再有効化
 
 
 def highlight() -> None:
