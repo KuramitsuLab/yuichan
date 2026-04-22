@@ -144,20 +144,50 @@ def _build_highlight_js() -> str:
 
 _SUPPRESS_DIAGNOSTICS_JS = """
 (function() {
-  if (typeof monaco === 'undefined') {
-    console.warn('[yuichan] monaco not found. Diagnostic suppression skipped.');
-    return;
+  // %%yui を含むセルのルート要素を探す
+  function findCellRoot(el) {
+    while (el) {
+      if (el.classList && (
+        el.classList.contains('cell') ||
+        el.tagName === 'COLAB-NOTEBOOK-CELL' ||
+        (el.getAttribute && el.getAttribute('data-cell-id'))
+      )) return el;
+      el = el.parentElement;
+    }
+    return null;
   }
-  monaco.editor.onDidChangeMarkers(function(uris) {
-    uris.forEach(function(uri) {
-      var model = monaco.editor.getModel(uri);
-      if (!model) return;
-      if (/^%%yui/.test(model.getValue())) {
-        monaco.editor.setModelMarkers(model, 'pylance', []);
-      }
+
+  function isYuiCell(el) {
+    var cell = findCellRoot(el);
+    if (!cell) return false;
+    var lines = cell.querySelectorAll('.cm-line, .view-line');
+    if (!lines.length) return false;
+    return /^%%yui/.test(lines[0].textContent.trimStart());
+  }
+
+  function removeDiagnosticsIn(root) {
+    root.querySelectorAll(
+      '.cm-lintRange-error, .cm-lintRange-warning, .cm-lintRange-info, .cm-diagnostic'
+    ).forEach(function(marker) {
+      if (isYuiCell(marker)) marker.remove();
+    });
+  }
+
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        if (node.className && /cm-lintRange|cm-diagnostic/.test(node.className)) {
+          if (isYuiCell(node)) { node.remove(); return; }
+        }
+        if (node.querySelectorAll) removeDiagnosticsIn(node);
+      });
     });
   });
-  console.log('[yuichan] %%yui diagnostic suppression active.');
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  removeDiagnosticsIn(document.body);
+  console.log('[yuichan] %%yui diagnostic suppression active (DOM observer).');
 })();
 """
 
