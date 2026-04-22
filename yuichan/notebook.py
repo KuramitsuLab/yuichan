@@ -39,8 +39,8 @@ def _show_stats(rt: 'YuiRuntime') -> None:
     text = _html.escape('  '.join(parts))
     _display(HTML(
         f'<pre style="'
-        f'color:#555;background:#f8f8f8;'
-        f'border-left:3px solid #aaa;'
+        f'color:#1a6abf;background:#f0f6ff;'
+        f'border-left:3px solid #1a6abf;'
         f'padding:4px 10px;margin:4px 0;'
         f'font-size:12px;white-space:pre-wrap;">'
         f'{text}</pre>'
