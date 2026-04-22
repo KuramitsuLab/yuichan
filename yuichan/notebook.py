@@ -11,7 +11,7 @@ from .yuiruntime import YuiRuntime
 from .yuitypes import YuiError
 
 
-def _show_error(label: str, message: str) -> None:
+def _show_error(message: str) -> None:
     safe = _html.escape(str(message))
     _display(HTML(
         f'<pre style="'
@@ -19,7 +19,7 @@ def _show_error(label: str, message: str) -> None:
         f'border-left:3px solid #c00;'
         f'padding:6px 10px;margin:4px 0;'
         f'font-size:13px;white-space:pre-wrap;">'
-        f'<b>{label}</b>: {safe}</pre>'
+        f'{safe}</pre>'
     ))
 
 
@@ -30,9 +30,9 @@ def _run_yui(source: str, syntax: str, eval_mode: bool) -> None:
         if eval_mode and result is not None:
             print(result)
     except YuiError as e:
-        _show_error('YuiError', e)
+        _show_error(rt.format_error(e, "| "))
     except Exception as e:
-        _show_error(type(e).__name__, e)
+        _show_error(f'{type(e).__name__}: {e}')
 
 
 def _yui_cell(line, cell):
