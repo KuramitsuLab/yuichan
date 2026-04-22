@@ -142,12 +142,34 @@ def _build_highlight_js() -> str:
 """
 
 
+_SUPPRESS_DIAGNOSTICS_JS = """
+(function() {
+  if (typeof monaco === 'undefined') {
+    console.warn('[yuichan] monaco not found. Diagnostic suppression skipped.');
+    return;
+  }
+  monaco.editor.onDidChangeMarkers(function(uris) {
+    uris.forEach(function(uri) {
+      var model = monaco.editor.getModel(uri);
+      if (!model) return;
+      if (/^%%yui/.test(model.getValue())) {
+        monaco.editor.setModelMarkers(model, 'pylance', []);
+      }
+    });
+  });
+  console.log('[yuichan] %%yui diagnostic suppression active.');
+})();
+"""
+
+
 def setup() -> None:
     """CodeMirror に Yui モードを登録し、既存の %%yui セルにハイライトを適用する。
+    また Monaco editor の %%yui セルへの診断エラー表示を抑制する。
 
     セッション開始時に1回呼び出す。
     """
     _display(Javascript(_build_define_mode_js()))
+    _display(Javascript(_SUPPRESS_DIAGNOSTICS_JS))
 
 
 def highlight() -> None:
