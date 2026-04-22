@@ -23,6 +23,24 @@ def _show_error(message: str) -> None:
     ))
 
 
+def _show_env(rt: 'YuiRuntime') -> None:
+    if not rt.environments:
+        return
+    env = {k: v for k, v in rt.environments[-1].items() if not k.startswith('@')}
+    if not env:
+        return
+    lines = [f'{k} = {v.stringify()}' for k, v in env.items()]
+    text = _html.escape('\n'.join(lines))
+    _display(HTML(
+        f'<pre style="'
+        f'color:#1a6abf;background:#f0f6ff;'
+        f'border-left:3px solid #1a6abf;'
+        f'padding:4px 10px;margin:4px 0;'
+        f'font-size:13px;white-space:pre-wrap;">'
+        f'{text}</pre>'
+    ))
+
+
 def _show_stats(rt: 'YuiRuntime') -> None:
     inc = rt.increment_count
     dec = rt.decrement_count
@@ -53,6 +71,8 @@ def _run_yui(source: str, syntax: str, eval_mode: bool) -> None:
         result = rt.exec(source, syntax=syntax, eval_mode=eval_mode)
         if eval_mode and result is not None:
             print(result)
+        else:
+            _show_env(rt)
         _show_stats(rt)
     except YuiError as e:
         _show_error(rt.format_error(e, "| "))
