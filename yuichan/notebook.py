@@ -23,12 +23,37 @@ def _show_error(message: str) -> None:
     ))
 
 
+def _show_stats(rt: 'YuiRuntime') -> None:
+    inc = rt.increment_count
+    dec = rt.decrement_count
+    cmp = rt.compare_count
+    if inc == 0 and dec == 0 and cmp == 0:
+        return
+    parts = []
+    if inc:
+        parts.append(f'増加: {inc}')
+    if dec:
+        parts.append(f'減少: {dec}')
+    if cmp:
+        parts.append(f'比較: {cmp}')
+    text = _html.escape('  '.join(parts))
+    _display(HTML(
+        f'<pre style="'
+        f'color:#555;background:#f8f8f8;'
+        f'border-left:3px solid #aaa;'
+        f'padding:4px 10px;margin:4px 0;'
+        f'font-size:12px;white-space:pre-wrap;">'
+        f'{text}</pre>'
+    ))
+
+
 def _run_yui(source: str, syntax: str, eval_mode: bool) -> None:
     rt = YuiRuntime()
     try:
         result = rt.exec(source, syntax=syntax, eval_mode=eval_mode)
         if eval_mode and result is not None:
             print(result)
+        _show_stats(rt)
     except YuiError as e:
         _show_error(rt.format_error(e, "| "))
     except Exception as e:
