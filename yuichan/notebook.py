@@ -6,7 +6,6 @@
 
 import html as _html
 from IPython.display import HTML, display as _display
-from IPython.core.magic import register_magic_function
 
 from .yuiruntime import YuiRuntime
 from .yuitypes import YuiError
@@ -49,8 +48,9 @@ def _yui_line(line):
 
 def register_magics() -> None:
     """%%yui / %yui マジックを IPython に登録する。"""
-    register_magic_function(_yui_cell, magic_kind='cell', magic_name='yui')
-    register_magic_function(_yui_line, magic_kind='line', magic_name='yui')
+    ip = get_ipython()  # noqa: F821
+    ip.register_magic_function(_yui_cell, magic_kind='cell', magic_name='yui')
+    ip.register_magic_function(_yui_line, magic_kind='line', magic_name='yui')
 
 
 def setup() -> None:
