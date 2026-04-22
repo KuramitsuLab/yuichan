@@ -32,12 +32,12 @@ def _show_stats(rt: 'YuiRuntime') -> None:
         return
     parts = []
     if inc:
-        parts.append(f'増加: {inc}')
+        parts.append(f'増加: {inc}回')
     if dec:
-        parts.append(f'減少: {dec}')
+        parts.append(f'減少: {dec}回')
     if cmp:
-        parts.append(f'比較: {cmp}')
-    text = _html.escape('  '.join(parts))
+        parts.append(f'比較: {cmp}回')
+    text = _html.escape('(操作回数) ' + '  '.join(parts))
     _display(HTML(
         f'<pre style="'
         f'color:#1a6abf;background:#f0f6ff;'
