@@ -754,6 +754,10 @@ class ReturnParser(ParserCombinator):
     def match(self, source: Source):
         BK = source.can_backtrack('return-lookahead')
         start_pos = source.pos
+        # 戻り値なし（「関数から抜ける」= return-none）を先に試す。
+        # is_ は未定義／不一致なら位置を戻して False を返す。
+        if source.is_('return-none'):
+            return source.p(ReturnNode(None), start_pos=start_pos)
         source.require_('return-begin', BK=BK)
         if BK: BK = source.pos == start_pos
         expr_node = source.parse("@Expression", BK=BK)

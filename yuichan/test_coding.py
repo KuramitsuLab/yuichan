@@ -58,6 +58,9 @@ testcases = {
     "break": (BreakNode(), 'くり返しを抜ける'),
     # ReturnNode
     "return result": (ReturnNode(NameNode("result")), 'resultが答え'),
+    # 戻り値なし（return-none）と明示的な null 返却の区別
+    "return none": (ReturnNode(None), '関数から抜ける'),
+    "return null": (ReturnNode(ConstNode(None)), '値なしが答え'),
     # PrintExpressionNode
     'print "Hello, World!"': (PrintExpressionNode(StringNode("Hello, World!")), '"Hello, World!"'),   
     # BlockNode

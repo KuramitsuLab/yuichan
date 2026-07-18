@@ -342,9 +342,12 @@ class ReturnNode(StatementNode):
     """関数からの返値（式 が 答え）を表すノード"""
     expression: ExpressionNode
 
-    def __init__(self, expression: ExpressionNode):
+    def __init__(self, expression: ExpressionNode = None):
         super().__init__()
-        self.expression = _node(expression)
+        # expression=None は戻り値なし（「関数から抜ける」= return-none）を表す。
+        # _node(None) は ConstNode(null) になってしまい void 判定が壊れるためラップしない。
+        # 明示的な null 返却（「値なしが答え」）は ConstNode(None) を渡すこと。
+        self.expression = _node(expression) if expression is not None else None
 
 
 class FuncDefNode(StatementNode):

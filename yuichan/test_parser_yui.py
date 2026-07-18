@@ -76,6 +76,17 @@ class TestParseStatementNode_Yui:
         return_node = source.parse("@Return")
         assert str(return_node) == "1が答え"
 
+    def test_Return_none(self):
+        # 戻り値なし（「関数から抜ける」= return-none）が正しくパースできること
+        source = Source("関数から抜ける")
+        return_node = source.parse("@Return")
+        assert str(return_node) == "関数から抜ける"
+        assert return_node.expression is None
+
+        source = Source("関数から抜ける # コメント")
+        return_node = source.parse("@Statement")
+        assert str(return_node) == "関数から抜ける"
+
     def test_FuncDef_with_arg(self):
         source = Source("f = 入力x に対して {\n  xが答え\n}")
         funcdef_node = source.parse("@FuncDef")
