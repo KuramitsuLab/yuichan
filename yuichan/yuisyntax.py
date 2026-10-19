@@ -452,6 +452,16 @@ def generate_bnf(terminals: dict) -> str:
     if s.is_defined('comment-begin') and s.is_defined('comment-end'):
         r('BlockComment', ex('comment-begin') + ' ... ' + ex('comment-end'))
 
+    # ── Standard Library ─────────────────────────────────────
+    if s.is_defined('import-standard'):
+        from .yuistdlib import standard_lib
+        modules: list = []
+        standard_lib(modules)
+        section(f'Standard Library  ({ex("import-standard")})')
+        for names, func in modules:
+            doc = (func.__doc__ or '').strip().splitlines()
+            out.append(f'  {" | ".join(names.split("|")):<28} {doc[0] if doc else ""}'.rstrip())
+
     return '\n'.join(out)
 
 
